@@ -1,0 +1,647 @@
+# FIFA World Cup 2026 Picks — Project Plan
+
+**Domain:** wc.k61.dev  
+**Repo:** kurtzeborn/world-cup  
+**Status:** Planning
+
+---
+
+## 1. Overview
+
+A web application for making FIFA World Cup 2026 predictions. Users rank teams within each group, pick which 3rd-place teams advance, and complete a knockout bracket that auto-fills based on their group stage picks. Points are awarded for correct predictions with escalating values through each tournament round.
+
+### Key Features
+- Microsoft Entra ID authentication (Google to be added post-launch)
+- Group stage team ordering (12 groups × 4 teams)
+- 3rd-place advancement picks (8 of 12)
+- Auto-populated knockout bracket based on group picks
+- Escalating scoring system with partial credit
+- Global leaderboard + private leagues
+- Admin panel for entering actual results (with future API automation)
+- All picks lock before the tournament starts (June 11, 2026)
+
+---
+
+## 2. Tournament Format — 2026 FIFA World Cup
+
+### 2.1 Group Stage
+- **48 teams** in **12 groups** (A through L) of 4 teams each
+- Each team plays 3 group matches (June 11–27, 2026)
+- **Top 2 from each group** (24 teams) advance automatically
+- **8 best 3rd-place teams** (out of 12) also advance
+- **32 total teams** enter the knockout stage
+
+### 2.2 Groups (as drawn December 5, 2025)
+
+| Group | Pot 1 | Pot 2 | Pot 3 | Pot 4 |
+|-------|-------|-------|-------|-------|
+| A | Mexico (H) | South Africa | South Korea | UEFA Path D winner* |
+| B | Canada (H) | UEFA Path A winner* | Qatar | Switzerland |
+| C | Brazil | Morocco | Haiti | Scotland |
+| D | United States (H) | Paraguay | Australia | UEFA Path C winner* |
+| E | Germany | Curaçao | Ivory Coast | Ecuador |
+| F | Netherlands | Japan | UEFA Path B winner* | Tunisia |
+| G | Belgium | Egypt | Iran | New Zealand |
+| H | Spain | Cape Verde | Saudi Arabia | Uruguay |
+| I | France | Senegal | IC Path 2 winner* | Norway |
+| J | Argentina | Algeria | Austria | Jordan |
+| K | Portugal | IC Path 1 winner* | Uzbekistan | Colombia |
+| L | England | Croatia | Ghana | Panama |
+
+*(H) = Host nation. Asterisked teams TBD from March 2026 playoffs.*
+
+**UEFA Playoff paths (March 2026):**
+- Path A: Serbia, Wales, Georgia, or Greece
+- Path B: Hungary, Ukraine, Iceland, or Finland  
+- Path C: Turkey, Slovakia, Kosovo, or Romania
+- Path D: Denmark, Czech Republic, Republic of Ireland, or North Macedonia
+
+**Inter-confederation playoffs (March 2026):**
+- IC Path 1: DR Congo, Jamaica, or New Caledonia
+- IC Path 2: Iraq, Bolivia, or Suriname
+
+> **Note:** The app must support updating team names once playoff results are known. Store teams with a stable ID and a display name that can be updated.
+
+### 2.3 3rd-Place Advancement
+- 12 third-place teams are ranked by: Points → Goal difference → Goals scored → Team conduct score → FIFA ranking
+- Top 8 advance to the Round of 32
+- The **specific R32 matchup** for each qualifying 3rd-place team depends on which combination of groups produced the 8 qualifying 3rd-place teams
+- FIFA publishes a **495-row lookup table** (Annex C of tournament regulations) mapping each possible combination of qualifying groups to specific bracket positions
+- This lookup table **must be implemented** in the application to correctly populate the bracket
+
+### 2.4 Knockout Stage Structure
+- **Round of 32** (16 matches): June 28 – July 3
+- **Round of 16** (8 matches): July 4–7
+- **Quarterfinals** (4 matches): July 9–11
+- **Semifinals** (2 matches): July 14–15
+- **Third-place match**: July 18
+- **Final**: July 19
+
+The bracket is split into two halves (pathways). By design, the #1 and #2 ranked teams (Spain, Argentina) and #3 and #4 (France, England) were drawn into opposite pathways, meaning they can only meet in the final if they win their groups.
+
+### 2.5 Round of 32 Fixed Matchups
+
+The R32 matchups are predetermined by the draw. Group winners (1X), runners-up (2X), and 3rd-place qualifiers (3X) are placed as follows:
+
+**Pathway 1 (Semifinal in Arlington):**
+
+| Match | Team A | Team B |
+|-------|--------|--------|
+| 74 | 1E (Germany) | 3rd from ABCDF |
+| 77 | 1I (France) | 3rd from CDFGH |
+| 73 | 2A | 2B |
+| 75 | 1F (Netherlands) | 2C |
+| 83 | 2K | 2L |
+| 84 | 1H (Spain) | 2J |
+| 81 | 1D (United States) | 3rd from BEFIJ |
+| 82 | 1G (Belgium) | 3rd from AEHIJ |
+
+**Pathway 2 (Semifinal in Atlanta):**
+
+| Match | Team A | Team B |
+|-------|--------|--------|
+| 76 | 1C (Brazil) | 2F |
+| 78 | 2E | 2I |
+| 79 | 1A (Mexico) | 3rd from CEFHI |
+| 80 | 1L (England) | 3rd from EHIJK |
+| 86 | 1J (Argentina) | 2H |
+| 88 | 2D | 2G |
+| 85 | 1K (Portugal) | 3rd from EFGIJ |
+| 87 | 1B (Canada) | 3rd from DEIJL |
+
+**Round of 16 matchups:**
+
+| Match | Team A | Team B |
+|-------|--------|--------|
+| 89 | W74 | W77 |
+| 90 | W73 | W75 |
+| 91 | W76 | W78 |
+| 92 | W79 | W80 |
+| 93 | W83 | W84 |
+| 94 | W81 | W82 |
+| 95 | W86 | W88 |
+| 96 | W85 | W87 |
+
+**Quarterfinals:**
+
+| Match | Team A | Team B |
+|-------|--------|--------|
+| 97 | W89 | W90 |
+| 98 | W93 | W94 |
+| 99 | W91 | W92 |
+| 100 | W95 | W96 |
+
+**Semifinals:**
+
+| Match | Team A | Team B |
+|-------|--------|--------|
+| 101 | W97 | W98 |
+| 102 | W99 | W100 |
+
+**Final:** W101 vs W102  
+**Third place:** L101 vs L102
+
+---
+
+## 3. User Experience
+
+### 3.1 Authentication Flow
+1. Landing page with tournament branding and "Sign in with Microsoft" button
+2. After auth, user sees their pick dashboard (or the pick entry screen if no picks yet)
+3. Google sign-in to be added post-launch
+
+### 3.2 Pick Entry — Combined View (Primary Goal)
+
+The pick entry screen should attempt to fit **both group stage and bracket** in a single view, with the following layout concept:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  HEADER: "Your World Cup 2026 Picks"    [Save] [Lock]   │
+├──────────────────┬──────────────────────────────────────┤
+│  GROUP STAGE     │  KNOCKOUT BRACKET                     │
+│  (Left panel)    │  (Right panel, scrollable)            │
+│                  │                                        │
+│  ┌─ Group A ──┐  │  R32 → R16 → QF → SF → F            │
+│  │ 1. Mexico  │  │                                        │
+│  │ 2. S.Korea │  │  [bracket auto-fills from groups]     │
+│  │ 3. S.Africa│  │                                        │
+│  │ 4. PathD   │  │  Users click to pick winners          │
+│  └────────────┘  │  of each knockout match               │
+│                  │                                        │
+│  ┌─ Group B ──┐  │                                        │
+│  │ ...        │  │                                        │
+│  └────────────┘  │                                        │
+│                  │                                        │
+│  [3RD PLACE]     │                                        │
+│  Pick 8 of 12    │                                        │
+│  3rd-place teams │                                        │
+│  to advance      │                                        │
+│                  │                                        │
+│  ... Groups C-L  │                                        │
+└──────────────────┴──────────────────────────────────────┘
+```
+
+**On mobile:** Stack vertically — group picks at top, then 3rd-place picks, then bracket below (or use tabs).
+
+### 3.3 Group Stage Interaction
+- Each group shows 4 teams in a **drag-and-drop** sortable list (numbered 1–4)
+- Default order matches the draw seeding
+- User reorders by dragging teams to predict their finish position
+- Visual indicators: positions 1-2 highlighted green (auto-advance), position 3 highlighted yellow (possible advance), position 4 grayed out
+- Country flags displayed alongside team names
+
+### 3.4 3rd-Place Advancement Picks
+- After ordering all 12 groups, the app shows the 12 predicted 3rd-place teams
+- User selects **exactly 8** to advance (toggle/checkbox)
+- Clear visual feedback: selected teams highlighted, count shown ("8 of 12 selected")
+- Validation: cannot proceed until exactly 8 are selected
+
+### 3.5 Knockout Bracket Interaction
+- Bracket **auto-populates** based on group picks + 3rd-place selections
+- The 3rd-place teams are placed using the FIFA 495-combination lookup table
+- Group winners and runners-up fill their predetermined bracket positions
+- User then clicks/taps to select the winner of each R32 match
+- Winners cascade forward — selecting a R32 winner fills the R16 slot, etc.
+- If user changes a group pick that affects the bracket, affected bracket picks are **cleared with a warning**
+- Visual bracket layout following the standard tournament bracket format (top to bottom, left to right converging to center)
+
+### 3.6 Pick Locking
+- All picks lock before the first match: **June 11, 2026, kickoff**
+- Lock deadline displayed prominently with countdown timer
+- Once locked, picks are read-only (viewable but not editable)
+- Admin can configure the exact lock datetime
+
+### 3.7 Leaderboard & Leagues
+- **Global leaderboard:** All users ranked by total points, updated as results come in
+- **Private leagues:**
+  - Any user can create a league (gets a shareable join code)
+  - Other users enter the code to join
+  - League leaderboard shows only league members
+  - A user can be in multiple leagues
+- Leaderboard shows: Rank, Username, Total Points, Group Points, Knockout Points
+- Click on a user to view their full picks (only after lock deadline)
+
+### 3.8 Dashboard
+- After picks are locked, the main view becomes a dashboard showing:
+  - User's picks with color-coded correctness (green = correct, yellow = partial, red = wrong, gray = pending)
+  - Running point total
+  - Quick links to leaderboard and leagues
+  - Next match countdown
+  - Recent results
+
+---
+
+## 4. Scoring System
+
+### 4.1 Group Stage Scoring (per group, max 12 pts)
+
+| Prediction | Points |
+|-----------|--------|
+| Team correctly picked in exact finishing position | 3 |
+| Team correctly picked to advance (top 2) but in wrong position (e.g., picked 1st, finished 2nd) | 1 |
+| Incorrect / team eliminated | 0 |
+
+- Per group: 4 teams × up to 3 pts = 12 pts max
+- Total group stage: 12 groups × 12 pts = **144 pts max**
+
+### 4.2 3rd-Place Advancement Scoring
+
+| Prediction | Points |
+|-----------|--------|
+| Correctly picked a 3rd-place team to advance (and they did) | 2 |
+| Picked a 3rd-place team to advance but they didn't | 0 |
+
+- 8 picks × 2 pts = **16 pts max**
+
+### 4.3 Knockout Stage Scoring
+
+| Round | Correct pick (right position) | Partial credit (team won but wrong bracket slot) | Max per round |
+|-------|------------------------------|--------------------------------------------------|---------------|
+| Round of 32 (16 matches) | 2 | 1 | 32 |
+| Round of 16 (8 matches) | 4 | 2 | 32 |
+| Quarterfinals (4 matches) | 8 | 4 | 32 |
+| Semifinals (2 matches) | 16 | 8 | 32 |
+| Third-place match (1 match) | 16 | 8 | 16 |
+| Final (1 match) | 32 | 16 | 32 |
+
+**"Right position"** means the team is in the exact bracket slot the user predicted (i.e., they advanced from the correct path).
+
+**"Partial credit"** means the team won the match in real life but was in a different bracket position than the user predicted (because the user's group picks were slightly wrong, sending the team to a different R32 matchup, but they still won through).
+
+### 4.4 Maximum Points Summary
+
+| Category | Max Points |
+|----------|-----------|
+| Group stage (12 groups) | 144 |
+| 3rd-place advancement | 16 |
+| Round of 32 | 32 |
+| Round of 16 | 32 |
+| Quarterfinals | 32 |
+| Semifinals | 32 |
+| Third-place match | 16 |
+| Final | 32 |
+| **Total** | **336** |
+
+### 4.5 Tiebreakers
+If users are tied on points:
+1. Most correct exact group positions
+2. Most correct knockout picks (by round, starting from Final working backward)
+3. Earlier submission timestamp
+
+---
+
+## 5. Technical Architecture
+
+### 5.1 Tech Stack
+
+| Component | Technology | Tier/Cost |
+|-----------|-----------|-----------|
+| Hosting | Azure Static Web Apps | Free tier |
+| Frontend | Vanilla HTML/CSS/JS with Vite bundler | — |
+| Backend API | Azure Functions (managed, within SWA) | Included in free SWA |
+| Database | Azure Table Storage | Pay-per-use (~$0/month at this scale) |
+| Static assets | Azure Blob Storage | Pay-per-use (pennies) |
+| Auth | SWA built-in auth (Microsoft provider) | Free |
+| Domain | wc.k61.dev (custom domain on SWA) | Already owned |
+| CI/CD | GitHub Actions (SWA deploys) | Free for public repos |
+
+**Why Vanilla JS instead of React/Vue?**
+- SWA free tier has no build-time restrictions, but keeping the bundle small keeps load times fast
+- Drag-and-drop and bracket rendering can be done with the HTML Drag and Drop API + CSS Grid
+- If complexity warrants it during development, we can add Preact (3KB) as a lightweight option
+- No SSR needed — all rendering is client-side
+
+**Alternative considered:** SvelteKit — lightweight, good DX, but adds build complexity. Vanilla JS preferred for simplicity; can upgrade later.
+
+### 5.2 Azure Static Web Apps — Built-in Auth
+
+SWA provides built-in authentication with zero custom code for the auth flow itself:
+
+- Microsoft (Entra ID) provider enabled by default: `/.auth/login/aad`
+- Google provider can be enabled later: `/.auth/login/google`
+- User info available at `/.auth/me` endpoint
+- Role-based access via `staticwebapp.config.json` routes
+- Built-in `/.auth/logout` endpoint
+
+**No MSAL library or custom OAuth code needed.** SWA handles the full OAuth redirect flow.
+
+```json
+// staticwebapp.config.json example
+{
+  "routes": [
+    { "route": "/api/*", "allowedRoles": ["authenticated"] },
+    { "route": "/admin/*", "allowedRoles": ["admin"] }
+  ],
+  "responseOverrides": {
+    "401": { "redirect": "/.auth/login/aad" }
+  }
+}
+```
+
+### 5.3 Project Structure
+
+```
+world-cup/
+├── .github/
+│   ├── workflows/
+│   │   └── deploy.yml              # SWA deploy via GitHub Actions
+│   └── copilot-instructions.md
+├── docs/
+│   └── plan.md                      # This file
+├── staticwebapp.config.json         # SWA routing and auth config
+├── web/                             # Frontend (SWA app_location)
+│   ├── index.html                   # Main SPA entry point
+│   ├── style.css                    # Global styles
+│   ├── vite.config.js
+│   ├── package.json
+│   └── src/
+│       ├── main.js                  # App entry
+│       ├── auth.js                  # Auth helpers (/.auth/me)
+│       ├── api.js                   # API client
+│       ├── router.js                # Simple client-side router
+│       ├── components/
+│       │   ├── group-picker.js      # Drag-and-drop group ordering
+│       │   ├── third-place-picker.js # 3rd-place advancement selection
+│       │   ├── bracket.js           # Knockout bracket rendering + picks
+│       │   ├── leaderboard.js       # Leaderboard display
+│       │   ├── league-manager.js    # Create/join leagues
+│       │   └── dashboard.js         # Results dashboard
+│       ├── data/
+│       │   ├── teams.js             # Team data (names, flags, groups)
+│       │   ├── bracket-structure.js  # R32 matchup definitions
+│       │   └── third-place-table.js  # 495-row 3rd-place lookup table
+│       └── utils/
+│           ├── scoring.js           # Client-side score calculation
+│           └── drag-drop.js         # Drag-and-drop utilities
+├── functions/                       # Azure Functions (SWA api_location)
+│   ├── package.json
+│   ├── host.json
+│   └── src/
+│       ├── picks.js                 # CRUD for user picks
+│       ├── results.js               # Get tournament results
+│       ├── leaderboard.js           # Leaderboard computation
+│       ├── leagues.js               # League CRUD
+│       ├── admin-results.js         # Admin: enter match results
+│       ├── admin-teams.js           # Admin: update team names
+│       └── shared/
+│           ├── storage.js           # Azure Table Storage client
+│           ├── scoring.js           # Server-side score calculation
+│           └── auth.js              # Auth helpers (role checking)
+└── infra/                           # (Future) Bicep/Terraform
+    └── main.bicep
+```
+
+### 5.4 Data Model — Azure Table Storage
+
+#### Teams Table
+| Field | Type | Description |
+|-------|------|-------------|
+| PartitionKey | string | `"team"` |
+| RowKey | string | Team ID (e.g., `"MEX"`, `"BRA"`) |
+| name | string | Display name (e.g., `"Mexico"`) |
+| group | string | Group letter (e.g., `"A"`) |
+| groupSeed | number | Draw position in group (1-4) |
+| flagCode | string | ISO country code for flag display |
+| confirmed | boolean | `false` for playoff TBD teams |
+
+#### Picks Table
+| Field | Type | Description |
+|-------|------|-------------|
+| PartitionKey | string | User ID (from SWA auth) |
+| RowKey | string | `"picks"` |
+| groupPicks | string (JSON) | `{ "A": ["MEX","KOR","RSA","TBD_D"], "B": [...], ... }` |
+| thirdPlaceAdvancing | string (JSON) | `["A","C","E","F","G","H","J","K"]` (group letters) |
+| bracketPicks | string (JSON) | `{ "R32_74": "GER", "R32_77": "FRA", "R16_89": "FRA", ... }` |
+| lockedAt | string (ISO datetime) | When picks were finalized |
+| updatedAt | string (ISO datetime) | Last modification |
+| displayName | string | User's display name |
+
+#### Results Table
+| Field | Type | Description |
+|-------|------|-------------|
+| PartitionKey | string | `"result"` |
+| RowKey | string | Match identifier (e.g., `"GROUP_A"`, `"R32_74"`, `"R16_89"`) |
+| data | string (JSON) | Group standings or match winner |
+| enteredBy | string | Admin user ID |
+| enteredAt | string (ISO datetime) | When result was entered |
+
+#### Leagues Table
+| Field | Type | Description |
+|-------|------|-------------|
+| PartitionKey | string | `"league"` |
+| RowKey | string | League ID (generated) |
+| name | string | League display name |
+| joinCode | string | 6-character shareable code |
+| createdBy | string | User ID of creator |
+| createdAt | string (ISO datetime) | Creation time |
+
+#### League Members Table
+| Field | Type | Description |
+|-------|------|-------------|
+| PartitionKey | string | League ID |
+| RowKey | string | User ID |
+| joinedAt | string (ISO datetime) | When user joined |
+| displayName | string | User's display name |
+
+#### Scores Table (Computed/Cached)
+| Field | Type | Description |
+|-------|------|-------------|
+| PartitionKey | string | `"score"` |
+| RowKey | string | User ID |
+| totalPoints | number | Total score |
+| groupPoints | number | Points from group stage |
+| thirdPlacePoints | number | Points from 3rd-place picks |
+| knockoutPoints | number | Points from knockout picks |
+| breakdown | string (JSON) | Detailed breakdown by round |
+| calculatedAt | string (ISO datetime) | Last recalculation time |
+
+### 5.5 API Endpoints
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| GET | `/api/me` | authenticated | Get current user info |
+| GET | `/api/picks` | authenticated | Get current user's picks |
+| PUT | `/api/picks` | authenticated | Save/update picks (before lock) |
+| POST | `/api/picks/lock` | authenticated | Lock picks (one-way) |
+| GET | `/api/picks/:userId` | authenticated | View another user's picks (post-lock only) |
+| GET | `/api/leaderboard` | authenticated | Global leaderboard |
+| GET | `/api/leaderboard/:leagueId` | authenticated | League leaderboard |
+| POST | `/api/leagues` | authenticated | Create a league |
+| POST | `/api/leagues/join` | authenticated | Join a league by code |
+| GET | `/api/leagues` | authenticated | List user's leagues |
+| GET | `/api/results` | authenticated | Get current tournament results |
+| GET | `/api/teams` | anonymous | Get team list (public) |
+| POST | `/api/admin/results` | admin | Enter/update match results |
+| PUT | `/api/admin/teams/:id` | admin | Update team name (for playoffs) |
+| POST | `/api/admin/recalculate` | admin | Recalculate all scores |
+
+### 5.6 Auth & Role Management
+
+- **SWA built-in auth** handles login/logout/session
+- **Admin role:** Assigned via SWA role management (Azure portal → SWA → Role management → invite specific user as "admin")
+- **Authenticated role:** All logged-in users automatically get the `authenticated` role
+- Routes protected via `staticwebapp.config.json` (see 5.2)
+
+---
+
+## 6. Admin Features
+
+### 6.1 Result Entry (Phase 1 — Manual)
+- Admin-only page at `/admin`
+- **Group Results:** For each group, admin enters final standings (1st through 4th)
+- **3rd-Place Ranking:** Admin enters which 8 third-place teams qualified
+- **Knockout Results:** For each match, admin selects the winner
+- After each entry, scores are recalculated for all users
+
+### 6.2 Team Name Updates
+- Before playoffs conclude (March 2026), TBD teams show placeholder names
+- Admin can update team names once playoff results are known
+- This updates the Teams table; users' picks reference team IDs (not names) so picks are unaffected
+
+### 6.3 Automated Results (Phase 2 — Future)
+- Scheduled Azure Function polls a sports data API for live results
+- Candidate APIs (to evaluate):
+  - [Football-Data.org](https://www.football-data.org/) — free tier available
+  - [API-Football](https://www.api-football.com/) — free tier with limits
+  - [FIFA's own data feeds](https://www.fifa.com/) — if publicly available
+- Function runs every 5 minutes during match windows
+- Auto-enters results and triggers score recalculation
+- Admin can override any auto-imported result
+
+---
+
+## 7. Deployment & Infrastructure
+
+### 7.1 Azure Resources Needed
+
+| Resource | SKU | Estimated Cost |
+|----------|-----|---------------|
+| Azure Static Web App | Free tier | $0/month |
+| Azure Storage Account (Table + Blob) | Standard LRS | ~$0.01–0.10/month |
+| **Total** | | **< $1/month** |
+
+### 7.2 GitHub Actions CI/CD
+
+- Single workflow triggered on push to `main`
+- SWA CLI handles build + deploy
+- `app_location: "web"` (frontend)
+- `api_location: "functions"` (Azure Functions API)
+- `output_location: "dist"` (Vite build output)
+
+### 7.3 Custom Domain Setup
+
+1. Create SWA resource in Azure
+2. Add custom domain `wc.k61.dev` in SWA settings
+3. Create CNAME record: `wc.k61.dev` → SWA auto-generated hostname
+4. SWA provisions free SSL certificate automatically
+
+### 7.4 Environment Configuration
+
+- **Storage connection string:** Set as SWA application setting (not in code)
+- **Lock deadline:** Configurable app setting (ISO datetime)
+- **Admin user IDs:** Managed via SWA Role Management in Azure portal
+
+---
+
+## 8. 3rd-Place Lookup Table Implementation
+
+This is a critical and complex piece. FIFA's Annex C defines **495 combinations** of which 8 groups (out of 12) produce advancing 3rd-place teams, and for each combination, which specific R32 match each 3rd-place team is assigned to.
+
+### 8.1 Data Structure
+
+```javascript
+// Each entry: [qualifying groups] → [bracket slot assignments]
+// Bracket slots correspond to R32 match positions for 3rd-place teams
+const THIRD_PLACE_TABLE = {
+  // Key: sorted string of qualifying group letters (e.g., "ABCDEFGH")
+  // Value: array of 8 entries mapping [groupLetter, R32MatchNumber]
+  "EFGHIJKL": [
+    ["E", 74], // 3E goes to Match 74
+    ["J", 77], // 3J goes to Match 77 (vs 1I)
+    ["I", 79], // ...
+    ["F", 80],
+    ["H", 82],
+    ["G", 81],
+    ["L", 85],
+    ["K", 87]
+  ],
+  // ... 494 more entries
+};
+```
+
+### 8.2 Simplification for User Picks
+
+Since picks lock before the tournament, the user's bracket auto-fills based on their predictions. When a user:
+1. Ranks all 12 groups → determines predicted 3rd-place team per group
+2. Selects 8 of 12 to advance → determines the combination
+3. App looks up that combination in the table → places 3rd-place teams into correct R32 slots
+4. R32 bracket is fully populated → user picks winners from there
+
+If the user changes group rankings or 3rd-place selections, the bracket resets and re-populates.
+
+---
+
+## 9. Implementation Phases
+
+### Phase 1 — Foundation (Target: April 2026)
+- [ ] Set up SWA + storage account in Azure
+- [ ] Configure GitHub Actions deployment
+- [ ] Implement SWA built-in Microsoft auth
+- [ ] Build Teams data file with all 48 teams (placeholders for TBD)
+- [ ] Build the 495-row 3rd-place lookup table
+- [ ] Create API endpoints: `/api/me`, `/api/teams`
+- [ ] Basic landing page with auth flow
+
+### Phase 2 — Pick Entry (Target: May 2026)
+- [ ] Group stage drag-and-drop UI
+- [ ] 3rd-place advancement picker
+- [ ] Knockout bracket auto-fill logic  
+- [ ] Knockout bracket winner selection UI
+- [ ] Pick save/load API
+- [ ] Pick locking logic (countdown timer, lock button, one-way lock)
+- [ ] Mobile-responsive layout
+
+### Phase 3 — Social & Scoring (Target: Late May 2026)
+- [ ] Leaderboard API and UI
+- [ ] League create/join flow
+- [ ] League leaderboard
+- [ ] Scoring engine (server-side)
+- [ ] View other users' picks (post-lock)
+
+### Phase 4 — Admin & Polish (Target: Early June 2026)
+- [ ] Admin page for entering results
+- [ ] Admin team name update (for playoff results)
+- [ ] Score recalculation on result entry
+- [ ] Dashboard view (post-lock, showing results vs picks)
+- [ ] Custom domain setup (wc.k61.dev)
+- [ ] Add Google auth provider
+
+### Phase 5 — Future Enhancements
+- [ ] Automated results from sports API
+- [ ] Email/push notifications for result updates
+- [ ] Pick sharing (social media cards)
+- [ ] Historical data (if reused for future tournaments)
+- [ ] Pre-production environment
+
+---
+
+## 10. Key Risks & Mitigations
+
+| Risk | Impact | Mitigation |
+|------|--------|-----------|
+| TBD playoff teams not resolved in time | Users can't complete picks | Allow saving partial picks; update team names via admin once known |
+| 3rd-place lookup table errors | Wrong bracket matchups | Cross-reference multiple sources; unit test all 495 combinations |
+| SWA free tier limits (100GB bandwidth) | Site goes down during peak | Monitor usage; upgrade to Standard ($9/mo) if needed |
+| Scoring edge cases (e.g., team in wrong bracket slot but still wins) | Unfair scoring | Define clear rules; partial credit handles most cases |
+| Lock deadline timezone confusion | Some users lock late | Show deadline in user's local timezone with prominent countdown |
+| Azure Table Storage query limitations | Slow leaderboard | Pre-compute scores in Scores table; update on result entry |
+
+---
+
+## 11. Open Questions
+
+1. **Flag assets:** Use emoji flags (🇧🇷) or an icon library (flagcdn.com)? Emoji is simpler but rendering varies by OS.
+2. **Username display:** Use Microsoft account name or let users set a custom display name?
+3. **Pick visibility:** Can users see others' picks before the lock deadline? (Currently: no, only after lock.)
+4. **Late registration:** Can users sign up and make picks after others but before the lock deadline? (Currently: yes.)
+5. **League size limits:** Should there be a max number of members per league?

@@ -68,6 +68,7 @@ A web application for making FIFA World Cup 2026 predictions. Users rank teams w
 - The **specific R32 matchup** for each qualifying 3rd-place team depends on which combination of groups produced the 8 qualifying 3rd-place teams
 - FIFA publishes a **495-row lookup table** (Annex C of tournament regulations) mapping each possible combination of qualifying groups to specific bracket positions
 - This lookup table **must be implemented** in the application to correctly populate the bracket
+- **Edge case:** If 3rd-place ranking produces ties resolved by fair play score or drawing of lots, the final official 8 qualifiers as published by FIFA are authoritative. Admin must enter the exact 8 groups/teams that FIFA publishes.
 
 ### 2.4 Knockout Stage Structure
 - **Round of 32** (16 matches): June 28 – July 3
@@ -188,12 +189,14 @@ The pick entry screen should attempt to fit **both group stage and bracket** in 
 - Default order matches the draw seeding
 - User reorders by dragging teams to predict their finish position
 - Visual indicators: positions 1-2 highlighted green (auto-advance), position 3 highlighted yellow (possible advance), position 4 grayed out
-- Country flags displayed alongside team names
+- Country flags displayed alongside team names (SVG flags from [flagcdn.com](https://flagcdn.com))
+- **FIFA World Ranking** displayed subtly next to each team name (e.g., small badge or parenthetical) to help inform picks
 
 ### 3.4 3rd-Place Advancement Picks
 - After ordering all 12 groups, the app shows the 12 predicted 3rd-place teams
 - User selects **exactly 8** to advance (toggle/checkbox)
 - Clear visual feedback: selected teams highlighted, count shown ("8 of 12 selected")
+- **FIFA World Ranking** shown prominently next to each 3rd-place team to assist with these difficult picks
 - Validation: cannot proceed until exactly 8 are selected
 
 ### 3.5 Knockout Bracket Interaction
@@ -202,26 +205,59 @@ The pick entry screen should attempt to fit **both group stage and bracket** in 
 - Group winners and runners-up fill their predetermined bracket positions
 - User then clicks/taps to select the winner of each R32 match
 - Winners cascade forward — selecting a R32 winner fills the R16 slot, etc.
-- If user changes a group pick that affects the bracket, affected bracket picks are **cleared with a warning**
+- **Group change impact handling:**
+  - When a user changes a group ranking or 3rd-place selection that affects the bracket, a **warning dialog** is shown explaining which bracket picks will be affected
+  - Only the **minimum necessary** bracket picks are cleared (e.g., if only one R32 slot changes, only that slot and its downstream picks are reset — not the entire bracket)
+  - User can **undo** the group change to restore their bracket picks (single-level undo)
 - Visual bracket layout following the standard tournament bracket format (top to bottom, left to right converging to center)
+- FIFA World Rankings shown as subtle indicators on bracket matchup cards
 
-### 3.6 Pick Locking
+### 3.6 Auto-Save
+- Picks are **automatically saved as drafts** on every change (debounced, ~2 second delay)
+- Since the user is already authenticated, no extra action needed
+- Visual save indicator: small "Saved" / "Saving..." status in the header
+- Users can close the browser and resume exactly where they left off
+- Draft picks are stored server-side (not just localStorage) for cross-device access
+
+### 3.7 Pick Locking
 - All picks lock before the first match: **June 11, 2026, kickoff**
 - Lock deadline displayed prominently with countdown timer
 - Once locked, picks are read-only (viewable but not editable)
 - Admin can configure the exact lock datetime
 
-### 3.7 Leaderboard & Leagues
+### 3.8 PDF Export
+- Users can **export their picks to a PDF** at any time (before or after locking)
+- PDF includes:
+  - User's display name and export date
+  - All 12 group rankings with team flags
+  - 3rd-place advancement selections
+  - Full knockout bracket with all picks
+  - **QR code** linking to the app's landing page (wc.k61.dev) so anyone viewing the PDF can scan to create their own picks
+- Generated client-side (e.g., jsPDF or html2pdf.js) — no server cost
+
+### 3.9 Dark Mode
+- **System preference detection:** App defaults to the user's OS light/dark mode setting via `prefers-color-scheme` media query
+- **Manual override:** Toggle in the header/settings to switch between light, dark, and system-auto modes
+- Preference persisted in localStorage
+- All UI components (groups, bracket, leaderboard, admin) must support both themes
+- Use CSS custom properties (variables) for all colors to make theming straightforward
+
+### 3.10 Icons
+- **All icons use [Font Awesome](https://fontawesome.com/)** (free tier)
+- Loaded via CDN (`cdnjs.cloudflare.com/ajax/libs/font-awesome/...`)
+- Examples: lock icon for deadline, trophy for leaderboard, user-group for leagues, sun/moon for dark mode toggle, file-pdf for export, drag-handle for sortable lists
+
+### 3.11 Leaderboard & Leagues
 - **Global leaderboard:** All users ranked by total points, updated as results come in
 - **Private leagues:**
   - Any user can create a league (gets a shareable join code)
   - Other users enter the code to join
   - League leaderboard shows only league members
   - A user can be in multiple leagues
-- Leaderboard shows: Rank, Username, Total Points, Group Points, Knockout Points
+- Leaderboard shows: Rank, Display Name, Total Points, Group Points, Knockout Points
 - Click on a user to view their full picks (only after lock deadline)
 
-### 3.8 Dashboard
+### 3.12 Dashboard
 - After picks are locked, the main view becomes a dashboard showing:
   - User's picks with color-coded correctness (green = correct, yellow = partial, red = wrong, gray = pending)
   - Running point total
@@ -264,9 +300,11 @@ The pick entry screen should attempt to fit **both group stage and bracket** in 
 | Third-place match (1 match) | 16 | 8 | 16 |
 | Final (1 match) | 32 | 16 | 32 |
 
-**"Right position"** means the team is in the exact bracket slot the user predicted (i.e., they advanced from the correct path).
+**"Right position"** (full credit) means the team is in the exact bracket slot the user predicted (i.e., they advanced from the correct path through the correct matchups).
 
-**"Partial credit"** means the team won the match in real life but was in a different bracket position than the user predicted (because the user's group picks were slightly wrong, sending the team to a different R32 matchup, but they still won through).
+**"Partial credit"** applies when a team the user predicted to win a given round **did win in that round in real life**, but arrived at a **different bracket position** than the user predicted. In other words: the winning team is correct regardless of the path it took to get there. If you picked Team X to win in the quarterfinals and Team X does win a quarterfinal match — but in a different quarter of the bracket than you predicted — you receive partial credit.
+
+> **Clarification:** Partial credit is awarded based solely on whether the team advanced in the correct round, not whether the matchup was correct. This is the most generous interpretation and avoids penalizing users for cascading 3rd-place placement differences. Full detailed rules are documented in [docs/rules.md](rules.md).
 
 ### 4.4 Maximum Points Summary
 
@@ -304,6 +342,9 @@ If users are tied on points:
 | Auth | SWA built-in auth (Microsoft provider) | Free |
 | Domain | wc.k61.dev (custom domain on SWA) | Already owned |
 | CI/CD | GitHub Actions (SWA deploys) | Free for public repos |
+| Flags | flagcdn.com (SVG) | Free CDN |
+| Icons | Font Awesome (free tier) | Free CDN |
+| PDF export | jsPDF + html2canvas (client-side) | Free (npm) |
 
 **Why Vanilla JS instead of React/Vue?**
 - SWA free tier has no build-time restrictions, but keeping the bundle small keeps load times fast
@@ -347,7 +388,8 @@ world-cup/
 │   │   └── deploy.yml              # SWA deploy via GitHub Actions
 │   └── copilot-instructions.md
 ├── docs/
-│   └── plan.md                      # This file
+│   ├── plan.md                      # This file
+│   └── rules.md                     # Scoring rules (user-facing + internal reference)
 ├── staticwebapp.config.json         # SWA routing and auth config
 ├── web/                             # Frontend (SWA app_location)
 │   ├── index.html                   # Main SPA entry point
@@ -367,12 +409,14 @@ world-cup/
 │       │   ├── league-manager.js    # Create/join leagues
 │       │   └── dashboard.js         # Results dashboard
 │       ├── data/
-│       │   ├── teams.js             # Team data (names, flags, groups)
+│       │   ├── teams.js             # Team data (names, flags, groups, FIFA rankings)
 │       │   ├── bracket-structure.js  # R32 matchup definitions
-│       │   └── third-place-table.js  # 495-row 3rd-place lookup table
+│       │   └── third-place-table.js  # 495-row 3rd-place lookup table (minified)
 │       └── utils/
 │           ├── scoring.js           # Client-side score calculation
-│           └── drag-drop.js         # Drag-and-drop utilities
+│           ├── drag-drop.js         # Drag-and-drop utilities
+│           ├── pdf-export.js        # PDF generation with QR code
+│           └── theme.js             # Dark mode / theme management
 ├── functions/                       # Azure Functions (SWA api_location)
 │   ├── package.json
 │   ├── host.json
@@ -401,8 +445,19 @@ world-cup/
 | name | string | Display name (e.g., `"Mexico"`) |
 | group | string | Group letter (e.g., `"A"`) |
 | groupSeed | number | Draw position in group (1-4) |
-| flagCode | string | ISO country code for flag display |
+| flagCode | string | ISO country code for flag display (used with flagcdn.com) |
+| fifaRanking | number | Current FIFA World Ranking (updated periodically by admin) |
 | confirmed | boolean | `false` for playoff TBD teams |
+
+#### Users Table
+| Field | Type | Description |
+|-------|------|-------------|
+| PartitionKey | string | `"user"` |
+| RowKey | string | User ID (from SWA auth) |
+| displayName | string | Custom display name (user-chosen, shown on leaderboard) |
+| authProvider | string | `"aad"` or `"google"` |
+| createdAt | string (ISO datetime) | First login |
+| updatedAt | string (ISO datetime) | Last profile update |
 
 #### Picks Table
 | Field | Type | Description |
@@ -413,8 +468,7 @@ world-cup/
 | thirdPlaceAdvancing | string (JSON) | `["A","C","E","F","G","H","J","K"]` (group letters) |
 | bracketPicks | string (JSON) | `{ "R32_74": "GER", "R32_77": "FRA", "R16_89": "FRA", ... }` |
 | lockedAt | string (ISO datetime) | When picks were finalized |
-| updatedAt | string (ISO datetime) | Last modification |
-| displayName | string | User's display name |
+| updatedAt | string (ISO datetime) | Last modification (auto-save timestamp) |
 
 #### Results Table
 | Field | Type | Description |
@@ -459,9 +513,10 @@ world-cup/
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| GET | `/api/me` | authenticated | Get current user info |
-| GET | `/api/picks` | authenticated | Get current user's picks |
-| PUT | `/api/picks` | authenticated | Save/update picks (before lock) |
+| GET | `/api/me` | authenticated | Get current user info + display name |
+| PUT | `/api/me` | authenticated | Update display name |
+| GET | `/api/picks` | authenticated | Get current user's picks (including drafts) |
+| PUT | `/api/picks` | authenticated | Auto-save / update picks (before lock) |
 | POST | `/api/picks/lock` | authenticated | Lock picks (one-way) |
 | GET | `/api/picks/:userId` | authenticated | View another user's picks (post-lock only) |
 | GET | `/api/leaderboard` | authenticated | Global leaderboard |
@@ -489,7 +544,7 @@ world-cup/
 ### 6.1 Result Entry (Phase 1 — Manual)
 - Admin-only page at `/admin`
 - **Group Results:** For each group, admin enters final standings (1st through 4th)
-- **3rd-Place Ranking:** Admin enters which 8 third-place teams qualified
+- **3rd-Place Ranking:** Admin enters the exact 8 groups whose third-place teams qualified, as officially published by FIFA (including any tiebreakers resolved by fair play or drawing of lots)
 - **Knockout Results:** For each match, admin selects the winner
 - After each entry, scores are recalculated for all users
 
@@ -547,7 +602,22 @@ world-cup/
 
 This is a critical and complex piece. FIFA's Annex C defines **495 combinations** of which 8 groups (out of 12) produce advancing 3rd-place teams, and for each combination, which specific R32 match each 3rd-place team is assigned to.
 
-### 8.1 Data Structure
+### 8.1 Data Source — CRITICAL
+
+> **The 495-row table MUST be sourced from the official FIFA regulations PDF**, not from Wikipedia or fan recreations. Small transcription errors in 495 rows will silently break bracket population for some users.
+
+**Steps to obtain:**
+1. Download the official "FIFA World Cup 2026™ Regulations" document from [digitalhub.fifa.com](https://digitalhub.fifa.com)
+2. Locate **Annex C** — the complete mapping of 3rd-place qualifying group combinations to R32 bracket slots
+3. Extract all 495 rows programmatically (OCR or manual with double-verification)
+4. **Cross-verify** against the Wikipedia partial table and at least one other independent source
+5. Write unit tests covering every single combination
+
+**Similarly**, the bracket match numbering (73–88 for R32, 89–96 R16, etc.) and opponent descriptions must be cross-checked against the **official match schedule PDF** from digitalhub.fifa.com — early fan summaries sometimes contain small discrepancies in which third-place groups feed into which R32 match.
+
+### 8.2 Data Structure & Storage
+
+The table is stored as a **minified JS module** (tree-shakeable, included in the client bundle). At ~495 entries × ~50 bytes each, the raw JSON is ~25KB, which is acceptable for the client bundle. If size becomes a concern, it can be gzip-compressed in Blob Storage and fetched on demand.
 
 ```javascript
 // Each entry: [qualifying groups] → [bracket slot assignments]
@@ -569,7 +639,7 @@ const THIRD_PLACE_TABLE = {
 };
 ```
 
-### 8.2 Simplification for User Picks
+### 8.3 Simplification for User Picks
 
 Since picks lock before the tournament, the user's bracket auto-fills based on their predictions. When a user:
 1. Ranks all 12 groups → determines predicted 3rd-place team per group
@@ -577,28 +647,39 @@ Since picks lock before the tournament, the user's bracket auto-fills based on t
 3. App looks up that combination in the table → places 3rd-place teams into correct R32 slots
 4. R32 bracket is fully populated → user picks winners from there
 
-If the user changes group rankings or 3rd-place selections, the bracket resets and re-populates.
+If the user changes group rankings or 3rd-place selections, **only the affected bracket slots are cleared** (with a warning — see section 3.5).
 
 ---
 
 ## 9. Implementation Phases
 
+### Phase 0 — Documentation (Target: March 2026)
+- [ ] Finalize `docs/rules.md` scoring rules document
+- [ ] Download official FIFA regulations PDF and extract Annex C
+- [ ] Cross-verify bracket match numbering against official match schedule PDF
+- [ ] Source and verify all 48 team FIFA World Rankings
+
 ### Phase 1 — Foundation (Target: April 2026)
 - [ ] Set up SWA + storage account in Azure
 - [ ] Configure GitHub Actions deployment
 - [ ] Implement SWA built-in Microsoft auth
-- [ ] Build Teams data file with all 48 teams (placeholders for TBD)
-- [ ] Build the 495-row 3rd-place lookup table
-- [ ] Create API endpoints: `/api/me`, `/api/teams`
+- [ ] Build Teams data file with all 48 teams (placeholders for TBD) + FIFA rankings
+- [ ] Build the 495-row 3rd-place lookup table (from official Annex C) with unit tests for all 495 entries
+- [ ] Create API endpoints: `/api/me` (with display name), `/api/teams`
 - [ ] Basic landing page with auth flow
+- [ ] Dark mode support (CSS custom properties + system preference detection)
+- [ ] Font Awesome integration
 
 ### Phase 2 — Pick Entry (Target: May 2026)
-- [ ] Group stage drag-and-drop UI
-- [ ] 3rd-place advancement picker
-- [ ] Knockout bracket auto-fill logic  
+- [ ] Group stage drag-and-drop UI (with FIFA rankings shown)
+- [ ] 3rd-place advancement picker (with rankings)
+- [ ] Knockout bracket auto-fill logic
+- [ ] Bracket change-impact detection (minimal clearing + warning + undo)
 - [ ] Knockout bracket winner selection UI
-- [ ] Pick save/load API
+- [ ] Auto-save draft picks on every change
 - [ ] Pick locking logic (countdown timer, lock button, one-way lock)
+- [ ] PDF export with QR code
+- [ ] Custom display name prompt on first login
 - [ ] Mobile-responsive layout
 
 ### Phase 3 — Social & Scoring (Target: Late May 2026)
@@ -630,7 +711,7 @@ If the user changes group rankings or 3rd-place selections, the bracket resets a
 | Risk | Impact | Mitigation |
 |------|--------|-----------|
 | TBD playoff teams not resolved in time | Users can't complete picks | Allow saving partial picks; update team names via admin once known |
-| 3rd-place lookup table errors | Wrong bracket matchups | Cross-reference multiple sources; unit test all 495 combinations |
+| 3rd-place lookup table errors | Wrong bracket matchups | Source from official FIFA PDF (Annex C); cross-reference multiple sources; unit test all 495 combinations |
 | SWA free tier limits (100GB bandwidth) | Site goes down during peak | Monitor usage; upgrade to Standard ($9/mo) if needed |
 | Scoring edge cases (e.g., team in wrong bracket slot but still wins) | Unfair scoring | Define clear rules; partial credit handles most cases |
 | Lock deadline timezone confusion | Some users lock late | Show deadline in user's local timezone with prominent countdown |
@@ -638,10 +719,20 @@ If the user changes group rankings or 3rd-place selections, the bracket resets a
 
 ---
 
-## 11. Open Questions
+## 11. Resolved Decisions
 
-1. **Flag assets:** Use emoji flags (🇧🇷) or an icon library (flagcdn.com)? Emoji is simpler but rendering varies by OS.
-2. **Username display:** Use Microsoft account name or let users set a custom display name?
-3. **Pick visibility:** Can users see others' picks before the lock deadline? (Currently: no, only after lock.)
-4. **Late registration:** Can users sign up and make picks after others but before the lock deadline? (Currently: yes.)
-5. **League size limits:** Should there be a max number of members per league?
+| Decision | Resolution |
+|----------|------------|
+| Flag assets | **flagcdn.com** (SVG) — reliable, fast, consistent cross-platform rendering |
+| Username display | **Custom display name** — user sets on first login; Microsoft account names are often emails/full names which are bad for leaderboards |
+| Pick visibility | No — users cannot see others' picks before the lock deadline; only after lock |
+| Late registration | Yes — users can sign up and make picks any time before the lock deadline |
+| Icons | **Font Awesome** (free tier via CDN) for all icons |
+| Dark mode | **System preference detection** with manual override toggle |
+| Scoring rules doc | Created as `docs/rules.md` — maintained as source of truth, shown in-app on a rules page |
+
+## 12. Open Questions
+
+1. **League size limits:** Should there be a max number of members per league?
+2. **Scoring rules page:** Should the rules page be accessible before login (public) or only after auth?
+3. **Display name uniqueness:** Should display names be unique across all users, or allow duplicates?

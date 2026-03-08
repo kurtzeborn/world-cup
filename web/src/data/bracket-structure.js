@@ -95,3 +95,11 @@ export function getMatchRound(matchNum) {
 // 3rd-place slot → R32 match number mapping
 // These are the 8 slots in the R32 that go to 3rd-place teams
 export const THIRD_PLACE_SLOTS = [74, 77, 79, 80, 81, 82, 85, 87];
+
+// Full bracket with id and round fields for easy filtering/lookup by bracket.js
+export const BRACKET_STRUCTURE = ALL_MATCHES.map(m => ({
+  ...m,
+  id: m.match,
+  round: getMatchRound(m.match),
+}));
+

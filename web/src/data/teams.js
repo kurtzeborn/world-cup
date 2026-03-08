@@ -2,18 +2,9 @@
 // All 48 teams with stable IDs, groups, seeds, flag codes, and FIFA rankings (March 2026)
 // TBD teams use placeholder IDs prefixed with "TBD_"
 // FIFA rankings as of November 2025 (used for draw seeding; update periodically via admin)
+// Team shape: { id, name, group, groupSeed, flagCode, fifaRanking, confirmed }
 
-export interface Team {
-  id: string;
-  name: string;
-  group: string;
-  groupSeed: number; // 1–4 within group
-  flagCode: string;  // ISO 3166-1 alpha-2 for flagcdn.com
-  fifaRanking: number;
-  confirmed: boolean; // false for TBD playoff teams
-}
-
-export const TEAMS: Team[] = [
+export const TEAMS = [
   // Group A
   { id: 'MEX', name: 'Mexico', group: 'A', groupSeed: 1, flagCode: 'mx', fifaRanking: 16, confirmed: true },
   { id: 'RSA', name: 'South Africa', group: 'A', groupSeed: 2, flagCode: 'za', fifaRanking: 62, confirmed: true },
@@ -88,10 +79,10 @@ export const TEAMS: Team[] = [
 ];
 
 // Keyed by team ID for fast lookup
-export const TEAMS_BY_ID: Record<string, Team> = Object.fromEntries(TEAMS.map(t => [t.id, t]));
+export const TEAMS_BY_ID = Object.fromEntries(TEAMS.map(t => [t.id, t]));
 
 // Grouped by group letter
-export const TEAMS_BY_GROUP: Record<string, Team[]> = {};
+export const TEAMS_BY_GROUP = {};
 for (const team of TEAMS) {
   if (!TEAMS_BY_GROUP[team.group]) TEAMS_BY_GROUP[team.group] = [];
   TEAMS_BY_GROUP[team.group].push(team);

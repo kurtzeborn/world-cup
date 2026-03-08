@@ -2,7 +2,8 @@
 
 **Domain:** wc.k61.dev  
 **Repo:** kurtzeborn/world-cup  
-**Status:** Planning
+**Status:** Phase 1 Complete / Phase 2 In Progress  
+**Live:** https://wc.k61.dev
 
 ---
 
@@ -385,54 +386,59 @@ SWA provides built-in authentication with zero custom code for the auth flow its
 world-cup/
 ├── .github/
 │   ├── workflows/
-│   │   └── deploy.yml              # SWA deploy via GitHub Actions
+│   │   ├── deploy.yml              # SWA deploy via SWA token (push to main)
+│   │   └── infra.yml               # Bicep deploy via OIDC (infra/** changes)
 │   └── copilot-instructions.md
+├── .gitignore
 ├── docs/
 │   ├── plan.md                      # This file
 │   └── rules.md                     # Scoring rules (user-facing + internal reference)
-├── staticwebapp.config.json         # SWA routing and auth config
+├── staticwebapp.config.json         # SWA routing + auth config
 ├── web/                             # Frontend (SWA app_location)
 │   ├── index.html                   # Main SPA entry point
-│   ├── style.css                    # Global styles
 │   ├── vite.config.js
 │   ├── package.json
 │   └── src/
-│       ├── main.js                  # App entry
-│       ├── auth.js                  # Auth helpers (/.auth/me)
-│       ├── api.js                   # API client
-│       ├── router.js                # Simple client-side router
-│       ├── components/
-│       │   ├── group-picker.js      # Drag-and-drop group ordering
-│       │   ├── third-place-picker.js # 3rd-place advancement selection
-│       │   ├── bracket.js           # Knockout bracket rendering + picks
-│       │   ├── leaderboard.js       # Leaderboard display
-│       │   ├── league-manager.js    # Create/join leagues
-│       │   └── dashboard.js         # Results dashboard
+│       ├── main.js                  # App entry + hash router + auth init
+│       ├── auth.js                  # Auth helpers (/.auth/me wrapper)
+│       ├── api.js                   # API client (all endpoint wrappers)
+│       ├── state.js                 # Global app state (user, picks, teams, locked)
+│       ├── favicon.svg
+│       ├── style.css                # Global styles
 │       ├── data/
-│       │   ├── teams.js             # Team data (names, flags, groups, FIFA rankings)
-│       │   ├── bracket-structure.js  # R32 matchup definitions
-│       │   └── third-place-table.js  # 495-row 3rd-place lookup table (minified)
-│       └── utils/
-│           ├── scoring.js           # Client-side score calculation
-│           ├── drag-drop.js         # Drag-and-drop utilities
-│           ├── pdf-export.js        # PDF generation with QR code
-│           └── theme.js             # Dark mode / theme management
-├── functions/                       # Azure Functions (SWA api_location)
+│       │   ├── teams.js             # 48 teams (flags, groups, seeds, FIFA rankings)
+│       │   ├── bracket-structure.js # R32‑F matchup definitions + BRACKET_STRUCTURE
+│       │   └── third-place-table.js # 495-row 3rd-place placement lookup table
+│       └── pages/
+│           ├── groups.js            # Group stage reordering + 3rd-place picker
+│           ├── bracket.js           # Knockout bracket auto-fill + winner selection
+│           ├── leaderboard.js       # Global leaderboard display
+│           └── leagues.js           # Create/join leagues + league leaderboard
+├── functions/                       # Azure Functions TypeScript (SWA api_location)
 │   ├── package.json
 │   ├── host.json
+│   ├── tsconfig.json
 │   └── src/
-│       ├── picks.js                 # CRUD for user picks
-│       ├── results.js               # Get tournament results
-│       ├── leaderboard.js           # Leaderboard computation
-│       ├── leagues.js               # League CRUD
-│       ├── admin-results.js         # Admin: enter match results
-│       ├── admin-teams.js           # Admin: update team names
+│       ├── functions/
+│       │   ├── me.ts                # GET/PUT /api/me
+│       │   ├── teams.ts             # GET /api/teams
+│       │   ├── picks.ts             # GET/PUT/POST /api/picks
+│       │   ├── results.ts           # GET /api/results
+│       │   ├── leaderboard.ts       # GET /api/leaderboard[/:leagueId]
+│       │   ├── leagues.ts           # GET/POST /api/leagues, POST /api/leagues/join
+│       │   ├── admin-results.ts     # POST /api/admin/results
+│       │   └── admin-teams.ts       # PUT /api/admin/teams/:id
 │       └── shared/
-│           ├── storage.js           # Azure Table Storage client
-│           ├── scoring.js           # Server-side score calculation
-│           └── auth.js              # Auth helpers (role checking)
-└── infra/                           # (Future) Bicep/Terraform
-    └── main.bicep
+│           ├── auth.ts              # SWA user header parsing + role checks
+│           ├── storage.ts           # Azure Table Storage client + helpers
+│           └── types.ts             # Shared TypeScript interfaces
+├── infra/
+│   ├── main.bicep                   # Storage Account (7 tables) + SWA + app settings
+│   └── main.bicepparam              # eastus2, wc.k61.dev, lock deadline
+└── tools/
+    ├── parse-annex-c.js             # Source tool: extract Annex C from FIFA PDF
+    ├── gen-third-place-table.js     # Build third-place-table.js
+    └── generate-third-place-table.js
 ```
 
 ### 5.4 Data Model — Azure Table Storage
@@ -577,11 +583,19 @@ world-cup/
 
 ### 7.2 GitHub Actions CI/CD
 
-- Single workflow triggered on push to `main`
-- SWA CLI handles build + deploy
-- `app_location: "web"` (frontend)
-- `api_location: "functions"` (Azure Functions API)
-- `output_location: "dist"` (Vite build output)
+Two workflows:
+
+**`deploy.yml`** — triggered on push to `main` and PRs:
+- Build Vite frontend + TypeScript functions
+- Deploy to SWA via `AZURE_STATIC_WEB_APPS_API_TOKEN`
+- `app_location: "web"`, `api_location: "functions"`, `output_location: "dist"`
+
+**`infra.yml`** — triggered on changes to `infra/**` + `workflow_dispatch`:
+- Authenticates via **OIDC** (no long-lived secrets) using `sp-wc-deploy` service principal
+- Deploys `infra/main.bicep` via `azure/arm-deploy@v2`
+- Scoped to `rg-world-cup` only (least privilege)
+
+GitHub secrets set: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_STATIC_WEB_APPS_API_TOKEN`
 
 ### 7.3 Custom Domain Setup
 
@@ -654,47 +668,50 @@ If the user changes group rankings or 3rd-place selections, **only the affected 
 ## 9. Implementation Phases
 
 ### Phase 0 — Documentation (Target: March 2026)
-- [ ] Finalize `docs/rules.md` scoring rules document
-- [ ] Download official FIFA regulations PDF and extract Annex C
-- [ ] Cross-verify bracket match numbering against official match schedule PDF
-- [ ] Source and verify all 48 team FIFA World Rankings
+- [x] Finalize `docs/rules.md` scoring rules document
+- [x] Download official FIFA regulations PDF and extract Annex C
+- [x] Cross-verify bracket match numbering against official match schedule PDF
+- [x] Source and verify all 48 team FIFA World Rankings
 
-### Phase 1 — Foundation (Target: April 2026)
-- [ ] Set up SWA + storage account in Azure
-- [ ] Configure GitHub Actions deployment
-- [ ] Implement SWA built-in Microsoft auth
-- [ ] Build Teams data file with all 48 teams (placeholders for TBD) + FIFA rankings
-- [ ] Build the 495-row 3rd-place lookup table (from official Annex C) with unit tests for all 495 entries
-- [ ] Create API endpoints: `/api/me` (with display name), `/api/teams`
-- [ ] Basic landing page with auth flow
+### Phase 1 — Foundation ✅ Complete
+- [x] Set up SWA + storage account in Azure (`swa-wc-prod`, `stwcjafnrgdxqw3v4`, `rg-world-cup`)
+- [x] Configure GitHub Actions deployment (two workflows: `deploy.yml` via SWA token, `infra.yml` via OIDC)
+- [x] Implement SWA built-in Microsoft auth (`staticwebapp.config.json`)
+- [x] Build Teams data file with all 48 teams (placeholders for TBD) + FIFA rankings
+- [x] Build the 495-row 3rd-place lookup table (from official Annex C)
+- [x] Create API endpoints: all endpoints from section 5.5 implemented as TypeScript Functions
+- [x] Basic SPA with hash router, auth header, per-page loading
+- [x] Custom domain live with HTTPS (`wc.k61.dev`)
 - [ ] Dark mode support (CSS custom properties + system preference detection)
 - [ ] Font Awesome integration
 
 ### Phase 2 — Pick Entry (Target: May 2026)
-- [ ] Group stage drag-and-drop UI (with FIFA rankings shown)
-- [ ] 3rd-place advancement picker (with rankings)
-- [ ] Knockout bracket auto-fill logic
+- [x] Group stage UI with click-to-reorder team ordering (FIFA rankings shown)
+- [x] 3rd-place advancement picker (select 8 of 12)
+- [x] Knockout bracket auto-fill from group + 3rd-place picks (3rd-place table used)
+- [x] Knockout bracket winner selection UI
+- [x] Pick locking (server-enforced, lock button, locked state display)
+- [ ] Drag-and-drop reordering for group stage (currently click-select)
 - [ ] Bracket change-impact detection (minimal clearing + warning + undo)
-- [ ] Knockout bracket winner selection UI
-- [ ] Auto-save draft picks on every change
-- [ ] Pick locking logic (countdown timer, lock button, one-way lock)
+- [ ] Auto-save draft picks on every change (currently manual save only)
+- [ ] Countdown timer to lock deadline
 - [ ] PDF export with QR code
 - [ ] Custom display name prompt on first login
 - [ ] Mobile-responsive layout
 
 ### Phase 3 — Social & Scoring (Target: Late May 2026)
-- [ ] Leaderboard API and UI
-- [ ] League create/join flow
-- [ ] League leaderboard
-- [ ] Scoring engine (server-side)
+- [x] Leaderboard API and UI
+- [x] League create/join flow API and UI
+- [ ] Scoring engine (server-side, `admin-results.ts` exists but recalculation not yet wired)
 - [ ] View other users' picks (post-lock)
 
 ### Phase 4 — Admin & Polish (Target: Early June 2026)
-- [ ] Admin page for entering results
-- [ ] Admin team name update (for playoff results)
+- [x] Admin result entry API (`admin-results.ts`)
+- [x] Admin team name update API (`admin-teams.ts`)
+- [x] Custom domain setup (`wc.k61.dev` — CNAME + Azure binding complete)
+- [ ] Admin page UI at `/admin`
 - [ ] Score recalculation on result entry
 - [ ] Dashboard view (post-lock, showing results vs picks)
-- [ ] Custom domain setup (wc.k61.dev)
 - [ ] Add Google auth provider
 
 ### Phase 5 — Future Enhancements

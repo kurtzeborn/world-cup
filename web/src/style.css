@@ -230,28 +230,18 @@ body {
    Bracket — Visual bracket layout
 -----------------------------------------*/
 
-/* Section labels ("Pathway 1", "Pathway 2") */
-.bk-pathway-label {
-  font-size: .8rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: .05em;
-  margin: 1.25rem 0 .35rem;
-}
-
 /* Horizontal scroll wrapper for each bracket half */
 .bk-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;          /* room for scrollbar */
+  padding-bottom: 4px;
 }
 
 /* Flex row of round columns */
 .bk-half {
   display: flex;
   gap: 24px;
-  min-width: min-content;       /* prevent shrinking below content */
+  min-width: min-content;
 }
 
 /* One column per round */
@@ -259,7 +249,7 @@ body {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  min-width: 130px;
+  min-width: 150px;
 }
 
 /* Small round header above each column */
@@ -366,24 +356,50 @@ body {
   font-size: .72rem;
 }
 
-/* Finals section between the two bracket halves */
-.bk-finals {
+/* ── Center section: SF + Final + TPM + Champion ── */
+.bk-center {
   display: flex;
-  gap: 1.5rem;
+  align-items: flex-start;
   justify-content: center;
+  gap: 1.5rem;
   padding: 1.25rem 0;
   flex-wrap: wrap;
 }
 
-.bk-final-card { text-align: center; }
-
-.bk-final-title {
-  font-size: .9rem;
-  font-weight: 700;
-  margin-bottom: .35rem;
+.bk-center-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 170px;
 }
 
-.bk-match-final { min-width: 200px; }
+.bk-center-hdr {
+  font-size: .7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.bk-center-trophy {
+  align-self: center;
+  min-width: auto;
+}
+
+.bk-champ-team {
+  border: 2px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  font-size: .95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  white-space: nowrap;
+}
+
+.bk-champ-team img { width: 28px; height: 21px; }
 
 /* ----------------------------------------
    Leaderboard

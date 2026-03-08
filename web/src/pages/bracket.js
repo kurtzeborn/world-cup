@@ -10,9 +10,6 @@ const ROUND_NAMES = {
   R32: 'Round of 32',
   R16: 'Round of 16',
   QF:  'Quarter-Finals',
-  SF:  'Semi-Finals',
-  TPM: 'Third Place',
-  F:   'Final',
 };
 
 /** Lookup match definition by id */
@@ -27,17 +24,15 @@ const PATHWAY_1 = {
   R32: [74, 77, 73, 75, 83, 84, 81, 82],
   R16: [89, 90, 93, 94],
   QF:  [97, 98],
-  SF:  [101],
 };
 
 const PATHWAY_2 = {
   R32: [76, 78, 79, 80, 86, 88, 85, 87],
   R16: [91, 92, 95, 96],
   QF:  [99, 100],
-  SF:  [102],
 };
 
-const HALF_ROUNDS = ['R32', 'R16', 'QF', 'SF'];
+const HALF_ROUNDS = ['R32', 'R16', 'QF'];
 
 // ─── Page entry point ───────────────────────────────────────
 
@@ -85,15 +80,8 @@ function renderBracketContent() {
   if (!el) return;
 
   el.innerHTML = `
-    <div class="bk-pathway-label">Pathway 1</div>
     <div class="bk-scroll">${renderHalf(PATHWAY_1, bp, mt, locked, teamById)}</div>
-
-    <div class="bk-finals">
-      ${renderFinalCard(104, 'F', '🏆 Final', bp, mt, locked, teamById)}
-      ${renderFinalCard(103, 'TPM', '🥉 Third Place', bp, mt, locked, teamById)}
-    </div>
-
-    <div class="bk-pathway-label">Pathway 2</div>
+    ${renderCenter(bp, mt, locked, teamById)}
     <div class="bk-scroll">${renderHalf(PATHWAY_2, bp, mt, locked, teamById)}</div>
   `;
 }
@@ -129,7 +117,7 @@ function renderSlot(match, round, bracketPicks, matchTeams, locked, teamById) {
   const [a, b] = matchTeams[match.id] || [null, null];
   const key = `${round}_${match.id}`;
   const picked = bracketPicks[key] ?? '';
-  const canPick = !locked && a && b;
+  const canPick = !locked && (a || b);
 
   return `<div class="bk-slot">
     <div class="bk-match">
@@ -150,7 +138,7 @@ function teamRow(resolved, slotStr, picked, canPick, pickKey, teamById) {
 
   if (resolved) {
     const t = teamById[resolved];
-    return `<div class="${cls.join(' ')}" ${attrs}>${getFlag(resolved)} ${t?.name ?? resolved}</div>`;
+    return `<div class="${cls.join(' ')}" ${attrs}>${getFlag(t?.flagCode)} ${t?.name ?? resolved}</div>`;
   }
   return `<div class="${cls.join(' ')}">${slotDesc(slotStr)}</div>`;
 }
@@ -167,19 +155,49 @@ function slotDesc(slot) {
   return `<span class="bk-tbd">${slot}</span>`;
 }
 
-function renderFinalCard(matchId, round, label, bracketPicks, matchTeams, locked, teamById) {
-  const match = MATCH_BY_ID[matchId];
-  const [a, b] = matchTeams[matchId] || [null, null];
-  const key = `${round}_${matchId}`;
-  const picked = bracketPicks[key] ?? '';
-  const canPick = !locked && a && b;
+function renderCenter(bp, mt, locked, teamById) {
+  const sf1 = renderCenterMatch(101, 'SF', bp, mt, locked, teamById);
+  const sf2 = renderCenterMatch(102, 'SF', bp, mt, locked, teamById);
+  const finalMatch = renderCenterMatch(104, 'F', bp, mt, locked, teamById);
+  const tpm = renderCenterMatch(103, 'TPM', bp, mt, locked, teamById);
 
-  return `<div class="bk-final-card">
-    <div class="bk-final-title">${label}</div>
-    <div class="bk-match bk-match-final">
-      ${teamRow(a, match.teamA, picked, canPick, key, teamById)}
-      ${teamRow(b, match.teamB, picked, canPick, key, teamById)}
+  const finalPick = bp['F_104'] ?? null;
+  const champTeam = finalPick ? teamById[finalPick] : null;
+  const champHtml = champTeam
+    ? `<div class="bk-champ-team">${getFlag(champTeam.flagCode)} ${champTeam.name}</div>`
+    : `<div class="bk-champ-team bk-tbd">Pick the Final winner</div>`;
+
+  return `
+    <div class="bk-center">
+      <div class="bk-center-col">
+        <div class="bk-center-hdr">Semi-Finals</div>
+        ${sf1}
+        ${sf2}
+      </div>
+      <div class="bk-center-col">
+        <div class="bk-center-hdr">Final</div>
+        ${finalMatch}
+        <div class="bk-center-hdr" style="margin-top:.75rem">3rd Place</div>
+        ${tpm}
+      </div>
+      <div class="bk-center-col bk-center-trophy">
+        <div class="bk-center-hdr">🏆 Champion</div>
+        ${champHtml}
+      </div>
     </div>
+  `;
+}
+
+function renderCenterMatch(matchId, round, bp, mt, locked, teamById) {
+  const match = MATCH_BY_ID[matchId];
+  const [a, b] = mt[matchId] || [null, null];
+  const key = `${round}_${matchId}`;
+  const picked = bp[key] ?? '';
+  const canPick = !locked && (a || b);
+
+  return `<div class="bk-match">
+    ${teamRow(a, match.teamA, picked, canPick, key, teamById)}
+    ${teamRow(b, match.teamB, picked, canPick, key, teamById)}
   </div>`;
 }
 

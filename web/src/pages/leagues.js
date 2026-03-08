@@ -2,6 +2,7 @@
 
 import { getState, setState } from '../state.js';
 import { api } from '../api.js';
+import { escapeHtml } from '../utils.js';
 
 export async function renderLeaguesPage(container) {
   const { user } = getState();
@@ -49,9 +50,14 @@ async function loadLeagues() {
           <strong>${escapeHtml(l.name)}</strong>
           <span style="font-size:.8rem;color:var(--text-muted);margin-left:.5rem">Code: <code>${l.joinCode}</code></span>
         </div>
-        <button class="btn btn-secondary" onclick="viewLeague('${l.leagueId}')">Leaderboard</button>
+        <button class="btn btn-secondary league-view-btn" data-league-id="${l.leagueId}">Leaderboard</button>
       </div>
     `).join('');
+
+    // Attach click listeners for league leaderboards
+    el.querySelectorAll('.league-view-btn').forEach(btn => {
+      btn.addEventListener('click', () => viewLeague(btn.dataset.leagueId));
+    });
   } catch (err) {
     el.innerHTML = `<p style="color:#f44336">Error: ${err.message}</p>`;
   }
@@ -127,7 +133,7 @@ function showJoinModal() {
   });
 }
 
-window.viewLeague = async function(leagueId) {
+async function viewLeague(leagueId) {
   // Open an inline leaderboard for the specific league
   const { leagues } = getState();
   const league = leagues.find(l => l.leagueId === leagueId);
@@ -158,8 +164,6 @@ window.viewLeague = async function(leagueId) {
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
-};
-
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+

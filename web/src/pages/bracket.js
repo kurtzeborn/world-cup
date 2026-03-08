@@ -3,7 +3,6 @@
 import { getState, setState } from '../state.js';
 import { api } from '../api.js';
 import { BRACKET_STRUCTURE } from '../data/bracket-structure.js';
-import { TEAMS } from '../data/teams.js';
 import { getThirdPlacePlacements } from '../data/third-place-table.js';
 
 const ROUND_LABELS = {

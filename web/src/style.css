@@ -154,7 +154,6 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1rem;
 }
-.group-card { }
 .group-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
 .group-table th {
   text-align: left;
@@ -267,6 +266,8 @@ select.pick-select {
 }
 .leaderboard-table td { padding: .45rem .75rem; border-bottom: 1px solid var(--border); }
 .leaderboard-table tr:hover td { background: var(--leaderboard-hover); }
+.current-user-row td { background: #fffde7; }
+[data-theme="dark"] .current-user-row td { background: rgba(255, 253, 231, .1); }
 .rank-num { font-weight: 700; color: var(--text-muted); }
 .points-total { font-weight: 700; color: var(--green-dark); }
 

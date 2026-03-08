@@ -2,26 +2,25 @@
 
 import { getState, setState } from '../state.js';
 import { api } from '../api.js';
-import { TEAMS } from '../data/teams.js';
+import { TEAMS_BY_GROUP, GROUP_LETTERS } from '../data/teams.js';
+import { getFlag, FIFA_RANKINGS_URL } from '../utils.js';
 
-const GROUP_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L'];
-
-const FIFA_RANKINGS_URL = 'https://inside.fifa.com/fifa-world-ranking/men';
+/** Build a copy of teams-by-group (safe to reference without mutation). */
+function getByGroup() {
+  const byGroup = {};
+  for (const letter of GROUP_LETTERS) {
+    byGroup[letter] = [...(TEAMS_BY_GROUP[letter] ?? [])];
+  }
+  return byGroup;
+}
 
 export function renderGroupsPage(container) {
   const { picks, locked } = getState();
   const groupPicks = picks?.groupPicks ?? {};
   const thirdPlaceAdvancing = picks?.thirdPlaceAdvancing ?? [];
 
-  // Group teams by group letter
-  const byGroup = {};
-  for (const letter of GROUP_LETTERS) byGroup[letter] = [];
-  for (const team of TEAMS) {
-    if (byGroup[team.group]) byGroup[team.group].push(team);
-  }
-  for (const letter of GROUP_LETTERS) {
-    byGroup[letter].sort((a, b) => a.groupSeed - b.groupSeed);
-  }
+  // Group teams by group letter (use pre-sorted data)
+  const byGroup = getByGroup();
 
   container.innerHTML = `
     <div class="page active" id="page-groups">
@@ -47,18 +46,20 @@ export function renderGroupsPage(container) {
   }
 }
 
-function renderGroupGrid(byGroup, groupPicks, locked) {
+function renderGroupGrid(byGroup, groupPicks, thirdPlaceAdvancing, locked) {
   const grid = document.getElementById('groups-grid');
   if (!grid) return;
 
   grid.innerHTML = GROUP_LETTERS.map(letter => {
     const teams = byGroup[letter];
     const selected = groupPicks[letter] ?? [];
+    const thirdAdvances = thirdPlaceAdvancing.includes(letter);
+    const thirdPlaceCount = thirdPlaceAdvancing.length;
     return `
       <div class="card group-card">
         <div class="card-title">Group ${letter}</div>
         <table class="group-table">
-          <thead><tr><th>Team</th><th>FIFA Rank</th><th></th></tr></thead>
+          <thead><tr><th>Team</th><th></th></tr></thead>
           <tbody>
             ${teams.map(team => {
               const pos = selected.indexOf(team.id);
@@ -67,10 +68,23 @@ function renderGroupGrid(byGroup, groupPicks, locked) {
               const badge = pos >= 0
                 ? `<span class="rank-badge rank-${pos + 1}">${pos + 1}</span>`
                 : '';
-              return `<tr class="team-row ${cls}" data-group="${letter}" data-team="${team.id}" ${locked ? '' : 'title="Click to rank 1st–4th"'}>
-                <td>${getFlag(team.flagCode)} ${team.name}</td>
-                <td>${team.confirmed ? team.fifaRanking : '—'}</td>
-                <td>${badge}</td>
+              const fifaRank = team.confirmed
+                ? `<a href="${FIFA_RANKINGS_URL}" target="_blank" rel="noopener" class="fifa-rank" title="FIFA Ranking #${team.fifaRanking}">${team.fifaRanking}</a>`
+                : '';
+              // Show 3rd-place advance checkbox on position 3
+              const isThird = pos === 2;
+              const advanceCheckbox = isThird
+                ? `<label class="advance-toggle" title="Advances to Round of 32">
+                     <input type="checkbox" class="advance-cb" data-group="${letter}"
+                       ${thirdAdvances ? 'checked' : ''}
+                       ${locked ? 'disabled' : ''}
+                       ${!thirdAdvances && thirdPlaceCount >= 8 ? 'disabled' : ''}>
+                     <span class="advance-label">Advances</span>
+                   </label>`
+                : '';
+              return `<tr class="team-row ${cls}" data-group="${letter}" data-team="${team.id}" ${locked ? '' : 'title="Click to rank 1st\u20134th"'}>
+                <td>${getFlag(team.flagCode)} ${team.name} ${fifaRank}</td>
+                <td class="rank-cell">${advanceCheckbox}${badge}</td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -81,10 +95,19 @@ function renderGroupGrid(byGroup, groupPicks, locked) {
 
   if (!locked) {
     grid.querySelectorAll('.team-row').forEach(row => {
-      row.addEventListener('click', () => {
+      row.addEventListener('click', (e) => {
+        // Don't trigger rank toggle when clicking the advance checkbox or FIFA rank link
+        if (e.target.closest('.advance-toggle') || e.target.closest('.fifa-rank')) return;
         const group = row.dataset.group;
         const teamId = row.dataset.team;
         toggleGroupPick(group, teamId);
+      });
+    });
+
+    grid.querySelectorAll('.advance-cb').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        e.stopPropagation();
+        toggleThirdPlace(cb.dataset.group);
       });
     });
   }
@@ -108,17 +131,8 @@ function toggleGroupPick(group, teamId) {
   groupPicks[group] = selected;
   setState({ picks: { ...(picks ?? {}), groupPicks } });
 
-  // Re-render the group grid
-  const byGroup = {};
-  for (const letter of GROUP_LETTERS) byGroup[letter] = [];
-  for (const team of TEAMS) {
-    if (byGroup[team.group]) byGroup[team.group].push(team);
-  }
-  for (const letter of GROUP_LETTERS) {
-    byGroup[letter].sort((a, b) => a.groupSeed - b.groupSeed);
-  }
   const { picks: updatedPicks } = getState();
-  renderGroupGrid(byGroup, groupPicks, updatedPicks?.thirdPlaceAdvancing ?? [], false);
+  renderGroupGrid(getByGroup(), groupPicks, updatedPicks?.thirdPlaceAdvancing ?? [], false);
 }
 
 function toggleThirdPlace(letter) {
@@ -143,15 +157,7 @@ function toggleThirdPlace(letter) {
 
   // Re-render grid to update checkboxes
   const groupPicks = picks?.groupPicks ?? {};
-  const byGroup = {};
-  for (const letter2 of GROUP_LETTERS) byGroup[letter2] = [];
-  for (const team of TEAMS) {
-    if (byGroup[team.group]) byGroup[team.group].push(team);
-  }
-  for (const letter2 of GROUP_LETTERS) {
-    byGroup[letter2].sort((a, b) => a.groupSeed - b.groupSeed);
-  }
-  renderGroupGrid(byGroup, groupPicks, next, false);
+  renderGroupGrid(getByGroup(), groupPicks, next, false);
 }
 
 async function savePicks() {
@@ -198,9 +204,4 @@ async function lockPicks() {
   } catch (err) {
     alert(`Error locking picks: ${err.message}`);
   }
-}
-
-function getFlag(flagCode) {
-  if (!flagCode || flagCode === 'xx') return '<span class="flag flag-tbd">?</span>';
-  return `<img class="flag" src="https://flagcdn.com/w40/${flagCode}.png" srcset="https://flagcdn.com/w80/${flagCode}.png 2x" alt="" width="20" height="15" loading="lazy">`;
 }

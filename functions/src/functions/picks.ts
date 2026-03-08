@@ -22,7 +22,7 @@ app.http('getPicks', {
               bracketPicks: JSON.parse(entity.bracketPicks || '{}'),
               lockedAt: entity.lockedAt ?? null,
               updatedAt: entity.updatedAt,
-              isLocked: !!entity.lockedAt,
+              isLocked: !!entity.lockedAt || isLocked(),
             }
           : {
               groupPicks: {},
@@ -30,7 +30,7 @@ app.http('getPicks', {
               bracketPicks: {},
               lockedAt: null,
               updatedAt: null,
-              isLocked: false,
+              isLocked: isLocked(),
             },
       };
     } catch (err) {
@@ -51,7 +51,12 @@ app.http('savePicks', {
     try {
       const user = requireAuth(request);
 
-      // Check if already locked
+      // Check if deadline has passed
+      if (isLocked()) {
+        return { status: 403, jsonBody: { error: 'Lock deadline has passed — picks can no longer be modified' } };
+      }
+
+      // Check if already locked by user
       const existing = await getEntity<PicksEntity>('Picks', user.userId, 'picks');
       if (existing?.lockedAt) {
         return { status: 409, jsonBody: { error: 'Picks are locked and cannot be modified' } };

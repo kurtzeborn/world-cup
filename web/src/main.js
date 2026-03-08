@@ -3,6 +3,7 @@
 import { fetchAuthUser } from './auth.js';
 import { api } from './api.js';
 import { getState, setState } from './state.js';
+import { escapeHtml } from './utils.js';
 import { renderGroupsPage } from './pages/groups.js';
 import { renderBracketPage } from './pages/bracket.js';
 import { renderLeaderboardPage } from './pages/leaderboard.js';
@@ -128,12 +129,6 @@ async function navigateTo(page) {
     default:
       renderGroupsPage(app);
   }
-}
-
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, c =>
-    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])
-  );
 }
 
 init().catch(console.error);

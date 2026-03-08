@@ -2,6 +2,7 @@
 
 import { getState } from '../state.js';
 import { api } from '../api.js';
+import { escapeHtml } from '../utils.js';
 
 export async function renderLeaderboardPage(container) {
   container.innerHTML = `
@@ -47,7 +48,7 @@ function renderTable(leaderboard) {
       </thead>
       <tbody>
         ${leaderboard.map((row, i) => `
-          <tr ${user?.userId === row.userId ? 'style="background:#fffde7"' : ''}>
+          <tr ${user?.userId === row.userId ? 'class="current-user-row"' : ''}>
             <td class="rank-num">${i + 1}</td>
             <td>${escapeHtml(row.displayName || row.userId)}</td>
             <td class="points-total">${row.totalPoints}</td>
@@ -61,6 +62,4 @@ function renderTable(leaderboard) {
   `;
 }
 
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
+

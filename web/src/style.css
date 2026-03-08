@@ -227,32 +227,163 @@ body {
 }
 
 /* ----------------------------------------
-   Bracket
+   Bracket — Visual bracket layout
 -----------------------------------------*/
-.bracket-overview { overflow-x: auto; }
-.bracket-round { margin-bottom: 1.5rem; }
-.bracket-round h3 { font-size: .95rem; color: var(--text-muted); margin-bottom: .5rem; }
-.match-list { display: flex; flex-wrap: wrap; gap: .5rem; }
-.match-card {
+
+/* Section labels ("Pathway 1", "Pathway 2") */
+.bk-pathway-label {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin: 1.25rem 0 .35rem;
+}
+
+/* Horizontal scroll wrapper for each bracket half */
+.bk-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;          /* room for scrollbar */
+}
+
+/* Flex row of round columns */
+.bk-half {
+  display: flex;
+  gap: 24px;
+  min-width: min-content;       /* prevent shrinking below content */
+}
+
+/* One column per round */
+.bk-round-col {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  min-width: 130px;
+}
+
+/* Small round header above each column */
+.bk-round-hdr {
+  text-align: center;
+  font-size: .65rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Flex column of slots — each slot gets equal height via flex:1 */
+.bk-slots {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.bk-slot {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  position: relative;
+  min-height: 46px;
+}
+
+/*
+ * Connector lines between rounds.
+ * Odd slots (1st of each pair) draw right-border from center to bottom.
+ * Even slots (2nd of each pair) draw right-border from top to center.
+ * Together they form a bracket ┐┘ shape connecting two matches to one.
+ */
+.bk-round-col:not(.bk-col-last) .bk-slot:nth-child(odd)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -12px;
+  width: 12px;
+  height: 50%;
+  border-top: 2px solid var(--border);
+  border-right: 2px solid var(--border);
+}
+
+.bk-round-col:not(.bk-col-last) .bk-slot:nth-child(even)::after {
+  content: '';
+  position: absolute;
+  bottom: 50%;
+  right: -12px;
+  width: 12px;
+  height: 50%;
+  border-bottom: 2px solid var(--border);
+  border-right: 2px solid var(--border);
+}
+
+/* Horizontal line incoming from previous round's junction */
+.bk-round-col:not(.bk-col-first) .bk-slot::before {
+  content: '';
+  position: absolute;
+  top: calc(50% - 1px);
+  left: -12px;
+  width: 12px;
+  border-top: 2px solid var(--border);
+}
+
+/* Match card — two team rows stacked */
+.bk-match {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: .5rem .75rem;
-  min-width: 180px;
-  font-size: .85rem;
+  overflow: hidden;
+  width: 100%;
   background: var(--surface);
 }
-.match-id { color: var(--text-muted); font-size: .75rem; margin-bottom: .25rem; }
-.match-slot { display: flex; align-items: center; gap: .4rem; padding: .15rem 0; }
-.match-slot.winner { font-weight: 700; color: var(--green-dark); }
-select.pick-select {
-  font-size: .82rem;
-  padding: .15rem .3rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  max-width: 140px;
-  background: var(--surface);
-  color: var(--text);
+
+/* Individual team row inside a match */
+.bk-team {
+  padding: 6px 10px;
+  font-size: .78rem;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border-bottom: 1px solid var(--border);
+  transition: background .12s;
 }
+.bk-team:last-child { border-bottom: none; }
+
+.bk-team.pickable { cursor: pointer; }
+.bk-team.pickable:hover { background: var(--row-hover); }
+
+.bk-team.picked {
+  background: var(--row-1st);
+  font-weight: 600;
+}
+
+.bk-team img { width: 20px; height: 15px; vertical-align: middle; }
+
+.bk-tbd {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: .72rem;
+}
+
+/* Finals section between the two bracket halves */
+.bk-finals {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  padding: 1.25rem 0;
+  flex-wrap: wrap;
+}
+
+.bk-final-card { text-align: center; }
+
+.bk-final-title {
+  font-size: .9rem;
+  font-weight: 700;
+  margin-bottom: .35rem;
+}
+
+.bk-match-final { min-width: 200px; }
 
 /* ----------------------------------------
    Leaderboard

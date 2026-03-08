@@ -1,103 +1,189 @@
-// pages/bracket.js — Knockout bracket picks page
+// pages/bracket.js — Visual knockout bracket
 
 import { getState, setState } from '../state.js';
 import { api } from '../api.js';
 import { BRACKET_STRUCTURE } from '../data/bracket-structure.js';
 import { getThirdPlacePlacements } from '../data/third-place-table.js';
+import { getFlag } from '../utils.js';
 
-const ROUND_LABELS = {
+const ROUND_NAMES = {
   R32: 'Round of 32',
   R16: 'Round of 16',
   QF:  'Quarter-Finals',
   SF:  'Semi-Finals',
-  TPM: 'Third-Place Match',
+  TPM: 'Third Place',
   F:   'Final',
 };
 
+/** Lookup match definition by id */
+const MATCH_BY_ID = Object.fromEntries(BRACKET_STRUCTURE.map(m => [m.id, m]));
+
+/**
+ * Bracket pathway definitions — match IDs in top-to-bottom visual order.
+ * Adjacent pairs in each round feed into the same next-round match
+ * (e.g. R32[0]+R32[1] → R16[0]).
+ */
+const PATHWAY_1 = {
+  R32: [74, 77, 73, 75, 83, 84, 81, 82],
+  R16: [89, 90, 93, 94],
+  QF:  [97, 98],
+  SF:  [101],
+};
+
+const PATHWAY_2 = {
+  R32: [76, 78, 79, 80, 86, 88, 85, 87],
+  R16: [91, 92, 95, 96],
+  QF:  [99, 100],
+  SF:  [102],
+};
+
+const HALF_ROUNDS = ['R32', 'R16', 'QF', 'SF'];
+
+// ─── Page entry point ───────────────────────────────────────
+
 export function renderBracketPage(container) {
-  const { picks, locked, teams } = getState();
-  const bracketPicks = picks?.bracketPicks ?? {};
-  const groupPicks = picks?.groupPicks ?? {};
-  const thirdPlaceAdvancing = picks?.thirdPlaceAdvancing ?? [];
-
-  // Build team lookup
-  const teamById = Object.fromEntries(teams.map(t => [t.id, t]));
-
-  // Resolve who plays in each R32 match based on group picks + third-place table
-  const matchTeams = resolveMatchTeams(groupPicks, thirdPlaceAdvancing, bracketPicks, teamById);
-
-  const rounds = ['R32','R16','QF','SF','TPM','F'];
+  const { locked } = getState();
 
   container.innerHTML = `
     <div class="page active" id="page-bracket">
       ${locked ? '<div class="lock-banner locked">🔒 Picks are locked</div>' : ''}
-      <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem">
-        Pick the winner of each match. Matches unlock as you complete earlier rounds.
+      <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.75rem">
+        ${locked ? 'Your locked bracket picks.' : 'Click a team to pick them as the winner. Winners advance to the next round.'}
       </p>
-      ${rounds.map(round => renderRound(round, bracketPicks, matchTeams, locked, teamById)).join('')}
-      ${!locked ? `<div style="margin-top:1rem">
+      <div id="bracket-content"></div>
+      ${!locked ? `<div style="margin-top:1.5rem">
         <button class="btn btn-primary" id="save-bracket-btn">Save Bracket</button>
         <span id="bracket-save-status" style="margin-left:.5rem;font-size:.85rem;color:var(--text-muted)"></span>
       </div>` : ''}
     </div>
   `;
 
+  renderBracketContent();
+
   if (!locked) {
-    container.querySelectorAll('select.pick-select').forEach(sel => {
-      sel.addEventListener('change', e => {
-        const { matchId } = e.target.dataset;
-        onBracketPick(matchId, e.target.value);
-      });
+    document.getElementById('bracket-content').addEventListener('click', e => {
+      const el = e.target.closest('.bk-team[data-pick-team]');
+      if (!el) return;
+      onBracketPick(el.dataset.pickKey, el.dataset.pickTeam);
+      renderBracketContent();
     });
-    document.getElementById('save-bracket-btn').addEventListener('click', saveBracket);
+    document.getElementById('save-bracket-btn')?.addEventListener('click', saveBracket);
   }
 }
 
-function renderRound(round, bracketPicks, matchTeams, locked, teamById) {
-  const matches = BRACKET_STRUCTURE.filter(m => m.round === round);
-  if (!matches.length) return '';
+// ─── Render the full bracket content ────────────────────────
 
-  return `
-    <div class="bracket-round card">
-      <div class="card-title">${ROUND_LABELS[round]}</div>
-      <div class="match-list">
-        ${matches.map(m => renderMatch(m, bracketPicks, matchTeams, locked, teamById)).join('')}
-      </div>
+function renderBracketContent() {
+  const { picks, locked, teams } = getState();
+  const bp = picks?.bracketPicks ?? {};
+  const gp = picks?.groupPicks ?? {};
+  const tpa = picks?.thirdPlaceAdvancing ?? [];
+  const teamById = Object.fromEntries(teams.map(t => [t.id, t]));
+  const mt = resolveMatchTeams(gp, tpa, bp);
+
+  const el = document.getElementById('bracket-content');
+  if (!el) return;
+
+  el.innerHTML = `
+    <div class="bk-pathway-label">Pathway 1</div>
+    <div class="bk-scroll">${renderHalf(PATHWAY_1, bp, mt, locked, teamById)}</div>
+
+    <div class="bk-finals">
+      ${renderFinalCard(104, 'F', '🏆 Final', bp, mt, locked, teamById)}
+      ${renderFinalCard(103, 'TPM', '🥉 Third Place', bp, mt, locked, teamById)}
     </div>
+
+    <div class="bk-pathway-label">Pathway 2</div>
+    <div class="bk-scroll">${renderHalf(PATHWAY_2, bp, mt, locked, teamById)}</div>
   `;
 }
 
-function renderMatch(match, bracketPicks, matchTeams, locked, teamById) {
-  const [slotA, slotB] = matchTeams[match.id] || [null, null];
-  const picked = bracketPicks[`${match.round}_${match.id}`] ?? '';
+// ─── Rendering helpers ──────────────────────────────────────
 
-  const getTeamLabel = (t) => t ? (teamById[t]?.name ?? t) : '?';
+function renderHalf(pathway, bracketPicks, matchTeams, locked, teamById) {
+  let html = '<div class="bk-half">';
 
-  if (locked) {
-    return `
-      <div class="match-card">
-        <div class="match-id">M${match.id}</div>
-        <div class="match-slot ${picked === slotA ? 'winner' : ''}">${getTeamLabel(slotA)}</div>
-        <div class="match-slot ${picked === slotB ? 'winner' : ''}">${getTeamLabel(slotB)}</div>
-        ${picked ? `<div style="font-size:.75rem;color:var(--text-muted)">Pick: ${getTeamLabel(picked)}</div>` : ''}
-      </div>
-    `;
+  for (let r = 0; r < HALF_ROUNDS.length; r++) {
+    const round = HALF_ROUNDS[r];
+    const ids = pathway[round];
+    const isFirst = r === 0;
+    const isLast = r === HALF_ROUNDS.length - 1;
+
+    const cls = ['bk-round-col'];
+    if (isFirst) cls.push('bk-col-first');
+    if (isLast) cls.push('bk-col-last');
+
+    html += `<div class="${cls.join(' ')}">`;
+    html += `<div class="bk-round-hdr">${ROUND_NAMES[round]}</div>`;
+    html += '<div class="bk-slots">';
+    for (const id of ids) {
+      html += renderSlot(MATCH_BY_ID[id], round, bracketPicks, matchTeams, locked, teamById);
+    }
+    html += '</div></div>';
   }
 
-  const options = [slotA, slotB].filter(Boolean).map(t =>
-    `<option value="${t}" ${picked === t ? 'selected' : ''}>${getTeamLabel(t)}</option>`
-  ).join('');
-
-  return `
-    <div class="match-card">
-      <div class="match-id">M${match.id}: ${getTeamLabel(slotA)} vs ${getTeamLabel(slotB)}</div>
-      <select class="pick-select" data-match-id="${match.round}_${match.id}">
-        <option value="">— pick winner —</option>
-        ${options}
-      </select>
-    </div>
-  `;
+  return html + '</div>';
 }
+
+function renderSlot(match, round, bracketPicks, matchTeams, locked, teamById) {
+  const [a, b] = matchTeams[match.id] || [null, null];
+  const key = `${round}_${match.id}`;
+  const picked = bracketPicks[key] ?? '';
+  const canPick = !locked && a && b;
+
+  return `<div class="bk-slot">
+    <div class="bk-match">
+      ${teamRow(a, match.teamA, picked, canPick, key, teamById)}
+      ${teamRow(b, match.teamB, picked, canPick, key, teamById)}
+    </div>
+  </div>`;
+}
+
+function teamRow(resolved, slotStr, picked, canPick, pickKey, teamById) {
+  const isPicked = resolved && picked === resolved;
+  const cls = ['bk-team'];
+  if (isPicked) cls.push('picked');
+  if (canPick) cls.push('pickable');
+  const attrs = canPick && resolved
+    ? `data-pick-team="${resolved}" data-pick-key="${pickKey}"`
+    : '';
+
+  if (resolved) {
+    const t = teamById[resolved];
+    return `<div class="${cls.join(' ')}" ${attrs}>${getFlag(resolved)} ${t?.name ?? resolved}</div>`;
+  }
+  return `<div class="${cls.join(' ')}">${slotDesc(slotStr)}</div>`;
+}
+
+function slotDesc(slot) {
+  if (!slot) return '<span class="bk-tbd">TBD</span>';
+  if (slot.startsWith('3P_')) return '<span class="bk-tbd">3rd place</span>';
+  if (slot.startsWith('W')) return `<span class="bk-tbd">Winner M${slot.slice(1)}</span>`;
+  if (slot.startsWith('L')) return `<span class="bk-tbd">Loser M${slot.slice(1)}</span>`;
+  const rank = parseInt(slot[0]);
+  const group = slot.slice(1);
+  if (rank === 1) return `<span class="bk-tbd">1st ${group}</span>`;
+  if (rank === 2) return `<span class="bk-tbd">2nd ${group}</span>`;
+  return `<span class="bk-tbd">${slot}</span>`;
+}
+
+function renderFinalCard(matchId, round, label, bracketPicks, matchTeams, locked, teamById) {
+  const match = MATCH_BY_ID[matchId];
+  const [a, b] = matchTeams[matchId] || [null, null];
+  const key = `${round}_${matchId}`;
+  const picked = bracketPicks[key] ?? '';
+  const canPick = !locked && a && b;
+
+  return `<div class="bk-final-card">
+    <div class="bk-final-title">${label}</div>
+    <div class="bk-match bk-match-final">
+      ${teamRow(a, match.teamA, picked, canPick, key, teamById)}
+      ${teamRow(b, match.teamB, picked, canPick, key, teamById)}
+    </div>
+  </div>`;
+}
+
+// ─── State & persistence ────────────────────────────────────
 
 function onBracketPick(matchKey, winnerId) {
   const { picks } = getState();
@@ -122,30 +208,26 @@ async function saveBracket() {
   }
 }
 
-/**
- * Resolve which two teams play in each match based on current picks.
- * Returns { matchId: [teamA, teamB] }
- */
-function resolveMatchTeams(groupPicks, thirdPlaceAdvancing, bracketPicks, teamById) {
+// ─── Match resolution (group picks → R32 → R16 → … → Final) ─
+
+function resolveMatchTeams(groupPicks, thirdPlaceAdvancing, bracketPicks) {
   const result = {};
 
   // Determine 3rd-place slot assignments
-  let thirdPlaceBySlot = {}; // matchId -> teamId
+  let thirdPlaceBySlot = {};
   if (thirdPlaceAdvancing.length === 8) {
     const placements = getThirdPlacePlacements(thirdPlaceAdvancing);
     if (placements) {
-      // THIRD_PLACE_SLOTS = [74,77,79,80,82,81,85,87] mapped to placements[0..7]
-      const SLOTS = [74,77,79,80,82,81,85,87];
+      const SLOTS = [74, 77, 79, 80, 82, 81, 85, 87];
       SLOTS.forEach((matchId, i) => {
         const groupLetter = placements[i];
-        // 3rd-place team is at index 2 in the user's 1-4 ordering
         const groupTeams = groupPicks[groupLetter] ?? [];
         thirdPlaceBySlot[matchId] = groupTeams[2] ?? null;
       });
     }
   }
 
-  // Resolve R32 matches
+  // Resolve R32 matches from group picks
   for (const match of BRACKET_STRUCTURE) {
     if (match.round !== 'R32') continue;
     result[match.id] = [
@@ -155,7 +237,7 @@ function resolveMatchTeams(groupPicks, thirdPlaceAdvancing, bracketPicks, teamBy
   }
 
   // Resolve subsequent rounds from bracket picks
-  for (const round of ['R16','QF','SF','TPM','F']) {
+  for (const round of ['R16', 'QF', 'SF', 'TPM', 'F']) {
     for (const match of BRACKET_STRUCTURE.filter(m => m.round === round)) {
       result[match.id] = [
         resolveKnockoutSlot(match.teamA, bracketPicks, result),
@@ -169,40 +251,29 @@ function resolveMatchTeams(groupPicks, thirdPlaceAdvancing, bracketPicks, teamBy
 
 function resolveSlot(slot, groupPicks, thirdPlaceBySlot) {
   if (!slot) return null;
-  // "1X" = 1st place group X, "2X" = 2nd place group X
-  const rank = parseInt(slot[0]);
-  const group = slot.slice(1);
-
   if (slot.startsWith('3P_')) {
     const matchId = parseInt(slot.replace('3P_', ''));
     return thirdPlaceBySlot[matchId] ?? null;
   }
-
-  if (rank === 1 || rank === 2) {
-    return groupPicks[group]?.[rank - 1] ?? null;
-  }
-
+  const rank = parseInt(slot[0]);
+  const group = slot.slice(1);
+  if (rank === 1 || rank === 2) return groupPicks[group]?.[rank - 1] ?? null;
   return null;
 }
 
 function resolveKnockoutSlot(slot, bracketPicks, resolvedMatches) {
   if (!slot) return null;
-  // "WXX" = winner of match XX, "LXX" = loser of match XX
   if (slot.startsWith('W')) {
     const matchId = parseInt(slot.slice(1));
-    // Find which round/key this match belongs to
     const match = BRACKET_STRUCTURE.find(m => m.id === matchId);
     if (!match) return null;
-    const pickKey = `${match.round}_${matchId}`;
-    return bracketPicks[pickKey] ?? null;
+    return bracketPicks[`${match.round}_${matchId}`] ?? null;
   }
   if (slot.startsWith('L')) {
-    // Loser of a match — for TPM
     const matchId = parseInt(slot.slice(1));
     const match = BRACKET_STRUCTURE.find(m => m.id === matchId);
     if (!match) return null;
-    const pickKey = `${match.round}_${matchId}`;
-    const winner = bracketPicks[pickKey];
+    const winner = bracketPicks[`${match.round}_${matchId}`];
     const [teamA, teamB] = resolvedMatches[matchId] ?? [];
     if (!winner || (!teamA && !teamB)) return null;
     return winner === teamA ? teamB : teamA;

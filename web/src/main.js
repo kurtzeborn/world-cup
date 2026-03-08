@@ -10,7 +10,38 @@ import { renderLeaguesPage } from './pages/leagues.js';
 
 const LOCK_DEADLINE_DEV = '2026-06-11T19:00:00Z'; // fallback
 
+// --- Dark Mode ---
+function initTheme() {
+  const stored = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = stored || (prefersDark ? 'dark' : 'light');
+  applyTheme(theme);
+
+  // Listen for system preference changes when no user override
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if (!localStorage.getItem('theme')) applyTheme(e.matches ? 'dark' : 'light');
+  });
+
+  const btn = document.getElementById('theme-toggle');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('theme', next);
+      applyTheme(next);
+    });
+  }
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const icon = document.querySelector('#theme-toggle i');
+  if (icon) {
+    icon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  }
+}
+
 async function init() {
+  initTheme();
   // Load auth + teams in parallel
   const [authUser, teams] = await Promise.all([
     fetchAuthUser(),

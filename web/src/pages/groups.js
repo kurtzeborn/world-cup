@@ -74,7 +74,7 @@ function renderGroupGrid(byGroup, groupPicks, locked) {
                   ? `<span class="rank-badge rank-2">2</span>`
                   : '';
               return `<tr class="team-row ${cls}" data-group="${letter}" data-team="${team.id}" ${locked ? '' : 'title="Click to select as 1st/2nd"'}>
-                <td><span class="flag">${getFlagEmoji(team.flagCode)}</span>${team.name}</td>
+                <td>${getFlag(team.flagCode)} ${team.name}</td>
                 <td>${team.confirmed ? team.fifaRanking : '—'}</td>
                 <td>${badge}</td>
               </tr>`;
@@ -217,9 +217,7 @@ async function lockPicks() {
   }
 }
 
-function getFlagEmoji(flagCode) {
-  if (!flagCode || flagCode.length !== 2) return '🏳️';
-  return String.fromCodePoint(
-    ...flagCode.toUpperCase().split('').map(c => 0x1F1E0 + c.charCodeAt(0) - 65)
-  );
+function getFlag(flagCode) {
+  if (!flagCode || flagCode === 'xx') return '<span class="flag flag-tbd">?</span>';
+  return `<img class="flag" src="https://flagcdn.com/w40/${flagCode}.png" srcset="https://flagcdn.com/w80/${flagCode}.png 2x" alt="" width="20" height="15" loading="lazy">`;
 }

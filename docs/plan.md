@@ -682,8 +682,8 @@ If the user changes group rankings or 3rd-place selections, **only the affected 
 - [x] Create API endpoints: all endpoints from section 5.5 implemented as TypeScript Functions
 - [x] Basic SPA with hash router, auth header, per-page loading
 - [x] Custom domain live with HTTPS (`wc.k61.dev`)
-- [ ] Dark mode support (CSS custom properties + system preference detection)
-- [ ] Font Awesome integration
+- [x] Dark mode support (CSS custom properties + system preference detection)
+- [x] Font Awesome integration
 
 ### Phase 2 — Pick Entry (Target: May 2026)
 - [x] Group stage UI with click-to-reorder team ordering (FIFA rankings shown)

@@ -3,7 +3,7 @@
 import { getState, setState } from '../state.js';
 import { api } from '../api.js';
 import { TEAMS_BY_GROUP, GROUP_LETTERS } from '../data/teams.js';
-import { getFlag, FIFA_RANKINGS_URL } from '../utils.js';
+import { getFlag, FIFA_RANKINGS_URL, savePicksToServer } from '../utils.js';
 
 /** Build a copy of teams-by-group (safe to reference without mutation). */
 function getByGroup() {
@@ -161,20 +161,7 @@ function toggleThirdPlace(letter) {
 }
 
 async function savePicks() {
-  const { picks } = getState();
-  const statusEl = document.getElementById('save-status');
-  try {
-    statusEl.textContent = 'Saving…';
-    await api.savePicks({
-      groupPicks: picks?.groupPicks ?? {},
-      thirdPlaceAdvancing: picks?.thirdPlaceAdvancing ?? [],
-      bracketPicks: picks?.bracketPicks ?? {},
-    });
-    statusEl.textContent = '✓ Saved';
-    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
-  } catch (err) {
-    statusEl.textContent = `Error: ${err.message}`;
-  }
+  await savePicksToServer(document.getElementById('save-status'));
 }
 
 async function lockPicks() {

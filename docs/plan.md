@@ -152,9 +152,11 @@ The R32 matchups are predetermined by the draw. Group winners (1X), runners-up (
 2. After auth, user sees their pick dashboard (or the pick entry screen if no picks yet)
 3. Google sign-in to be added post-launch
 
-### 3.2 Pick Entry — Combined View (Primary Goal)
+### 3.2 Pick Entry — Tabbed Pages (Implemented)
 
-The pick entry screen should attempt to fit **both group stage and bracket** in a single view, with the following layout concept:
+> **Deviation from original plan:** The original concept was a combined side-by-side layout (groups left, bracket right). The actual implementation uses **separate tabbed pages** (Groups, Bracket, Leaderboard, Leagues) via a hash router. This is simpler, works better on mobile, and avoids the complexity of a two-panel synchronized layout. The combined-view concept may be revisited if user feedback requests it.
+
+The pick entry uses separate pages with a shared navigation header:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -411,7 +413,7 @@ world-cup/
 │       ├── style.css                # Global styles
 │       ├── data/
 │       │   ├── teams.js             # 48 teams (flags, groups, seeds, FIFA rankings)
-│       │   ├── bracket-structure.js # R32‑F matchup definitions + BRACKET_STRUCTURE
+│       ├── bracket-structure.js # R32‑F matchup definitions + BRACKET_STRUCTURE + MATCH_SCHEDULE
 │       │   └── third-place-table.js # 495-row 3rd-place placement lookup table
 │       └── pages/
 │           ├── groups.js            # Group stage reordering + 3rd-place picker
@@ -589,10 +591,11 @@ world-cup/
 
 Two workflows:
 
-**`deploy.yml`** — triggered on push to `main` and PRs:
+**`deploy.yml`** — triggered on push to `main`:
 - Build Vite frontend + TypeScript functions
 - Deploy to SWA via `AZURE_STATIC_WEB_APPS_API_TOKEN`
 - `app_location: "web"`, `api_location: "functions"`, `output_location: "dist"`
+- No PR staging environments (direct push to main workflow only)
 
 **`infra.yml`** — triggered on changes to `infra/**` + `workflow_dispatch`:
 - Authenticates via **OIDC** (no long-lived secrets) using `sp-wc-deploy` service principal
@@ -695,8 +698,13 @@ If the user changes group rankings or 3rd-place selections, **only the affected 
 - [x] Knockout bracket auto-fill from group + 3rd-place picks (3rd-place table used)
 - [x] Knockout bracket winner selection UI
 - [x] Pick locking (server-enforced, lock button, locked state display)
+- [x] Bracket CSS connector lines between rounds
+- [x] Match info bars showing match number, date, and city (MATCH_SCHEDULE data)
+- [x] Champion winner card (gold border) and 3rd Place winner card (bronze border)
+- [x] Center section with SF → Final bracket + TPM section
+- [x] Cascade-clear invalid downstream bracket picks on change
 - [ ] Drag-and-drop reordering for group stage (currently click-select)
-- [ ] Bracket change-impact detection (minimal clearing + warning + undo)
+- [ ] Bracket change-impact warning + undo (currently silent cascade-clear)
 - [ ] Auto-save draft picks on every change (currently manual save only)
 - [ ] Countdown timer to lock deadline
 - [ ] PDF export with QR code
@@ -751,6 +759,10 @@ If the user changes group rankings or 3rd-place selections, **only the affected 
 | Icons | **Font Awesome** (free tier via CDN) for all icons |
 | Dark mode | **System preference detection** with manual override toggle |
 | Scoring rules doc | Created as `docs/rules.md` — maintained as source of truth, shown in-app on a rules page |
+| Pick entry layout | **Separate tabbed pages** via hash router instead of combined side-by-side view — simpler, better mobile support |
+| Deploy workflow | **Push to main only** — removed PR trigger and staging environments (close_pull_request job) |
+| Bracket info | **Match info bars** between team rows showing match number, date, and city from FIFA schedule |
+| Winner display | **Fixed-width cards** (180px) for Champion (gold) and 3rd Place (bronze) to prevent layout shifts |
 
 ## 12. Open Questions
 

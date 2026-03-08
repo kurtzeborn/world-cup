@@ -1,11 +1,10 @@
 // pages/bracket.js — Visual knockout bracket
 
 import { getState, setState } from '../state.js';
-import { api } from '../api.js';
-import { BRACKET_STRUCTURE, MATCH_SCHEDULE } from '../data/bracket-structure.js';
+import { BRACKET_STRUCTURE, MATCH_SCHEDULE, THIRD_PLACE_SLOTS } from '../data/bracket-structure.js';
 import { getThirdPlacePlacements } from '../data/third-place-table.js';
 import { TEAMS_BY_ID } from '../data/teams.js';
-import { getFlag } from '../utils.js';
+import { getFlag, savePicksToServer } from '../utils.js';
 
 const ROUND_NAMES = {
   R32: 'Round of 32',
@@ -262,20 +261,7 @@ function onBracketPick(matchKey, winnerId) {
 }
 
 async function saveBracket() {
-  const { picks } = getState();
-  const statusEl = document.getElementById('bracket-save-status');
-  try {
-    if (statusEl) statusEl.textContent = 'Saving…';
-    await api.savePicks({
-      groupPicks: picks?.groupPicks ?? {},
-      thirdPlaceAdvancing: picks?.thirdPlaceAdvancing ?? [],
-      bracketPicks: picks?.bracketPicks ?? {},
-    });
-    if (statusEl) statusEl.textContent = '✓ Saved';
-    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
-  } catch (err) {
-    if (statusEl) statusEl.textContent = `Error: ${err.message}`;
-  }
+  await savePicksToServer(document.getElementById('bracket-save-status'));
 }
 
 // ─── Match resolution (group picks → R32 → R16 → … → Final) ─
@@ -288,8 +274,7 @@ function resolveMatchTeams(groupPicks, thirdPlaceAdvancing, bracketPicks) {
   if (thirdPlaceAdvancing.length === 8) {
     const placements = getThirdPlacePlacements(thirdPlaceAdvancing);
     if (placements) {
-      const SLOTS = [74, 77, 79, 80, 82, 81, 85, 87];
-      SLOTS.forEach((matchId, i) => {
+      THIRD_PLACE_SLOTS.forEach((matchId, i) => {
         const groupLetter = placements[i];
         const groupTeams = groupPicks[groupLetter] ?? [];
         thirdPlaceBySlot[matchId] = groupTeams[2] ?? null;
@@ -335,13 +320,13 @@ function resolveKnockoutSlot(slot, bracketPicks, resolvedMatches) {
   if (!slot) return null;
   if (slot.startsWith('W')) {
     const matchId = parseInt(slot.slice(1));
-    const match = BRACKET_STRUCTURE.find(m => m.id === matchId);
+    const match = MATCH_BY_ID[matchId];
     if (!match) return null;
     return bracketPicks[`${match.round}_${matchId}`] ?? null;
   }
   if (slot.startsWith('L')) {
     const matchId = parseInt(slot.slice(1));
-    const match = BRACKET_STRUCTURE.find(m => m.id === matchId);
+    const match = MATCH_BY_ID[matchId];
     if (!match) return null;
     const winner = bracketPicks[`${match.round}_${matchId}`];
     const [teamA, teamB] = resolvedMatches[matchId] ?? [];

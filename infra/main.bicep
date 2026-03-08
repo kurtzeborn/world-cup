@@ -40,6 +40,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.19.0' = {
     tableServices: {
       tables: [
         { name: 'Teams' }
+        { name: 'Users' }
         { name: 'Picks' }
         { name: 'Results' }
         { name: 'Scores' }

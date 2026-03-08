@@ -5,6 +5,8 @@ import { api } from '../api.js';
 import { TEAMS_BY_GROUP, GROUP_LETTERS } from '../data/teams.js';
 import { getFlag, FIFA_RANKINGS_URL, savePicksToServer } from '../utils.js';
 
+const MAX_THIRD_ADVANCING = 8;
+
 /** Build a copy of teams-by-group (safe to reference without mutation). */
 function getByGroup() {
   const byGroup = {};
@@ -28,7 +30,7 @@ export function renderGroupsPage(container) {
       <h2 class="slide-section-hdr">Group Stage</h2>
       <div class="groups-grid" id="groups-grid"></div>
 
-      ${!locked ? `<div style="margin-top:1rem;display:flex;gap:.75rem;align-items:center">
+      ${!locked ? `<div class="groups-actions">
         <button class="btn btn-primary" id="save-picks-btn">Save Picks</button>
         <button class="btn btn-secondary" id="lock-picks-btn">Lock &amp; Submit</button>
         <span id="save-status" style="font-size:.85rem;color:var(--text-muted)"></span>
@@ -78,7 +80,7 @@ function renderGroupGrid(byGroup, groupPicks, thirdPlaceAdvancing, locked) {
                      <input type="checkbox" class="advance-cb" data-group="${letter}"
                        ${thirdAdvances ? 'checked' : ''}
                        ${locked ? 'disabled' : ''}
-                       ${!thirdAdvances && thirdPlaceCount >= 8 ? 'disabled' : ''}>
+                       ${!thirdAdvances && thirdPlaceCount >= MAX_THIRD_ADVANCING ? 'disabled' : ''}>
                      <span class="advance-label">Advance?</span>
                    </label>`;
               }
@@ -142,10 +144,10 @@ function toggleThirdPlace(letter) {
   let next;
   if (idx !== -1) {
     next = prev.filter(l => l !== letter);
-  } else if (prev.length < 8) {
+  } else if (prev.length < MAX_THIRD_ADVANCING) {
     next = [...prev, letter];
   } else {
-    return; // already have 8
+    return; // already at max
   }
   setState({ picks: { ...(picks ?? {}), thirdPlaceAdvancing: next } });
 
@@ -169,8 +171,8 @@ async function lockPicks() {
     alert(`Please rank all 4 teams in groups: ${missingGroups.join(', ')}`);
     return;
   }
-  if (thirdPlace.length !== 8) {
-    alert('Please select exactly 8 third-place groups to advance.');
+  if (thirdPlace.length !== MAX_THIRD_ADVANCING) {
+    alert(`Please select exactly ${MAX_THIRD_ADVANCING} third-place groups to advance.`);
     return;
   }
 

@@ -353,10 +353,13 @@ body {
 .rank-4 { background: #9e9e9e; color: #fff; }
 
 /* ----------------------------------------
-   Third Place Counter
+   Groups Actions Bar
 -----------------------------------------*/
-.third-place-counter strong {
-  color: var(--green-dark);
+.groups-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: .75rem;
+  align-items: center;
 }
 
 /* ----------------------------------------

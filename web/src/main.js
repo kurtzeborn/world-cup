@@ -179,21 +179,12 @@ function ensureSlidePanel(app, initialPage) {
   track.style.transition = '';
 
   // Click right peek overlay or bracket panel (in groups view) → navigate to bracket
-  app.querySelector('.slide-peek-right')?.addEventListener('click', () => {
-    history.pushState(null, '', '#bracket');
-    navigateTo('bracket');
-  });
+  app.querySelector('.slide-peek-right')?.addEventListener('click', () => slideTo('bracket'));
   // Click left peek overlay → navigate back to groups
-  app.querySelector('.slide-peek-left')?.addEventListener('click', () => {
-    history.pushState(null, '', '#groups');
-    navigateTo('groups');
-  });
+  app.querySelector('.slide-peek-left')?.addEventListener('click', () => slideTo('groups'));
   // Click anywhere on the bracket panel while in groups view → slide to bracket
   app.querySelector('.slide-panel-bracket')?.addEventListener('click', () => {
-    if (currentSlide === 'groups') {
-      history.pushState(null, '', '#bracket');
-      navigateTo('bracket');
-    }
+    if (currentSlide === 'groups') slideTo('bracket');
   });
 
   // Keep bracket in sync with group picks
@@ -214,19 +205,28 @@ function ensureSlidePanel(app, initialPage) {
 function destroySlidePanel() {
   if (!sliderActive) return;
   sliderActive = false;
+  savedScrollY = { groups: 0, bracket: 0 };
   if (unsubBracketSync) { unsubBracketSync(); unsubBracketSync = null; }
 }
 
-function sizeSlidePanels() {
+/** Compute layout dimensions from container width. */
+function getSlideLayout() {
   const ct = document.querySelector('.slide-container');
-  if (!ct) return;
+  if (!ct) return null;
   const w = ct.clientWidth;
   const peek = getPeekWidth();
   const gap = peek > 0 ? PANEL_GAP : 0;
   const groupsW = Math.min(GROUPS_MAX_W, w - peek - gap);
-  ct.querySelector('.slide-panel-groups').style.width = groupsW + 'px';
-  ct.querySelector('.slide-panel-bracket').style.width = w + 'px';
-  ct.querySelector('.slide-track').style.gap = gap + 'px';
+  const leftPeek = peek > 0 ? PEEK_LEFT : 0;
+  return { ct, w, peek, gap, groupsW, leftPeek };
+}
+
+function sizeSlidePanels() {
+  const lay = getSlideLayout();
+  if (!lay) return;
+  lay.ct.querySelector('.slide-panel-groups').style.width = lay.groupsW + 'px';
+  lay.ct.querySelector('.slide-panel-bracket').style.width = lay.w + 'px';
+  lay.ct.querySelector('.slide-track').style.gap = lay.gap + 'px';
 }
 
 function slideToPage(page) {
@@ -240,23 +240,24 @@ function slideToPage(page) {
   requestAnimationFrame(() => window.scrollTo(0, savedScrollY[page] || 0));
 }
 
+/** Navigate to a slide page, updating the URL hash. */
+function slideTo(page) {
+  history.pushState(null, '', `#${page}`);
+  navigateTo(page);
+}
+
 function positionTrack(page) {
-  const ct = document.querySelector('.slide-container');
-  if (!ct) return;
-  const track = ct.querySelector('.slide-track');
-  const w = ct.clientWidth;
-  const peek = getPeekWidth();
-  const gap = peek > 0 ? PANEL_GAP : 0;
-  const groupsW = Math.min(GROUPS_MAX_W, w - peek - gap);
-  const leftPeek = peek > 0 ? PEEK_LEFT : 0;
-  track.style.transform = page === 'bracket'
-    ? `translateX(-${groupsW + gap - leftPeek}px)`
+  const lay = getSlideLayout();
+  if (!lay) return;
+  lay.ct.querySelector('.slide-track').style.transform = page === 'bracket'
+    ? `translateX(-${lay.groupsW + lay.gap - lay.leftPeek}px)`
     : 'translateX(0)';
 }
 
 function updateOverlay(page) {
-  const peek = getPeekWidth();
-  const leftPeek = peek > 0 ? PEEK_LEFT : 0;
+  const lay = getSlideLayout();
+  const peek = lay?.peek ?? 0;
+  const leftPeek = lay?.leftPeek ?? 0;
 
   const rightOv = document.querySelector('.slide-peek-right');
   if (rightOv) {
@@ -316,11 +317,6 @@ function initSwipeGesture(container) {
     tracking = true;
   }, { passive: true });
 
-  container.addEventListener('touchmove', () => {
-    // We just let the browser handle vertical scroll;
-    // only act on touchend based on delta
-  }, { passive: true });
-
   container.addEventListener('touchend', e => {
     if (!tracking) return;
     tracking = false;
@@ -334,13 +330,9 @@ function initSwipeGesture(container) {
     lastSwipeTime = Date.now();
 
     if (dx < 0 && currentSlide === 'groups') {
-      // Swipe left → go to bracket
-      history.pushState(null, '', '#bracket');
-      navigateTo('bracket');
+      slideTo('bracket');
     } else if (dx > 0 && currentSlide === 'bracket') {
-      // Swipe right → go to groups
-      history.pushState(null, '', '#groups');
-      navigateTo('groups');
+      slideTo('groups');
     }
   }, { passive: true });
 }

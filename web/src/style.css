@@ -425,6 +425,9 @@ body {
   gap: 8px;
   background: var(--surface);
   white-space: nowrap;
+  min-width: 180px;
+  width: 180px;
+  box-sizing: border-box;
 }
 .bk-champ-team { border: 2px solid var(--gold); }
 .bk-third-team { border: 2px solid #cd7f32; }

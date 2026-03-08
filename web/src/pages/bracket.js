@@ -163,33 +163,57 @@ function slotDesc(slot) {
 }
 
 function renderCenter(bp, mt, locked) {
-  const sf1 = renderCenterMatch(101, 'SF', bp, mt, locked);
-  const sf2 = renderCenterMatch(102, 'SF', bp, mt, locked);
-  const finalMatch = renderCenterMatch(104, 'F', bp, mt, locked);
+  const sf1 = renderSlot(MATCH_BY_ID[101], 'SF', bp, mt, locked);
+  const sf2 = renderSlot(MATCH_BY_ID[102], 'SF', bp, mt, locked);
+  const finalSlot = renderSlot(MATCH_BY_ID[104], 'F', bp, mt, locked);
   const tpm = renderCenterMatch(103, 'TPM', bp, mt, locked);
 
+  // Champion
   const finalPick = bp['F_104'] ?? null;
   const champTeam = finalPick ? TEAMS_BY_ID[finalPick] : null;
   const champHtml = champTeam
     ? `<div class="bk-champ-team">${getFlag(champTeam.flagCode)} ${champTeam.name}</div>`
     : `<div class="bk-champ-team bk-tbd">Pick the Final winner</div>`;
 
+  // 3rd Place winner
+  const tpmPick = bp['TPM_103'] ?? null;
+  const thirdTeam = tpmPick ? TEAMS_BY_ID[tpmPick] : null;
+  const thirdHtml = thirdTeam
+    ? `<div class="bk-third-team">${getFlag(thirdTeam.flagCode)} ${thirdTeam.name}</div>`
+    : `<div class="bk-third-team bk-tbd">Pick the 3rd Place winner</div>`;
+
   return `
     <div class="bk-center">
-      <div class="bk-center-col">
-        <div class="bk-center-hdr">Semi-Finals</div>
-        ${sf1}
-        ${sf2}
+      <div class="bk-center-main">
+        <div class="bk-half bk-center-bracket">
+          <div class="bk-round-col bk-col-first">
+            <div class="bk-round-hdr">Semi-Finals</div>
+            <div class="bk-slots">
+              ${sf1}
+              ${sf2}
+            </div>
+          </div>
+          <div class="bk-round-col bk-col-last">
+            <div class="bk-round-hdr">Final</div>
+            <div class="bk-slots">
+              ${finalSlot}
+            </div>
+          </div>
+        </div>
+        <div class="bk-award">
+          <div class="bk-center-hdr">🏆 Champion</div>
+          ${champHtml}
+        </div>
       </div>
-      <div class="bk-center-col">
-        <div class="bk-center-hdr">Final</div>
-        ${finalMatch}
-        <div class="bk-center-hdr" style="margin-top:.75rem">3rd Place</div>
-        ${tpm}
-      </div>
-      <div class="bk-center-col bk-center-trophy">
-        <div class="bk-center-hdr">🏆 Champion</div>
-        ${champHtml}
+      <div class="bk-center-secondary">
+        <div class="bk-center-tpm-wrap">
+          <div class="bk-center-hdr">3rd Place Match</div>
+          ${tpm}
+        </div>
+        <div class="bk-award">
+          <div class="bk-center-hdr">🥉 3rd Place</div>
+          ${thirdHtml}
+        </div>
       </div>
     </div>
   `;

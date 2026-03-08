@@ -272,9 +272,9 @@ body {
   flex-direction: column;
 }
 
-/* Add vertical breathing room in R32 (first column) */
-.bk-col-first .bk-slots {
-  gap: 4px;
+/* Add vertical breathing room in R32 (first column) without breaking connector alignment */
+.bk-col-first .bk-slot {
+  padding: 2px 0;
 }
 
 .bk-slot {
@@ -374,21 +374,22 @@ body {
   font-size: .72rem;
 }
 
-/* ── Center section: SF + Final + TPM + Champion ── */
+/* ── Center section: SF → Final → Champion, TPM → 3rd Place ── */
 .bk-center {
+  padding: 1.25rem 0;
+}
+
+.bk-center-main,
+.bk-center-secondary {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   gap: 1.5rem;
-  padding: 1.25rem 0;
   flex-wrap: wrap;
 }
 
-.bk-center-col {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 170px;
+.bk-center-secondary {
+  margin-top: 1rem;
 }
 
 .bk-center-hdr {
@@ -399,13 +400,22 @@ body {
   letter-spacing: .04em;
 }
 
-.bk-center-trophy {
+.bk-award {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   align-self: center;
-  min-width: auto;
 }
 
-.bk-champ-team {
-  border: 2px solid var(--gold);
+.bk-center-tpm-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 170px;
+}
+
+.bk-champ-team,
+.bk-third-team {
   border-radius: var(--radius);
   padding: 12px 18px;
   font-size: .95rem;
@@ -416,8 +426,11 @@ body {
   background: var(--surface);
   white-space: nowrap;
 }
+.bk-champ-team { border: 2px solid var(--gold); }
+.bk-third-team { border: 2px solid #cd7f32; }
 
-.bk-champ-team img { width: 28px; height: 21px; }
+.bk-champ-team img,
+.bk-third-team img { width: 28px; height: 21px; }
 
 /* ----------------------------------------
    Leaderboard

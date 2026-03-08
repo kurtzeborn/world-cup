@@ -17,6 +17,8 @@
   --row-hover: #f0f9f4;
   --row-1st: #d4edda;
   --row-2nd: #cce5ff;
+  --row-3rd: #fff3cd;
+  --row-4th: #e9ecef;
   --leaderboard-hover: #f9f9f9;
 }
 
@@ -33,6 +35,8 @@
   --row-hover: #1a2e1f;
   --row-1st: #1a3d28;
   --row-2nd: #1a2d44;
+  --row-3rd: #3d3a1a;
+  --row-4th: #2a2a2a;
   --leaderboard-hover: #252525;
 }
 
@@ -168,6 +172,8 @@ body {
 .team-row:hover { background: var(--row-hover); }
 .team-row.selected-1st { background: var(--row-1st); }
 .team-row.selected-2nd { background: var(--row-2nd); }
+.team-row.selected-3rd { background: var(--row-3rd); }
+.team-row.selected-4th { background: var(--row-4th); }
 .flag { width: 20px; height: 15px; vertical-align: middle; margin-right: .3rem; border-radius: 2px; object-fit: cover; }
 .flag-tbd { display: inline-block; width: 20px; text-align: center; font-size: .75rem; color: var(--text-muted); }
 .rank-badge {
@@ -182,6 +188,8 @@ body {
 }
 .rank-1 { background: var(--green); color: #fff; }
 .rank-2 { background: #2196f3; color: #fff; }
+.rank-3 { background: #ff9800; color: #fff; }
+.rank-4 { background: #9e9e9e; color: #fff; }
 
 /* ----------------------------------------
    Third Place Selection

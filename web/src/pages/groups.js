@@ -67,13 +67,12 @@ function renderGroupGrid(byGroup, groupPicks, locked) {
           <tbody>
             ${teams.map(team => {
               const pos = selected.indexOf(team.id);
-              const cls = pos === 0 ? 'selected-1st' : pos === 1 ? 'selected-2nd' : '';
-              const badge = pos === 0
-                ? `<span class="rank-badge rank-1">1</span>`
-                : pos === 1
-                  ? `<span class="rank-badge rank-2">2</span>`
-                  : '';
-              return `<tr class="team-row ${cls}" data-group="${letter}" data-team="${team.id}" ${locked ? '' : 'title="Click to select as 1st/2nd"'}>
+              const posClasses = ['selected-1st','selected-2nd','selected-3rd','selected-4th'];
+              const cls = pos >= 0 && pos < 4 ? posClasses[pos] : '';
+              const badge = pos >= 0
+                ? `<span class="rank-badge rank-${pos + 1}">${pos + 1}</span>`
+                : '';
+              return `<tr class="team-row ${cls}" data-group="${letter}" data-team="${team.id}" ${locked ? '' : 'title="Click to rank 1st–4th"'}>
                 <td>${getFlag(team.flagCode)} ${team.name}</td>
                 <td>${team.confirmed ? team.fifaRanking : '—'}</td>
                 <td>${badge}</td>
@@ -103,14 +102,13 @@ function toggleGroupPick(group, teamId) {
 
   const idx = selected.indexOf(teamId);
   if (idx !== -1) {
-    // Deselect
+    // Deselect — remove and shift later teams up
     selected.splice(idx, 1);
-  } else if (selected.length < 2) {
+  } else if (selected.length < 4) {
+    // Add as next rank
     selected.push(teamId);
-  } else {
-    // Replace last selection
-    selected[1] = teamId;
   }
+  // If already 4 ranked, must deselect one first
 
   groupPicks[group] = selected;
   setState({ picks: { ...(picks ?? {}), groupPicks } });
@@ -194,9 +192,9 @@ async function lockPicks() {
   const thirdPlace = picks?.thirdPlaceAdvancing ?? [];
 
   // Basic validation
-  const missingGroups = GROUP_LETTERS.filter(g => (groupPicks[g]?.length ?? 0) < 2);
+  const missingGroups = GROUP_LETTERS.filter(g => (groupPicks[g]?.length ?? 0) < 4);
   if (missingGroups.length > 0) {
-    alert(`Please pick 2 teams to advance from groups: ${missingGroups.join(', ')}`);
+    alert(`Please rank all 4 teams in groups: ${missingGroups.join(', ')}`);
     return;
   }
   if (thirdPlace.length !== 8) {

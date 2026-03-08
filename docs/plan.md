@@ -186,11 +186,12 @@ The pick entry screen should attempt to fit **both group stage and bracket** in 
 **On mobile:** Stack vertically — group picks at top, then 3rd-place picks, then bracket below (or use tabs).
 
 ### 3.3 Group Stage Interaction
-- Each group shows 4 teams in a **drag-and-drop** sortable list (numbered 1–4)
+- Each group shows 4 teams in a **click-to-order** sortable list (numbered 1–4)
 - Default order matches the draw seeding
-- User reorders by dragging teams to predict their finish position
+- User clicks teams sequentially to assign positions 1st → 2nd → 3rd → 4th
+- Clicking a team that's already placed removes it (and shifts later picks up)
 - Visual indicators: positions 1-2 highlighted green (auto-advance), position 3 highlighted yellow (possible advance), position 4 grayed out
-- Country flags displayed alongside team names (SVG flags from [flagcdn.com](https://flagcdn.com))
+- Country flags displayed alongside team names (PNG flags from [flagcdn.com](https://flagcdn.com))
 - **FIFA World Ranking** displayed subtly next to each team name (e.g., small badge or parenthetical) to help inform picks
 
 ### 3.4 3rd-Place Advancement Picks
@@ -270,16 +271,19 @@ The pick entry screen should attempt to fit **both group stage and bracket** in 
 
 ## 4. Scoring System
 
-### 4.1 Group Stage Scoring (per group, max 12 pts)
+### 4.1 Group Stage Scoring (per group, max 9 pts)
 
 | Prediction | Points |
 |-----------|--------|
-| Team correctly picked in exact finishing position | 3 |
-| Team correctly picked to advance (top 2) but in wrong position (e.g., picked 1st, finished 2nd) | 1 |
+| Team correctly picked in exact finishing position (1st, 2nd, or 3rd) | 3 |
+| Team correctly predicted to advance (top 2 or qualifying 3rd-place) but in wrong position | 1 |
+| 4th place — no points regardless of correctness | 0 |
 | Incorrect / team eliminated | 0 |
 
-- Per group: 4 teams × up to 3 pts = 12 pts max
-- Total group stage: 12 groups × 12 pts = **144 pts max**
+- Per group: 3 scoreable positions × up to 3 pts = 9 pts max
+- Total group stage: 12 groups × 9 pts = **108 pts max**
+
+> **Note:** Users rank all 4 teams 1st through 4th. 4th place earns no points even if correct, keeping the focus on identifying advancing teams.
 
 ### 4.2 3rd-Place Advancement Scoring
 
@@ -311,7 +315,7 @@ The pick entry screen should attempt to fit **both group stage and bracket** in 
 
 | Category | Max Points |
 |----------|-----------|
-| Group stage (12 groups) | 144 |
+| Group stage (12 groups) | 108 |
 | 3rd-place advancement | 16 |
 | Round of 32 | 32 |
 | Round of 16 | 32 |
@@ -319,7 +323,7 @@ The pick entry screen should attempt to fit **both group stage and bracket** in 
 | Semifinals | 32 |
 | Third-place match | 16 |
 | Final | 32 |
-| **Total** | **336** |
+| **Total** | **300** |
 
 ### 4.5 Tiebreakers
 If users are tied on points:

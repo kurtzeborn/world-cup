@@ -13,7 +13,7 @@ Players predict the outcome of all 104 matches in the 2026 FIFA World Cup. Point
 2. **3rd-Place Advancement** — predict which 8 of 12 third-place teams advance
 3. **Knockout Stage** — predict the winner of every knockout match (R32 through Final)
 
-**Maximum possible score: 336 points**
+**Maximum possible score: 300 points**
 
 All picks must be submitted before **June 11, 2026** (first match kickoff). No changes are allowed after the lock deadline.
 
@@ -25,34 +25,56 @@ Each of the 12 groups contains 4 teams. You rank all 4 teams from 1st to 4th.
 
 | Prediction Result | Points |
 |-------------------|--------|
-| Team in the **exact correct position** (e.g., you said 1st, they finished 1st) | **3** |
-| Team correctly predicted to **advance** (top 2) but in the wrong position (e.g., you said 1st, they finished 2nd) | **1** |
-| Team not in the correct position and not in the correct advance/eliminate category | **0** |
+| Team in the **exact correct position** (1st, 2nd, or 3rd) | **3** |
+| Team correctly predicted to **advance** (top 2, or qualifying 3rd-place) but in the wrong position | **1** |
+| 4th place — no points regardless of correctness | **0** |
+| Team not in the correct position and not in the correct advance category | **0** |
 
 ### Group Stage Details
 
-- Each group has 4 teams × 3 max points = **12 points max per group**
-- 12 groups × 12 points = **144 points max for group stage**
+- Each group has 3 scoreable positions × 3 max points = **9 points max per group**
+- 12 groups × 9 points = **108 points max for group stage**
+- 4th place is never scored (even if correct) — the focus is on identifying advancing teams
+
+### Partial Credit for Advancing Teams
+
+Partial credit (1 pt) is awarded when a team you predicted **actually advances in the tournament** but finishes in a different position than you predicted. "Advances" means:
+- Finishing in the **top 2** of their group (automatic advance), OR
+- Finishing **3rd** and being one of the **8 qualifying 3rd-place teams**
+
+If a team finishes 3rd but does NOT qualify as one of the 8 advancing 3rd-place teams, they are considered eliminated — no partial credit is awarded for predicting them to advance.
 
 ### Examples
 
-**Group A actual result:** 1st Mexico, 2nd South Korea, 3rd Colombia, 4th Tanzania
+**Group A actual result:** 1st Mexico, 2nd South Korea, 3rd South Africa, 4th UEFA Path D  
+**3rd-place outcome:** Group A’s 3rd-place team (South Africa) **does** qualify as one of the 8.
 
 | Your Pick | Actual | Points | Reason |
 |-----------|--------|--------|--------|
 | 1st: Mexico | 1st: Mexico | 3 | Exact position |
-| 2nd: Colombia | 2nd: South Korea | 0 | Wrong position AND wrong advance/eliminate category (you had Colombia advancing, they finished 3rd) |
-| 3rd: South Korea | 3rd: Colombia | 0 | Wrong position, wrong category |
-| 4th: Tanzania | 4th: Tanzania | 3 | Exact position |
+| 2nd: South Africa | 2nd: South Korea | 0 | Wrong position; South Africa didn’t finish top 2 in the group |
+| 3rd: South Korea | 3rd: South Africa | 0 | Wrong position; South Korea didn’t finish 3rd |
+| 4th: UEFA Path D | 4th: UEFA Path D | 0 | 4th place — never scored |
 
-**Another example — advance credit:**
+**Another example — advance partial credit:**
 
 | Your Pick | Actual | Points | Reason |
 |-----------|--------|--------|--------|
-| 1st: Mexico | 2nd: Mexico | 1 | Mexico advanced (top 2) — you predicted they'd advance, they did, but wrong position |
-| 2nd: South Korea | 1st: South Korea | 1 | South Korea advanced — you predicted they'd advance, they did, but wrong position |
-| 3rd: Colombia | 3rd: Colombia | 3 | Exact position |
-| 4th: Tanzania | 4th: Tanzania | 3 | Exact position |
+| 1st: Mexico | 2nd: Mexico | 1 | Mexico advanced (top 2) — you had them advancing, but wrong position |
+| 2nd: South Korea | 1st: South Korea | 1 | South Korea advanced (top 2) — you had them advancing, but wrong position |
+| 3rd: South Africa | 3rd: South Africa | 3 | Exact 3rd-place position |
+| 4th: UEFA Path D | 4th: UEFA Path D | 0 | 4th place — never scored |
+
+**Example — 3rd-place partial credit:**
+
+| Your Pick | Actual | Points | Reason |
+|-----------|--------|--------|--------|
+| 1st: South Korea | 3rd: South Korea | 1\* | South Korea finished 3rd AND qualified as advancing 3rd-place team — you had them advancing (1st), they did advance, but wrong position |
+| 2nd: Mexico | 1st: Mexico | 1 | Mexico advanced (top 2), wrong position |
+| 3rd: South Africa | 2nd: South Africa | 1 | South Africa advanced (top 2), you had them at 3rd |
+| 4th: UEFA Path D | 4th: UEFA Path D | 0 | 4th place — never scored |
+
+\* *Partial credit for 3rd-place teams only applies if that team actually qualifies as one of the 8 advancing 3rd-place teams.*
 
 ---
 
@@ -137,7 +159,7 @@ This is intentionally the most generous interpretation. Because 3rd-place placem
 
 | Category | Max Points |
 |----------|-----------|
-| Group stage (12 groups × 12) | 144 |
+| Group stage (12 groups × 9) | 108 |
 | 3rd-place advancement (8 × 2) | 16 |
 | Round of 32 (16 × 2) | 32 |
 | Round of 16 (8 × 4) | 32 |
@@ -145,7 +167,7 @@ This is intentionally the most generous interpretation. Because 3rd-place placem
 | Semifinals (2 × 16) | 32 |
 | Third-place match (1 × 16) | 16 |
 | Final (1 × 32) | 32 |
-| **Total** | **336** |
+| **Total** | **300** |
 
 ---
 

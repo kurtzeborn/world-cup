@@ -152,40 +152,39 @@ The R32 matchups are predetermined by the draw. Group winners (1X), runners-up (
 2. After auth, user sees their pick dashboard (or the pick entry screen if no picks yet)
 3. Google sign-in to be added post-launch
 
-### 3.2 Pick Entry — Tabbed Pages (Implemented)
+### 3.2 Pick Entry — Sliding Panel Layout (Implemented)
 
-> **Deviation from original plan:** The original concept was a combined side-by-side layout (groups left, bracket right). The actual implementation uses **separate tabbed pages** (Groups, Bracket, Leaderboard, Leagues) via a hash router. This is simpler, works better on mobile, and avoids the complexity of a two-panel synchronized layout. The combined-view concept may be revisited if user feedback requests it.
+The pick entry uses a **horizontal sliding panel** that pairs Groups and Bracket side-by-side. On desktop (≥900px), the bracket peek is visible alongside the groups panel; on smaller screens, users swipe or tap the nav to switch between panels.
 
-The pick entry uses separate pages with a shared navigation header:
+> **Layout evolution:** The original plan was a combined side-by-side layout. The first implementation used separate tabbed pages via a hash router. The current implementation is a sliding panel that gives the best of both: groups and bracket are always in the same DOM so they stay in sync, but the user focuses on one panel at a time with smooth transitions.
 
+**Desktop (≥900px):**
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  HEADER: "Your World Cup 2026 Picks"    [Save] [Lock]   │
-├──────────────────┬──────────────────────────────────────┤
-│  GROUP STAGE     │  KNOCKOUT BRACKET                     │
-│  (Left panel)    │  (Right panel, scrollable)            │
-│                  │                                        │
-│  ┌─ Group A ──┐  │  R32 → R16 → QF → SF → F            │
-│  │ 1. Mexico  │  │                                        │
-│  │ 2. S.Korea │  │  [bracket auto-fills from groups]     │
-│  │ 3. S.Africa│  │                                        │
-│  │ 4. PathD   │  │  Users click to pick winners          │
-│  └────────────┘  │  of each knockout match               │
-│                  │                                        │
-│  ┌─ Group B ──┐  │                                        │
-│  │ ...        │  │                                        │
-│  └────────────┘  │                                        │
-│                  │                                        │
-│  [3RD PLACE]     │                                        │
-│  Pick 8 of 12    │                                        │
-│  3rd-place teams │                                        │
-│  to advance      │                                        │
-│                  │                                        │
-│  ... Groups C-L  │                                        │
-└──────────────────┴──────────────────────────────────────┘
+│  HEADER: Groups | Bracket | Leaderboard | Leagues       │
+├──────────────────────────────┬──────────────────────────┤
+│  GROUP STAGE (≤620px)        │ BRACKET (peek 180px)     │
+│  "Group Stage" heading       │ Faded gradient overlay   │
+│  ┌─ Group A ─┐ ┌─ Group B ─┐│ Click to slide →         │
+│  │ 1. Mexico  │ │ 1. Canada ││                          │
+│  │ 2. S.Korea │ │ 2. Switz. ││                          │
+│  │ 3. S.Africa│ │ 3. Qatar  ││                          │
+│  │ 4. PathD   │ │ 4. PathA  ││                          │
+│  └────────────┘ └───────────┘│                          │
+│  ... Groups C-L (2-col grid) │                          │
+│  [Save Picks] [Lock & Submit]│                          │
+└──────────────────────────────┴──────────────────────────┘
 ```
 
-**On mobile:** Stack vertically — group picks at top, then 3rd-place picks, then bracket below (or use tabs).
+When viewing bracket, 120px of groups peeks from the left.
+
+**Mobile (<900px):**
+- No peek overlays; panels are full-width
+- Touch swipe left/right to switch panels
+- Floating indicator pill shows "Knockout Stage →" / "← Group Stage"
+- Tablet (600–899px): groups use 2-column grid
+- Phone (<600px): groups use single-column grid
+- Scroll position is preserved when switching panels
 
 ### 3.3 Group Stage Interaction
 - Each group shows 4 teams in a **click-to-order** sortable list (numbered 1–4)
@@ -193,15 +192,17 @@ The pick entry uses separate pages with a shared navigation header:
 - User clicks teams sequentially to assign positions 1st → 2nd → 3rd → 4th
 - Clicking a team that's already placed removes it (and shifts later picks up)
 - Visual indicators: positions 1-2 highlighted green (auto-advance), position 3 highlighted yellow (possible advance), position 4 grayed out
-- Country flags displayed alongside team names (PNG flags from [flagcdn.com](https://flagcdn.com))
-- **FIFA World Ranking** displayed subtly next to each team name (e.g., small badge or parenthetical) to help inform picks
+- **Advance indicators:** 1st and 2nd place show "Advances" text; 3rd place shows "Advance?" with a checkbox to toggle 3rd-place advancement
+- Country flags displayed alongside team names (SVG flags from [flagcdn.com](https://flagcdn.com))
+- **FIFA World Ranking** displayed subtly next to each team name (superscript link to FIFA rankings page) to help inform picks
+- Numbered rank badge (colored circle: green=1st, blue=2nd, orange=3rd, gray=4th) appears in the rank cell
 
 ### 3.4 3rd-Place Advancement Picks
-- After ordering all 12 groups, the app shows the 12 predicted 3rd-place teams
-- User selects **exactly 8** to advance (toggle/checkbox)
-- Clear visual feedback: selected teams highlighted, count shown ("8 of 12 selected")
-- **FIFA World Ranking** shown prominently next to each 3rd-place team to assist with these difficult picks
-- Validation: cannot proceed until exactly 8 are selected
+- 3rd-place advancement is integrated **inline** within each group card (not a separate section)
+- When a team is ranked 3rd, an "Advance?" checkbox appears next to it
+- User checks exactly **8 of 12** groups to advance; checkboxes disable at the maximum
+- Validation on lock: cannot lock picks until exactly 8 are selected
+- The bracket auto-updates in real time as 3rd-place selections change (via state subscription)
 
 ### 3.5 Knockout Bracket Interaction
 - Bracket **auto-populates** based on group picks + 3rd-place selections
@@ -694,7 +695,7 @@ If the user changes group rankings or 3rd-place selections, **only the affected 
 
 ### Phase 2 — Pick Entry (Target: May 2026)
 - [x] Group stage UI with click-to-reorder team ordering (FIFA rankings shown)
-- [x] 3rd-place advancement picker (select 8 of 12)
+- [x] 3rd-place advancement picker (inline checkbox per group, select 8 of 12)
 - [x] Knockout bracket auto-fill from group + 3rd-place picks (3rd-place table used)
 - [x] Knockout bracket winner selection UI
 - [x] Pick locking (server-enforced, lock button, locked state display)
@@ -703,13 +704,17 @@ If the user changes group rankings or 3rd-place selections, **only the affected 
 - [x] Champion winner card (gold border) and 3rd Place winner card (bronze border)
 - [x] Center section with SF → Final bracket + TPM section
 - [x] Cascade-clear invalid downstream bracket picks on change
-- [ ] Drag-and-drop reordering for group stage (currently click-select)
+- [x] Sliding panel layout (Groups ↔ Bracket with peek overlays and transitions)
+- [x] Live bracket sync (bracket re-renders on group/3rd-place pick changes via state subscription)
+- [x] Advance indicators ("Advances" for 1st/2nd, "Advance?" checkbox for 3rd)
+- [x] Mobile-responsive layout (touch swipe, scroll preservation, tablet 2-col, phone 1-col)
+- [x] Swipe indicator pill for mobile (shows direction to other panel)
+- [ ] Drag-and-drop reordering for group stage (currently click-select; may add SortableJS later)
 - [ ] Bracket change-impact warning + undo (currently silent cascade-clear)
 - [ ] Auto-save draft picks on every change (currently manual save only)
 - [ ] Countdown timer to lock deadline
 - [ ] PDF export with QR code
 - [ ] Custom display name prompt on first login
-- [ ] Mobile-responsive layout
 
 ### Phase 3 — Social & Scoring (Target: Late May 2026)
 - [x] Leaderboard API and UI
@@ -759,7 +764,9 @@ If the user changes group rankings or 3rd-place selections, **only the affected 
 | Icons | **Font Awesome** (free tier via CDN) for all icons |
 | Dark mode | **System preference detection** with manual override toggle |
 | Scoring rules doc | Created as `docs/rules.md` — maintained as source of truth, shown in-app on a rules page |
-| Pick entry layout | **Separate tabbed pages** via hash router instead of combined side-by-side view — simpler, better mobile support |
+| Pick entry layout | **Sliding panel** — Groups and Bracket share a horizontal slide track with peek overlays on desktop and swipe gestures on mobile. Hash router still used for all pages but Groups/Bracket are co-rendered in the same DOM for live sync. Evolved from tabbed pages → sliding panels. |
+| Layout constants | Groups panel capped at 620px, bracket peek 180px (right) / 120px (left), 24px gap, peek hidden below 900px |
+| 3rd-place UX | **Inline per-group** — "Advance?" checkbox appears on the 3rd-ranked team in each group card, replacing the separate counter/picker section |
 | Deploy workflow | **Push to main only** — removed PR trigger and staging environments (close_pull_request job) |
 | Bracket info | **Match info bars** between team rows showing match number, date, and city from FIFA schedule |
 | Winner display | **Fixed-width cards** (180px) for Champion (gold) and 3rd Place (bronze) to prevent layout shifts |

@@ -9,8 +9,8 @@ param location string = resourceGroup().location
 @description('Azure region for Static Web App (limited availability)')
 param swaLocation string = 'eastus2'
 
-@description('Custom domain for the Static Web App')
-param customDomain string = 'wc.k61.dev'
+@description('Custom domain for the Static Web App (leave empty until DNS CNAME is configured)')
+param customDomain string = ''
 
 @description('Lock deadline for picks (ISO 8601 UTC)')
 param lockDeadline string = '2026-06-11T19:00:00Z'

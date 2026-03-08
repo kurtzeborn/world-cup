@@ -176,6 +176,35 @@ body {
 .team-row.selected-4th { background: var(--row-4th); }
 .flag { width: 20px; height: 15px; vertical-align: middle; margin-right: .3rem; border-radius: 2px; object-fit: cover; }
 .flag-tbd { display: inline-block; width: 20px; text-align: center; font-size: .75rem; color: var(--text-muted); }
+.fifa-rank {
+  display: inline-block;
+  font-size: .65rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  vertical-align: super;
+  margin-left: .15rem;
+  line-height: 1;
+}
+.fifa-rank:hover { color: var(--green); text-decoration: underline; }
+.rank-cell { white-space: nowrap; text-align: right; }
+.advance-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  font-size: .7rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-right: .4rem;
+  vertical-align: middle;
+}
+.advance-toggle input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--green);
+  cursor: pointer;
+  margin: 0;
+}
+.advance-label { user-select: none; }
 .rank-badge {
   display: inline-block;
   width: 20px;
@@ -192,31 +221,11 @@ body {
 .rank-4 { background: #9e9e9e; color: #fff; }
 
 /* ----------------------------------------
-   Third Place Selection
+   Third Place Counter
 -----------------------------------------*/
-.third-place-section { margin-top: 1.5rem; }
-.third-place-section h2 { margin-bottom: .75rem; }
-.third-place-groups {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .5rem;
+.third-place-counter strong {
+  color: var(--green-dark);
 }
-.group-btn {
-  padding: .4rem .9rem;
-  border: 2px solid var(--border);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: .9rem;
-  background: var(--surface);
-  color: var(--text);
-  transition: border-color .15s, background .15s;
-}
-.group-btn.selected {
-  border-color: var(--green);
-  background: var(--row-1st);
-  font-weight: 600;
-}
-.group-btn:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ----------------------------------------
    Bracket

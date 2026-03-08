@@ -6,6 +6,8 @@ import { TEAMS } from '../data/teams.js';
 
 const GROUP_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L'];
 
+const FIFA_RANKINGS_URL = 'https://inside.fifa.com/fifa-world-ranking/men';
+
 export function renderGroupsPage(container) {
   const { picks, locked } = getState();
   const groupPicks = picks?.groupPicks ?? {};
@@ -24,16 +26,10 @@ export function renderGroupsPage(container) {
   container.innerHTML = `
     <div class="page active" id="page-groups">
       ${locked ? '<div class="lock-banner locked">🔒 Picks are locked</div>' : ''}
+      <p class="third-place-counter" id="third-place-counter" style="font-size:.85rem;color:var(--text-muted);margin-bottom:.75rem">
+        Third-place teams advancing: <strong>${thirdPlaceAdvancing.length}</strong> / 8 selected
+      </p>
       <div class="groups-grid" id="groups-grid"></div>
-
-      <div class="third-place-section card" id="third-place-section">
-        <div class="card-title">Third-Place Teams Advancing (pick 8 of 12 groups)</div>
-        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.75rem">
-          Select the 8 groups whose third-place team advances to the Round of 32.
-        </p>
-        <div class="third-place-groups" id="third-place-groups"></div>
-        <p id="third-place-count" style="margin-top:.5rem;font-size:.85rem"></p>
-      </div>
 
       ${!locked ? `<div style="margin-top:1rem;display:flex;gap:.75rem;align-items:center">
         <button class="btn btn-primary" id="save-picks-btn">Save Picks</button>
@@ -43,8 +39,7 @@ export function renderGroupsPage(container) {
     </div>
   `;
 
-  renderGroupGrid(byGroup, groupPicks, locked);
-  renderThirdPlaceSelector(thirdPlaceAdvancing, locked);
+  renderGroupGrid(byGroup, groupPicks, thirdPlaceAdvancing, locked);
 
   if (!locked) {
     document.getElementById('save-picks-btn').addEventListener('click', savePicks);
@@ -113,7 +108,7 @@ function toggleGroupPick(group, teamId) {
   groupPicks[group] = selected;
   setState({ picks: { ...(picks ?? {}), groupPicks } });
 
-  // Re-render just the group grid portion
+  // Re-render the group grid
   const byGroup = {};
   for (const letter of GROUP_LETTERS) byGroup[letter] = [];
   for (const team of TEAMS) {
@@ -122,30 +117,8 @@ function toggleGroupPick(group, teamId) {
   for (const letter of GROUP_LETTERS) {
     byGroup[letter].sort((a, b) => a.groupSeed - b.groupSeed);
   }
-  renderGroupGrid(byGroup, groupPicks, false);
-}
-
-function renderThirdPlaceSelector(thirdPlaceAdvancing, locked) {
-  const container = document.getElementById('third-place-groups');
-  if (!container) return;
-
-  container.innerHTML = GROUP_LETTERS.map(letter => {
-    const sel = thirdPlaceAdvancing.includes(letter);
-    const cnt = thirdPlaceAdvancing.length;
-    const canAdd = cnt < 8 || sel;
-    return `<button class="group-btn ${sel ? 'selected' : ''}" data-group="${letter}"
-      ${locked || (!canAdd && !sel) ? 'disabled' : ''}>
-      Group ${letter}
-    </button>`;
-  }).join('');
-
-  updateThirdPlaceCount(thirdPlaceAdvancing.length);
-
-  if (!locked) {
-    container.querySelectorAll('.group-btn').forEach(btn => {
-      btn.addEventListener('click', () => toggleThirdPlace(btn.dataset.group));
-    });
-  }
+  const { picks: updatedPicks } = getState();
+  renderGroupGrid(byGroup, groupPicks, updatedPicks?.thirdPlaceAdvancing ?? [], false);
 }
 
 function toggleThirdPlace(letter) {
@@ -161,12 +134,24 @@ function toggleThirdPlace(letter) {
     return; // already have 8
   }
   setState({ picks: { ...(picks ?? {}), thirdPlaceAdvancing: next } });
-  renderThirdPlaceSelector(next, false);
-}
 
-function updateThirdPlaceCount(count) {
-  const el = document.getElementById('third-place-count');
-  if (el) el.textContent = `${count} / 8 selected`;
+  // Update counter
+  const counterEl = document.getElementById('third-place-counter');
+  if (counterEl) {
+    counterEl.innerHTML = `Third-place teams advancing: <strong>${next.length}</strong> / 8 selected`;
+  }
+
+  // Re-render grid to update checkboxes
+  const groupPicks = picks?.groupPicks ?? {};
+  const byGroup = {};
+  for (const letter2 of GROUP_LETTERS) byGroup[letter2] = [];
+  for (const team of TEAMS) {
+    if (byGroup[team.group]) byGroup[team.group].push(team);
+  }
+  for (const letter2 of GROUP_LETTERS) {
+    byGroup[letter2].sort((a, b) => a.groupSeed - b.groupSeed);
+  }
+  renderGroupGrid(byGroup, groupPicks, next, false);
 }
 
 async function savePicks() {

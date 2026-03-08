@@ -139,13 +139,9 @@ function resolveMatchTeams(groupPicks, thirdPlaceAdvancing, bracketPicks, teamBy
       const SLOTS = [74,77,79,80,82,81,85,87];
       SLOTS.forEach((matchId, i) => {
         const groupLetter = placements[i];
-        // Find the 3rd-place team from that group (index 2 in groupPicks)
+        // 3rd-place team is at index 2 in the user's 1-4 ordering
         const groupTeams = groupPicks[groupLetter] ?? [];
-        // We don't know exactly which team is 3rd — use the ones NOT in picks
-        const { teams: allTeams } = getState();
-        const groupAllTeams = allTeams.filter(t => t.group === groupLetter).map(t => t.id);
-        const thirdTeam = groupAllTeams.find(id => !groupTeams.includes(id));
-        thirdPlaceBySlot[matchId] = thirdTeam ?? null;
+        thirdPlaceBySlot[matchId] = groupTeams[2] ?? null;
       });
     }
   }
@@ -153,20 +149,18 @@ function resolveMatchTeams(groupPicks, thirdPlaceAdvancing, bracketPicks, teamBy
   // Resolve R32 matches
   for (const match of BRACKET_STRUCTURE) {
     if (match.round !== 'R32') continue;
-    const [slotA, slotB] = match.slots;
     result[match.id] = [
-      resolveSlot(slotA, groupPicks, thirdPlaceBySlot),
-      resolveSlot(slotB, groupPicks, thirdPlaceBySlot),
+      resolveSlot(match.teamA, groupPicks, thirdPlaceBySlot),
+      resolveSlot(match.teamB, groupPicks, thirdPlaceBySlot),
     ];
   }
 
   // Resolve subsequent rounds from bracket picks
   for (const round of ['R16','QF','SF','TPM','F']) {
     for (const match of BRACKET_STRUCTURE.filter(m => m.round === round)) {
-      const [slotA, slotB] = match.slots;
       result[match.id] = [
-        resolveKnockoutSlot(slotA, bracketPicks, result),
-        resolveKnockoutSlot(slotB, bracketPicks, result),
+        resolveKnockoutSlot(match.teamA, bracketPicks, result),
+        resolveKnockoutSlot(match.teamB, bracketPicks, result),
       ];
     }
   }

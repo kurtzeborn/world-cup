@@ -1,0 +1,24 @@
+{
+  "name": "world-cup-functions",
+  "version": "1.0.0",
+  "description": "Azure Functions API for World Cup 2026 Picks",
+  "main": "dist/src/functions/*.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "start": "npm run build && func start",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.3.2",
+    "@azure/functions": "^4.11.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

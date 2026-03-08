@@ -103,3 +103,45 @@ export const BRACKET_STRUCTURE = ALL_MATCHES.map(m => ({
   round: getMatchRound(m.match),
 }));
 
+// Knockout match schedule — date & city (FIFA-marketed city names)
+export const MATCH_SCHEDULE = {
+  // Round of 32
+  73:  { date: 'Jun 28', city: 'Los Angeles' },
+  74:  { date: 'Jun 29', city: 'Boston' },
+  75:  { date: 'Jun 29', city: 'Monterrey' },
+  76:  { date: 'Jun 29', city: 'Houston' },
+  77:  { date: 'Jun 30', city: 'New York/NJ' },
+  78:  { date: 'Jun 30', city: 'Dallas' },
+  79:  { date: 'Jun 30', city: 'Mexico City' },
+  80:  { date: 'Jul 1',  city: 'Atlanta' },
+  81:  { date: 'Jul 1',  city: 'San Francisco' },
+  82:  { date: 'Jul 1',  city: 'Seattle' },
+  83:  { date: 'Jul 2',  city: 'Toronto' },
+  84:  { date: 'Jul 2',  city: 'Los Angeles' },
+  85:  { date: 'Jul 2',  city: 'Vancouver' },
+  86:  { date: 'Jul 3',  city: 'Miami' },
+  87:  { date: 'Jul 3',  city: 'Kansas City' },
+  88:  { date: 'Jul 3',  city: 'Dallas' },
+  // Round of 16
+  89:  { date: 'Jul 4',  city: 'Philadelphia' },
+  90:  { date: 'Jul 4',  city: 'Houston' },
+  91:  { date: 'Jul 5',  city: 'New York/NJ' },
+  92:  { date: 'Jul 5',  city: 'Mexico City' },
+  93:  { date: 'Jul 6',  city: 'Dallas' },
+  94:  { date: 'Jul 6',  city: 'Seattle' },
+  95:  { date: 'Jul 7',  city: 'Atlanta' },
+  96:  { date: 'Jul 7',  city: 'Vancouver' },
+  // Quarterfinals
+  97:  { date: 'Jul 9',  city: 'Boston' },
+  98:  { date: 'Jul 10', city: 'Los Angeles' },
+  99:  { date: 'Jul 11', city: 'Miami' },
+  100: { date: 'Jul 11', city: 'Kansas City' },
+  // Semifinals
+  101: { date: 'Jul 14', city: 'Dallas' },
+  102: { date: 'Jul 15', city: 'Atlanta' },
+  // Third place
+  103: { date: 'Jul 18', city: 'Miami' },
+  // Final
+  104: { date: 'Jul 19', city: 'New York/NJ' },
+};
+

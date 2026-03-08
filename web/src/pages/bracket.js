@@ -2,8 +2,9 @@
 
 import { getState, setState } from '../state.js';
 import { api } from '../api.js';
-import { BRACKET_STRUCTURE } from '../data/bracket-structure.js';
+import { BRACKET_STRUCTURE, MATCH_SCHEDULE } from '../data/bracket-structure.js';
 import { getThirdPlacePlacements } from '../data/third-place-table.js';
+import { TEAMS_BY_ID } from '../data/teams.js';
 import { getFlag } from '../utils.js';
 
 const ROUND_NAMES = {
@@ -69,26 +70,25 @@ export function renderBracketPage(container) {
 // ─── Render the full bracket content ────────────────────────
 
 function renderBracketContent() {
-  const { picks, locked, teams } = getState();
+  const { picks, locked } = getState();
   const bp = picks?.bracketPicks ?? {};
   const gp = picks?.groupPicks ?? {};
   const tpa = picks?.thirdPlaceAdvancing ?? [];
-  const teamById = Object.fromEntries(teams.map(t => [t.id, t]));
   const mt = resolveMatchTeams(gp, tpa, bp);
 
   const el = document.getElementById('bracket-content');
   if (!el) return;
 
   el.innerHTML = `
-    <div class="bk-scroll">${renderHalf(PATHWAY_1, bp, mt, locked, teamById)}</div>
-    ${renderCenter(bp, mt, locked, teamById)}
-    <div class="bk-scroll">${renderHalf(PATHWAY_2, bp, mt, locked, teamById)}</div>
+    <div class="bk-scroll">${renderHalf(PATHWAY_1, bp, mt, locked)}</div>
+    ${renderCenter(bp, mt, locked)}
+    <div class="bk-scroll">${renderHalf(PATHWAY_2, bp, mt, locked)}</div>
   `;
 }
 
 // ─── Rendering helpers ──────────────────────────────────────
 
-function renderHalf(pathway, bracketPicks, matchTeams, locked, teamById) {
+function renderHalf(pathway, bracketPicks, matchTeams, locked) {
   let html = '<div class="bk-half">';
 
   for (let r = 0; r < HALF_ROUNDS.length; r++) {
@@ -105,7 +105,7 @@ function renderHalf(pathway, bracketPicks, matchTeams, locked, teamById) {
     html += `<div class="bk-round-hdr">${ROUND_NAMES[round]}</div>`;
     html += '<div class="bk-slots">';
     for (const id of ids) {
-      html += renderSlot(MATCH_BY_ID[id], round, bracketPicks, matchTeams, locked, teamById);
+      html += renderSlot(MATCH_BY_ID[id], round, bracketPicks, matchTeams, locked);
     }
     html += '</div></div>';
   }
@@ -113,7 +113,7 @@ function renderHalf(pathway, bracketPicks, matchTeams, locked, teamById) {
   return html + '</div>';
 }
 
-function renderSlot(match, round, bracketPicks, matchTeams, locked, teamById) {
+function renderSlot(match, round, bracketPicks, matchTeams, locked) {
   const [a, b] = matchTeams[match.id] || [null, null];
   const key = `${round}_${match.id}`;
   const picked = bracketPicks[key] ?? '';
@@ -121,13 +121,20 @@ function renderSlot(match, round, bracketPicks, matchTeams, locked, teamById) {
 
   return `<div class="bk-slot">
     <div class="bk-match">
-      ${teamRow(a, match.teamA, picked, canPick, key, teamById)}
-      ${teamRow(b, match.teamB, picked, canPick, key, teamById)}
+      ${teamRow(a, match.teamA, picked, canPick, key)}
+      ${matchInfoBar(match.id)}
+      ${teamRow(b, match.teamB, picked, canPick, key)}
     </div>
   </div>`;
 }
 
-function teamRow(resolved, slotStr, picked, canPick, pickKey, teamById) {
+function matchInfoBar(matchId) {
+  const sched = MATCH_SCHEDULE[matchId];
+  if (!sched) return '';
+  return `<div class="bk-match-info">M${matchId} · ${sched.date} · ${sched.city}</div>`;
+}
+
+function teamRow(resolved, slotStr, picked, canPick, pickKey) {
   const isPicked = resolved && picked === resolved;
   const cls = ['bk-team'];
   if (isPicked) cls.push('picked');
@@ -137,7 +144,7 @@ function teamRow(resolved, slotStr, picked, canPick, pickKey, teamById) {
     : '';
 
   if (resolved) {
-    const t = teamById[resolved];
+    const t = TEAMS_BY_ID[resolved];
     return `<div class="${cls.join(' ')}" ${attrs}>${getFlag(t?.flagCode)} ${t?.name ?? resolved}</div>`;
   }
   return `<div class="${cls.join(' ')}">${slotDesc(slotStr)}</div>`;
@@ -155,14 +162,14 @@ function slotDesc(slot) {
   return `<span class="bk-tbd">${slot}</span>`;
 }
 
-function renderCenter(bp, mt, locked, teamById) {
-  const sf1 = renderCenterMatch(101, 'SF', bp, mt, locked, teamById);
-  const sf2 = renderCenterMatch(102, 'SF', bp, mt, locked, teamById);
-  const finalMatch = renderCenterMatch(104, 'F', bp, mt, locked, teamById);
-  const tpm = renderCenterMatch(103, 'TPM', bp, mt, locked, teamById);
+function renderCenter(bp, mt, locked) {
+  const sf1 = renderCenterMatch(101, 'SF', bp, mt, locked);
+  const sf2 = renderCenterMatch(102, 'SF', bp, mt, locked);
+  const finalMatch = renderCenterMatch(104, 'F', bp, mt, locked);
+  const tpm = renderCenterMatch(103, 'TPM', bp, mt, locked);
 
   const finalPick = bp['F_104'] ?? null;
-  const champTeam = finalPick ? teamById[finalPick] : null;
+  const champTeam = finalPick ? TEAMS_BY_ID[finalPick] : null;
   const champHtml = champTeam
     ? `<div class="bk-champ-team">${getFlag(champTeam.flagCode)} ${champTeam.name}</div>`
     : `<div class="bk-champ-team bk-tbd">Pick the Final winner</div>`;
@@ -188,7 +195,7 @@ function renderCenter(bp, mt, locked, teamById) {
   `;
 }
 
-function renderCenterMatch(matchId, round, bp, mt, locked, teamById) {
+function renderCenterMatch(matchId, round, bp, mt, locked) {
   const match = MATCH_BY_ID[matchId];
   const [a, b] = mt[matchId] || [null, null];
   const key = `${round}_${matchId}`;
@@ -196,8 +203,9 @@ function renderCenterMatch(matchId, round, bp, mt, locked, teamById) {
   const canPick = !locked && (a || b);
 
   return `<div class="bk-match">
-    ${teamRow(a, match.teamA, picked, canPick, key, teamById)}
-    ${teamRow(b, match.teamB, picked, canPick, key, teamById)}
+    ${teamRow(a, match.teamA, picked, canPick, key)}
+    ${matchInfoBar(matchId)}
+    ${teamRow(b, match.teamB, picked, canPick, key)}
   </div>`;
 }
 

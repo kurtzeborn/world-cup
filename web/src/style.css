@@ -272,6 +272,11 @@ body {
   flex-direction: column;
 }
 
+/* Add vertical breathing room in R32 (first column) */
+.bk-col-first .bk-slots {
+  gap: 4px;
+}
+
 .bk-slot {
   flex: 1;
   display: flex;
@@ -318,13 +323,26 @@ body {
   border-top: 2px solid var(--border);
 }
 
-/* Match card — two team rows stacked */
+/* Match card — two team rows stacked with info bar between */
 .bk-match {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
   width: 100%;
   background: var(--surface);
+}
+
+/* Match info bar — match number, date, city */
+.bk-match-info {
+  font-size: .58rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 1px 6px;
+  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  white-space: nowrap;
+  letter-spacing: .02em;
 }
 
 /* Individual team row inside a match */

@@ -205,7 +205,27 @@ function renderCenterMatch(matchId, round, bp, mt, locked, teamById) {
 
 function onBracketPick(matchKey, winnerId) {
   const { picks } = getState();
-  const bracketPicks = { ...(picks?.bracketPicks ?? {}), [matchKey]: winnerId };
+  const gp = picks?.groupPicks ?? {};
+  const tpa = picks?.thirdPlaceAdvancing ?? [];
+  let bracketPicks = { ...(picks?.bracketPicks ?? {}), [matchKey]: winnerId };
+
+  // Cascade: clear any downstream picks that are now invalid.
+  // Loop because clearing one pick can invalidate further rounds.
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const mt = resolveMatchTeams(gp, tpa, bracketPicks);
+    for (const key of Object.keys(bracketPicks)) {
+      const matchId = parseInt(key.split('_')[1]);
+      const [a, b] = mt[matchId] || [null, null];
+      const picked = bracketPicks[key];
+      if (picked && picked !== a && picked !== b) {
+        delete bracketPicks[key];
+        changed = true;
+      }
+    }
+  }
+
   setState({ picks: { ...(picks ?? {}), bracketPicks } });
 }
 

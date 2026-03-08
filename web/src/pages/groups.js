@@ -25,9 +25,7 @@ export function renderGroupsPage(container) {
   container.innerHTML = `
     <div class="page active" id="page-groups">
       ${locked ? '<div class="lock-banner locked">🔒 Picks are locked</div>' : ''}
-      <p class="third-place-counter" id="third-place-counter" style="font-size:.85rem;color:var(--text-muted);margin-bottom:.75rem">
-        Third-place teams advancing: <strong>${thirdPlaceAdvancing.length}</strong> / 8 selected
-      </p>
+      <h2 class="slide-section-hdr">Group Stage</h2>
       <div class="groups-grid" id="groups-grid"></div>
 
       ${!locked ? `<div style="margin-top:1rem;display:flex;gap:.75rem;align-items:center">
@@ -71,20 +69,22 @@ function renderGroupGrid(byGroup, groupPicks, thirdPlaceAdvancing, locked) {
               const fifaRank = team.confirmed
                 ? `<a href="${FIFA_RANKINGS_URL}" target="_blank" rel="noopener" class="fifa-rank" title="FIFA Ranking #${team.fifaRanking}">${team.fifaRanking}</a>`
                 : '';
-              // Show 3rd-place advance checkbox on position 3
-              const isThird = pos === 2;
-              const advanceCheckbox = isThird
-                ? `<label class="advance-toggle" title="Advances to Round of 32">
+              // Show advance indicators based on position
+              let advanceHtml = '';
+              if (pos === 0 || pos === 1) {
+                advanceHtml = '<span class="advance-auto">Advances</span>';
+              } else if (pos === 2) {
+                advanceHtml = `<label class="advance-toggle" title="Advances to Round of 32">
                      <input type="checkbox" class="advance-cb" data-group="${letter}"
                        ${thirdAdvances ? 'checked' : ''}
                        ${locked ? 'disabled' : ''}
                        ${!thirdAdvances && thirdPlaceCount >= 8 ? 'disabled' : ''}>
-                     <span class="advance-label">Advances</span>
-                   </label>`
-                : '';
+                     <span class="advance-label">Advance?</span>
+                   </label>`;
+              }
               return `<tr class="team-row ${cls}" data-group="${letter}" data-team="${team.id}" ${locked ? '' : 'title="Click to rank 1st\u20134th"'}>
                 <td>${getFlag(team.flagCode)} ${team.name} ${fifaRank}</td>
-                <td class="rank-cell">${advanceCheckbox}${badge}</td>
+                <td class="rank-cell">${advanceHtml}${badge}</td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -148,12 +148,6 @@ function toggleThirdPlace(letter) {
     return; // already have 8
   }
   setState({ picks: { ...(picks ?? {}), thirdPlaceAdvancing: next } });
-
-  // Update counter
-  const counterEl = document.getElementById('third-place-counter');
-  if (counterEl) {
-    counterEl.innerHTML = `Third-place teams advancing: <strong>${next.length}</strong> / 8 selected`;
-  }
 
   // Re-render grid to update checkboxes
   const groupPicks = picks?.groupPicks ?? {};

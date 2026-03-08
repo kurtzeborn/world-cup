@@ -42,9 +42,7 @@ export function renderBracketPage(container) {
   container.innerHTML = `
     <div class="page active" id="page-bracket">
       ${locked ? '<div class="lock-banner locked">🔒 Picks are locked</div>' : ''}
-      <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:.75rem">
-        ${locked ? 'Your locked bracket picks.' : 'Click a team to pick them as the winner. Winners advance to the next round.'}
-      </p>
+      <h2 class="slide-section-hdr">Knockout Stage</h2>
       <div id="bracket-content"></div>
       ${!locked ? `<div style="margin-top:1.5rem">
         <button class="btn btn-primary" id="save-bracket-btn">Save Bracket</button>
@@ -68,7 +66,7 @@ export function renderBracketPage(container) {
 
 // ─── Render the full bracket content ────────────────────────
 
-function renderBracketContent() {
+export function renderBracketContent() {
   const { picks, locked } = getState();
   const bp = picks?.bracketPicks ?? {};
   const gp = picks?.groupPicks ?? {};
@@ -172,14 +170,14 @@ function renderCenter(bp, mt, locked) {
   const champTeam = finalPick ? TEAMS_BY_ID[finalPick] : null;
   const champHtml = champTeam
     ? `<div class="bk-champ-team">${getFlag(champTeam.flagCode)} ${champTeam.name}</div>`
-    : `<div class="bk-champ-team bk-tbd">Pick the Final winner</div>`;
+    : `<div class="bk-champ-team bk-tbd"></div>`;
 
   // 3rd Place winner
   const tpmPick = bp['TPM_103'] ?? null;
   const thirdTeam = tpmPick ? TEAMS_BY_ID[tpmPick] : null;
   const thirdHtml = thirdTeam
     ? `<div class="bk-third-team">${getFlag(thirdTeam.flagCode)} ${thirdTeam.name}</div>`
-    : `<div class="bk-third-team bk-tbd">Pick the 3rd Place winner</div>`;
+    : `<div class="bk-third-team bk-tbd"></div>`;
 
   return `
     <div class="bk-center">

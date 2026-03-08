@@ -114,6 +114,106 @@ body {
 .page.active { display: block; }
 
 /* ----------------------------------------
+   Slide Panel (Groups ↔ Bracket transition)
+-----------------------------------------*/
+.slide-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.slide-track {
+  display: flex;
+  align-items: flex-start;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.slide-panel-groups,
+.slide-panel-bracket {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Gradient fade over peek areas */
+.slide-peek-overlay {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  cursor: pointer;
+}
+
+.slide-peek-right {
+  right: 0;
+  background: linear-gradient(to right, transparent, var(--bg));
+}
+
+.slide-peek-left {
+  left: 0;
+  background: linear-gradient(to left, transparent, var(--bg));
+}
+
+.slide-peek-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Section headings inside slide panels */
+.slide-section-hdr {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--green-dark);
+  margin-bottom: .75rem;
+}
+
+/* Swipe indicator – visible only when peek overlays are hidden (<900px) */
+.slide-indicator {
+  display: none;
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  background: var(--green-dark);
+  color: #fff;
+  font-size: .8rem;
+  font-weight: 600;
+  padding: .4rem .75rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  z-index: 100;
+  pointer-events: none;
+  opacity: .85;
+  transition: opacity .3s;
+}
+
+/* Tablets: 2-column groups without peek */
+@media (min-width: 600px) and (max-width: 899px) {
+  .slide-peek-overlay { display: none; }
+  .slide-indicator { display: block; }
+  .slide-panel-groups .groups-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Small screens: single column, no peek */
+@media (max-width: 599px) {
+  .slide-peek-overlay { display: none; }
+  .slide-indicator { display: block; }
+  .slide-panel-groups .groups-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Empty champion/3rd card minimum height */
+.bk-champ-team.bk-tbd,
+.bk-third-team.bk-tbd {
+  min-height: 45px;
+}
+
+/* ----------------------------------------
    Cards / Surfaces
 -----------------------------------------*/
 .card {
@@ -154,6 +254,20 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1rem;
 }
+
+/* Inside the slide panel, force exactly 2 columns with tighter spacing */
+.slide-panel-groups .groups-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: .65rem;
+}
+.slide-panel-groups .card {
+  padding: .75rem;
+  margin-bottom: 0;
+}
+.slide-panel-groups .card-title {
+  font-size: .9rem;
+  margin-bottom: .5rem;
+}
 .group-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
 .group-table th {
   text-align: left;
@@ -165,6 +279,7 @@ body {
 .group-table td {
   padding: .35rem .4rem;
   border-bottom: 1px solid var(--border);
+  line-height: 18px;     /* match rank-badge – prevents height shift on select */
 }
 .group-table tr:last-child td { border-bottom: none; }
 .team-row { cursor: pointer; transition: background .1s; }
@@ -185,7 +300,15 @@ body {
   line-height: 1;
 }
 .fifa-rank:hover { color: var(--green); text-decoration: underline; }
-.rank-cell { white-space: nowrap; text-align: right; }
+.rank-cell { white-space: nowrap; text-align: right; line-height: 18px; }
+/* Zero-width spacer so empty cells have the same line-box height as filled ones */
+.rank-cell::after {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 18px;
+  vertical-align: middle;
+}
 .advance-toggle {
   display: inline-flex;
   align-items: center;
@@ -204,15 +327,25 @@ body {
   margin: 0;
 }
 .advance-label { user-select: none; }
+.advance-auto {
+  display: inline-block;
+  font-size: .65rem;
+  color: var(--green);
+  font-weight: 600;
+  margin-right: .4rem;
+  vertical-align: middle;
+  letter-spacing: .02em;
+}
 .rank-badge {
   display: inline-block;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   text-align: center;
-  line-height: 20px;
-  font-size: .75rem;
+  line-height: 18px;
+  font-size: .7rem;
   font-weight: 700;
+  vertical-align: middle;
 }
 .rank-1 { background: var(--green); color: #fff; }
 .rank-2 { background: #2196f3; color: #fff; }

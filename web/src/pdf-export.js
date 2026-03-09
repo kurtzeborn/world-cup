@@ -279,10 +279,14 @@ function _drawGroupCard(doc, letter, x, y, w, groupPicks, thirdAdvancing) {
     if (rank === 0 || rank === 1) doc.setTextColor(26, 122, 60);
     else if (rank === 2) doc.setTextColor(180, 120, 0);
     else doc.setTextColor(80);
-    let text = team.name;
-    if (rank === 0 || rank === 1) text += '  \u25C0 Advancing';
-    else if (rank === 2 && thirdAdv) text += '  \u25B2 Advancing';
-    doc.text(text, x + 16, ty, { maxWidth: w - 20 });
+    doc.text(team.name, x + 16, ty);
+    if (rank === 0 || rank === 1 || (rank === 2 && thirdAdv)) {
+      const nameW = doc.getTextWidth(team.name);
+      doc.setFontSize(5.5);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(26, 122, 60);
+      doc.text('Advancing', x + 16 + nameW + 2, ty);
+    }
     doc.setTextColor(0);
   }
 }

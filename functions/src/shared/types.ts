@@ -23,9 +23,16 @@ export interface PicksEntity {
 }
 
 export interface ResultEntity {
-  data: string;  // JSON
+  data: string;  // JSON: { groupStandings, advancing3rdPlace, matchResults, updatedAt }
   enteredBy: string;
   enteredAt: string;
+}
+
+export interface Results {
+  groupStandings: Record<string, string[]>;  // { "A": ["MEX", "KOR", "RSA", "URY"], ... }
+  advancing3rdPlace: string[];               // 8 team IDs that advanced from 3rd place
+  matchResults: Record<string, { winner: string; loser: string; score?: string }>;
+  updatedAt?: string;
 }
 
 export interface LeagueEntity {

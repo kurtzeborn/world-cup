@@ -3,11 +3,12 @@
 import { fetchAuthUser } from './auth.js';
 import { api } from './api.js';
 import { getState, setState, subscribe } from './state.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, isLocked } from './utils.js';
 import { renderGroupsPage } from './pages/groups.js';
 import { renderBracketPage, renderBracketContent } from './pages/bracket.js';
 import { renderLeaderboardPage } from './pages/leaderboard.js';
 import { renderLeaguesPage } from './pages/leagues.js';
+import { renderViewPicksPage } from './pages/view-picks.js';
 import { initAutoSave, loadLocalPicks, clearLocalPicks, syncToServer } from './autosave.js';
 import { initPicksStatus } from './picks-status.js';
 
@@ -171,6 +172,23 @@ function setActiveNav(page) {
 async function navigateTo(page) {
   // Map 'picks' to 'groups' (slide panel entry point)
   if (page === 'picks') page = 'groups';
+
+  // Handle view-picks/:userId route
+  const viewPicksMatch = page.match(/^view-picks\/(.+)$/);
+  if (viewPicksMatch) {
+    if (!isLocked()) {
+      // Before lock, redirect to leaderboard
+      history.replaceState(null, '', '#leaderboard');
+      navigateTo('leaderboard');
+      return;
+    }
+    destroySlidePanel();
+    const app = document.getElementById('app');
+    app.innerHTML = '<div class="loading-screen"><p>Loading…</p></div>';
+    setActiveNav(''); // No nav active for view-picks
+    await renderViewPicksPage(app, viewPicksMatch[1]);
+    return;
+  }
 
   setActiveNav(page);
   const app = document.getElementById('app');

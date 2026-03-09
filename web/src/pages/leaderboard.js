@@ -3,6 +3,7 @@
 import { getState } from '../state.js';
 import { api } from '../api.js';
 import { escapeHtml } from '../utils.js';
+import { isLocked } from '../utils.js';
 
 export async function renderLeaderboardPage(container) {
   container.innerHTML = `
@@ -33,6 +34,7 @@ function renderTable(leaderboard) {
   }
 
   const { user } = getState();
+  const locked = isLocked();
 
   el.innerHTML = `
     <table class="leaderboard-table">
@@ -48,7 +50,7 @@ function renderTable(leaderboard) {
       </thead>
       <tbody>
         ${leaderboard.map((row, i) => `
-          <tr ${user?.userId === row.userId ? 'class="current-user-row"' : ''}>
+          <tr ${user?.userId === row.userId ? 'class="current-user-row"' : ''} ${locked ? 'class="lb-clickable" data-user-id="' + row.userId + '"' : ''}>
             <td class="rank-num">${i + 1}</td>
             <td>${escapeHtml(row.displayName || row.userId)}</td>
             <td class="points-total">${row.totalPoints}</td>
@@ -60,6 +62,18 @@ function renderTable(leaderboard) {
       </tbody>
     </table>
   `;
+
+  // Add click handlers to rows if picks are locked
+  if (locked) {
+    el.querySelectorAll('tr[data-user-id]').forEach(row => {
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', () => {
+        const userId = row.dataset.userId;
+        window.location.hash = `#view-picks/${userId}`;
+      });
+    });
+  }
 }
+
 
 

@@ -18,6 +18,7 @@ export const api = {
   // Auth / profile
   getMe:         ()       => request('GET',  '/api/me'),
   updateMe:      (data)   => request('PUT',  '/api/me', data),
+  getUser:       (uid)    => request('GET',  `/api/me/${uid}`),
 
   // Teams
   getTeams:      ()       => request('GET',  '/api/teams'),

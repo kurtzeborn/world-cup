@@ -31,6 +31,33 @@ app.http('getMe', {
   },
 });
 
+// GET /api/me/:userId — get another user's display name (public, post-lock only)
+app.http('getUserInfo', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'me/{userId}',
+  handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
+    try {
+      requireAuth(request);
+      const userId = request.params.userId;
+      const entity = await getEntity<UserEntity>('Users', 'user', userId);
+
+      return {
+        status: 200,
+        jsonBody: {
+          userId,
+          displayName: entity?.displayName ?? userId,
+        },
+      };
+    } catch (err) {
+      if (err instanceof AuthError) {
+        return { status: err.statusCode, jsonBody: { error: err.message } };
+      }
+      throw err;
+    }
+  },
+});
+
 // PUT /api/me — update display name
 app.http('updateMe', {
   methods: ['PUT'],
@@ -77,3 +104,4 @@ app.http('updateMe', {
     }
   },
 });
+

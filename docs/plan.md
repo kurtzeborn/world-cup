@@ -161,7 +161,8 @@ The pick entry uses a **horizontal sliding panel** that pairs Groups and Bracket
 **Desktop (≥900px):**
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  HEADER: Groups | Bracket | Leaderboard | Leagues       │
+│  HEADER ROW 1: Title                  Auth | Theme      │
+│  HEADER ROW 2: Picks | Leaderboard | Leagues            │
 ├──────────────────────────────┬──────────────────────────┤
 │  GROUP STAGE (≤620px)        │ BRACKET (peek 180px)     │
 │  "Group Stage" heading       │ Faded gradient overlay   │
@@ -180,10 +181,13 @@ When viewing bracket, 120px of groups peeks from the left.
 
 **Mobile (<900px):**
 - No peek overlays; panels are full-width
-- Touch swipe left/right to switch panels
-- Floating indicator pill shows "Knockout Stage →" / "← Group Stage"
+- Touch swipe left/right to switch panels (with scroll-aware guard — swipe-back is suppressed while user is scrolling bracket content horizontally)
+- **Sticky tab bar** (Groups | Bracket) sits below the header and stays visible while scrolling; replaces the earlier floating pill indicator
+- **Two-row header:** Row 1 = title + auth status (truncated with ellipsis) + theme toggle; Row 2 = nav links (Picks, Leaderboard, Leagues). Total 68px height.
+- "Picks" is a single nav link that covers both Groups and Bracket; the tab bar provides sub-navigation
 - Tablet (600–899px): groups use 2-column grid
 - Phone (<600px): groups use single-column grid
+- Center bracket section (SF → Final → Champion) uses horizontal scroll (`min-width: min-content`) instead of wrapping, keeping all cards in a single row
 - Scroll position is preserved when switching panels
 
 ### 3.3 Group Stage Interaction
@@ -708,7 +712,11 @@ If the user changes group rankings or 3rd-place selections, **only the affected 
 - [x] Live bracket sync (bracket re-renders on group/3rd-place pick changes via state subscription)
 - [x] Advance indicators ("Advances" for 1st/2nd, "Advance?" checkbox for 3rd)
 - [x] Mobile-responsive layout (touch swipe, scroll preservation, tablet 2-col, phone 1-col)
-- [x] Swipe indicator pill for mobile (shows direction to other panel)
+- [x] Two-row header for mobile (title+auth top, nav bottom) with auth email truncation
+- [x] Sticky tab bar (Groups | Bracket) replacing floating pill indicator
+- [x] Merged Groups/Bracket into single "Picks" nav link with tab bar sub-navigation
+- [x] Swipe-back guard (suppresses panel switch while user is scrolling bracket content)
+- [x] Center bracket horizontal scroll (no-wrap) for narrow screens
 - [ ] Drag-and-drop reordering for group stage (currently click-select; may add SortableJS later)
 - [ ] Bracket change-impact warning + undo (currently silent cascade-clear)
 - [ ] Auto-save draft picks on every change (currently manual save only)
@@ -765,6 +773,9 @@ If the user changes group rankings or 3rd-place selections, **only the affected 
 | Dark mode | **System preference detection** with manual override toggle |
 | Scoring rules doc | Created as `docs/rules.md` — maintained as source of truth, shown in-app on a rules page |
 | Pick entry layout | **Sliding panel** — Groups and Bracket share a horizontal slide track with peek overlays on desktop and swipe gestures on mobile. Hash router still used for all pages but Groups/Bracket are co-rendered in the same DOM for live sync. Evolved from tabbed pages → sliding panels. |
+| Mobile header | **Two-row layout** — Row 1: title + auth (email truncated with ellipsis) + theme toggle (rightmost). Row 2: nav links (Picks, Leaderboard, Leagues). 68px total height. |
+| Mobile sub-nav | **Sticky tab bar** (Groups \| Bracket) replaces the floating pill indicator. Sits outside `.slide-container` so `position: sticky` works. Tab bar always visible, syncs active state with slide position. |
+| Nav consolidation | Groups and Bracket merged under single **"Picks"** nav link; tab bar handles sub-navigation between the two panels. |
 | Layout constants | Groups panel capped at 620px, bracket peek 180px (right) / 120px (left), 24px gap, peek hidden below 900px |
 | 3rd-place UX | **Inline per-group** — "Advance?" checkbox appears on the 3rd-ranked team in each group card, replacing the separate counter/picker section |
 | Deploy workflow | **Push to main only** — removed PR trigger and staging environments (close_pull_request job) |

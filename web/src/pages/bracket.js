@@ -77,7 +77,7 @@ export function renderBracketContent() {
 
   el.innerHTML = `
     <div class="bk-scroll">${renderHalf(PATHWAY_1, bp, mt, locked)}</div>
-    ${renderCenter(bp, mt, locked)}
+    <div class="bk-scroll">${renderCenter(bp, mt, locked)}</div>
     <div class="bk-scroll">${renderHalf(PATHWAY_2, bp, mt, locked)}</div>
   `;
 }

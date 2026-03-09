@@ -231,7 +231,8 @@ function getSlideLayout() {
   const w = ct.clientWidth;
   const peek = getPeekWidth();
   const gap = peek > 0 ? PANEL_GAP : 0;
-  const groupsW = Math.min(GROUPS_MAX_W, w - peek - gap);
+  // Only cap groups width when peek is active; otherwise fill container
+  const groupsW = peek > 0 ? Math.min(GROUPS_MAX_W, w - peek - gap) : w;
   const leftPeek = peek > 0 ? PEEK_LEFT : 0;
   return { ct, w, peek, gap, groupsW, leftPeek };
 }
@@ -340,6 +341,15 @@ function initSwipeGesture(container) {
     const dy = endY - startY;
     // Only trigger if horizontal swipe dominates vertical
     if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) return;
+
+    // When on bracket and swiping right (back to groups), only allow if
+    // all bracket scroll areas are at the far left — otherwise the
+    // user is just scrolling content, not trying to navigate.
+    if (dx > 0 && currentSlide === 'bracket') {
+      const scrollEls = container.querySelectorAll('.slide-panel-bracket .bk-scroll');
+      const anyScrolled = Array.from(scrollEls).some(el => el.scrollLeft > 5);
+      if (anyScrolled) return;
+    }
 
     lastSwipeTime = Date.now();
 

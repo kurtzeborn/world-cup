@@ -522,9 +522,8 @@ body {
 .bk-center-secondary {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 1.5rem;
-  flex-wrap: wrap;
+  min-width: min-content;
 }
 
 .bk-center-secondary {

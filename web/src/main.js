@@ -11,8 +11,7 @@ import { renderLeaguesPage } from './pages/leagues.js';
 import { initAutoSave, loadLocalPicks, clearLocalPicks, syncToServer } from './autosave.js';
 import { initPicksStatus } from './picks-status.js';
 
-const LOCK_DEADLINE_DEV = '2026-06-11T19:00:00Z'; // fallback
-const KICKOFF_TIME = '2026-06-11T19:00:00Z'; // June 11 2026 1pm MDT (UTC-6)
+const KICKOFF = '2026-06-11T19:00:00Z'; // June 11 2026 1pm MDT (UTC-6) — lock deadline + countdown target
 
 // ─── Slide Panel (Groups ↔ Bracket transition) ─────────────
 const PEEK_WIDTH = 180;        // px of bracket visible while on groups page
@@ -63,14 +62,14 @@ async function init() {
   ]);
 
   // Determine if locked (client-side check; server enforces too)
-  const deadline = new Date(LOCK_DEADLINE_DEV);
-  const locked = new Date() >= deadline;
+  const kickoff = new Date(KICKOFF);
+  const locked = new Date() >= kickoff;
 
-  setState({ user: authUser, teams, locked, lockDeadline: deadline });
+  setState({ user: authUser, teams, locked, lockDeadline: kickoff });
 
   // Render auth header & countdown
   renderAuthHeader(authUser);
-  startCountdown(new Date(KICKOFF_TIME));
+  startCountdown(kickoff);
 
   // If authenticated, fetch server profile for display name
   let hasDisplayName = false;
@@ -446,8 +445,9 @@ function updateCountdown(target) {
   const now = new Date();
   const diff = target - now;
   if (diff <= 0) {
-    el.textContent = '';
+    el.hidden = true;
     clearInterval(countdownInterval);
+    countdownInterval = null;
     return;
   }
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));

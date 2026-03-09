@@ -737,10 +737,10 @@ If the user changes group rankings or 3rd-place selections, **only the affected 
 - [x] Admin result entry API (`admin-results.ts`)
 - [x] Admin team name update API (`admin-teams.ts`)
 - [x] Custom domain setup (`wc.k61.dev` — CNAME + Azure binding complete)
-- [ ] Admin page UI at `/admin`
-- [ ] Score recalculation on result entry
-- [ ] Dashboard view (post-lock, showing results vs picks)
-- [ ] Add Google auth provider
+- [x] Admin page UI at `/admin` (form-based results entry with groups/3rd-place/knockout)
+- [x] Score recalculation on manual trigger (admin button in admin page)
+- [x] Dashboard view (post-lock, showing picks vs results with color coding)
+- [x] Add Google auth provider (federated identity with Azure AD)
 
 ### Phase 5 — Future Enhancements
 - [ ] Automated results from sports API

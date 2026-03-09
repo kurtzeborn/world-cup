@@ -12,6 +12,7 @@ import { initAutoSave, loadLocalPicks, clearLocalPicks, syncToServer } from './a
 import { initPicksStatus } from './picks-status.js';
 
 const LOCK_DEADLINE_DEV = '2026-06-11T19:00:00Z'; // fallback
+const KICKOFF_TIME = '2026-06-11T19:00:00Z'; // June 11 2026 1pm MDT (UTC-6)
 
 // ─── Slide Panel (Groups ↔ Bracket transition) ─────────────
 const PEEK_WIDTH = 180;        // px of bracket visible while on groups page
@@ -69,7 +70,7 @@ async function init() {
 
   // Render auth header & countdown
   renderAuthHeader(authUser);
-  startCountdown(deadline);
+  startCountdown(new Date(KICKOFF_TIME));
 
   // If authenticated, fetch server profile for display name
   let hasDisplayName = false;
@@ -434,16 +435,16 @@ function initSwipeGesture(container) {
 // ─── Countdown Timer ────────────────────────────────────────
 let countdownInterval = null;
 
-function startCountdown(deadline) {
-  updateCountdown(deadline);
-  countdownInterval = setInterval(() => updateCountdown(deadline), 60000);
+function startCountdown(target) {
+  updateCountdown(target);
+  countdownInterval = setInterval(() => updateCountdown(target), 1000);
 }
 
-function updateCountdown(deadline) {
+function updateCountdown(target) {
   const el = document.getElementById('header-countdown');
   if (!el) return;
   const now = new Date();
-  const diff = deadline - now;
+  const diff = target - now;
   if (diff <= 0) {
     el.textContent = '';
     clearInterval(countdownInterval);
@@ -451,12 +452,9 @@ function updateCountdown(deadline) {
   }
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  if (days > 0) {
-    el.textContent = `⏱ ${days}d ${hours}h`;
-  } else {
-    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    el.textContent = `⏱ ${hours}h ${mins}m`;
-  }
+  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const secs = Math.floor((diff % (1000 * 60)) / 1000);
+  el.textContent = `⏱ ${days}d ${hours}h ${mins}m ${secs}s until kickoff`;
 }
 
 init().catch(console.error);

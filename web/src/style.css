@@ -95,7 +95,12 @@ body {
 #auth-status { display: flex; align-items: center; gap: .25rem; min-width: 0; white-space: nowrap; }
 #auth-status .auth-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
-/* Countdown timer in header */
+/* Countdown timer row */
+.header-row-countdown {
+  height: auto;
+  justify-content: center;
+  padding-bottom: 2px;
+}
 .header-countdown {
   font-size: .7rem;
   opacity: .75;

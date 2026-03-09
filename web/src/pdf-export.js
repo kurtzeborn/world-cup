@@ -456,7 +456,7 @@ function _drawMatchCard(doc, x, y, w, h, matchId, teamA, teamB, picked) {
   doc.line(x + 1, y + half, x + w - 1, y + half);
 
   // Match number label
-  doc.setFontSize(5);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(170);
   doc.text(`M${matchId}`, x + w - 1, y + half + 0.3, { align: 'right' });

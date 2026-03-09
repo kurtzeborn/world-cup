@@ -4,7 +4,7 @@ import { getState, setState } from '../state.js';
 import { BRACKET_STRUCTURE, MATCH_SCHEDULE, THIRD_PLACE_SLOTS } from '../data/bracket-structure.js';
 import { getThirdPlacePlacements } from '../data/third-place-table.js';
 import { TEAMS_BY_ID } from '../data/teams.js';
-import { getFlag, savePicksToServer } from '../utils.js';
+import { getFlag } from '../utils.js';
 
 const ROUND_NAMES = {
   R32: 'Round of 32',
@@ -41,12 +41,8 @@ export function renderBracketPage(container) {
 
   container.innerHTML = `
     <div class="page active" id="page-bracket">
-      ${locked ? '<div class="lock-banner locked">🔒 Picks are locked</div>' : ''}
+      ${locked ? '<div class="lock-banner locked">🔒 Picks are locked — the deadline has passed</div>' : ''}
       <div id="bracket-content"></div>
-      ${!locked ? `<div style="margin-top:1.5rem">
-        <button class="btn btn-primary" id="save-bracket-btn">Save Bracket</button>
-        <span id="bracket-save-status" style="margin-left:.5rem;font-size:.85rem;color:var(--text-muted)"></span>
-      </div>` : ''}
     </div>
   `;
 
@@ -59,7 +55,6 @@ export function renderBracketPage(container) {
       onBracketPick(el.dataset.pickKey, el.dataset.pickTeam);
       renderBracketContent();
     });
-    document.getElementById('save-bracket-btn')?.addEventListener('click', saveBracket);
   }
 }
 
@@ -255,10 +250,6 @@ function onBracketPick(matchKey, winnerId) {
   }
 
   setState({ picks: { ...(picks ?? {}), bracketPicks } });
-}
-
-async function saveBracket() {
-  await savePicksToServer(document.getElementById('bracket-save-status'));
 }
 
 // ─── Match resolution (group picks → R32 → R16 → … → Final) ─

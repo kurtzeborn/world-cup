@@ -1,11 +1,13 @@
 // pages/groups.js — Group stage picks page
 
 import { getState, setState } from '../state.js';
-import { api } from '../api.js';
 import { TEAMS_BY_GROUP, GROUP_LETTERS } from '../data/teams.js';
-import { getFlag, FIFA_RANKINGS_URL, savePicksToServer } from '../utils.js';
+import { getFlag, FIFA_RANKINGS_URL } from '../utils.js';
+import { checkAuthPrompt } from '../auth-prompt.js';
+import Sortable from 'sortablejs';
 
 const MAX_THIRD_ADVANCING = 8;
+const IS_DESKTOP = window.matchMedia('(pointer: fine)').matches;
 
 /** Build a copy of teams-by-group (safe to reference without mutation). */
 function getByGroup() {
@@ -16,33 +18,28 @@ function getByGroup() {
   return byGroup;
 }
 
+/** Return teams in display order: ranked first (rank order), then unranked (draw order). */
+function getDisplayOrder(teams, selected) {
+  const ranked = selected.map(id => teams.find(t => t.id === id)).filter(Boolean);
+  const unranked = teams.filter(t => !selected.includes(t.id));
+  return [...ranked, ...unranked];
+}
+
 export function renderGroupsPage(container) {
   const { picks, locked } = getState();
   const groupPicks = picks?.groupPicks ?? {};
   const thirdPlaceAdvancing = picks?.thirdPlaceAdvancing ?? [];
 
-  // Group teams by group letter (use pre-sorted data)
   const byGroup = getByGroup();
 
   container.innerHTML = `
     <div class="page active" id="page-groups">
-      ${locked ? '<div class="lock-banner locked">🔒 Picks are locked</div>' : ''}
+      ${locked ? '<div class="lock-banner locked">🔒 Picks are locked — the deadline has passed</div>' : ''}
       <div class="groups-grid" id="groups-grid"></div>
-
-      ${!locked ? `<div class="groups-actions">
-        <button class="btn btn-primary" id="save-picks-btn">Save Picks</button>
-        <button class="btn btn-secondary" id="lock-picks-btn">Lock &amp; Submit</button>
-        <span id="save-status" style="font-size:.85rem;color:var(--text-muted)"></span>
-      </div>` : ''}
     </div>
   `;
 
   renderGroupGrid(byGroup, groupPicks, thirdPlaceAdvancing, locked);
-
-  if (!locked) {
-    document.getElementById('save-picks-btn').addEventListener('click', savePicks);
-    document.getElementById('lock-picks-btn').addEventListener('click', lockPicks);
-  }
 }
 
 function renderGroupGrid(byGroup, groupPicks, thirdPlaceAdvancing, locked) {
@@ -54,13 +51,19 @@ function renderGroupGrid(byGroup, groupPicks, thirdPlaceAdvancing, locked) {
     const selected = groupPicks[letter] ?? [];
     const thirdAdvances = thirdPlaceAdvancing.includes(letter);
     const thirdPlaceCount = thirdPlaceAdvancing.length;
+    const allRanked = selected.length >= 4;
+    const showDrag = IS_DESKTOP && allRanked && !locked;
+
+    // Display order: ranked teams first (in rank order), then unranked (draw order)
+    const ordered = getDisplayOrder(teams, selected);
+
     return `
-      <div class="card group-card">
+      <div class="card group-card" data-group="${letter}">
         <div class="card-title">Group ${letter}</div>
         <table class="group-table">
           <thead><tr><th>Team</th><th></th></tr></thead>
           <tbody>
-            ${teams.map(team => {
+            ${ordered.map(team => {
               const pos = selected.indexOf(team.id);
               const posClasses = ['selected-1st','selected-2nd','selected-3rd','selected-4th'];
               const cls = pos >= 0 && pos < 4 ? posClasses[pos] : '';
@@ -70,7 +73,7 @@ function renderGroupGrid(byGroup, groupPicks, thirdPlaceAdvancing, locked) {
               const fifaRank = team.confirmed
                 ? `<a href="${FIFA_RANKINGS_URL}" target="_blank" rel="noopener" class="fifa-rank" title="FIFA Ranking #${team.fifaRanking}">${team.fifaRanking}</a>`
                 : '';
-              // Show advance indicators based on position
+              // Advance indicators based on position
               let advanceHtml = '';
               if (pos === 0 || pos === 1) {
                 advanceHtml = '<span class="advance-auto">Advances</span>';
@@ -83,8 +86,11 @@ function renderGroupGrid(byGroup, groupPicks, thirdPlaceAdvancing, locked) {
                      <span class="advance-label">Advance?</span>
                    </label>`;
               }
+              const dragHtml = showDrag
+                ? '<i class="fa-solid fa-grip-vertical drag-handle"></i> '
+                : '';
               return `<tr class="team-row ${cls}" data-group="${letter}" data-team="${team.id}" ${locked ? '' : 'title="Click to rank 1st\u20134th"'}>
-                <td>${getFlag(team.flagCode)} ${team.name} ${fifaRank}</td>
+                <td>${dragHtml}${getFlag(team.flagCode)} ${team.name} ${fifaRank}</td>
                 <td class="rank-cell">${advanceHtml}${badge}</td>
               </tr>`;
             }).join('')}
@@ -97,8 +103,8 @@ function renderGroupGrid(byGroup, groupPicks, thirdPlaceAdvancing, locked) {
   if (!locked) {
     grid.querySelectorAll('.team-row').forEach(row => {
       row.addEventListener('click', (e) => {
-        // Don't trigger rank toggle when clicking the advance checkbox or FIFA rank link
-        if (e.target.closest('.advance-toggle') || e.target.closest('.fifa-rank')) return;
+        // Don't trigger rank toggle when clicking the advance checkbox, FIFA rank, or drag handle
+        if (e.target.closest('.advance-toggle') || e.target.closest('.fifa-rank') || e.target.closest('.drag-handle')) return;
         const group = row.dataset.group;
         const teamId = row.dataset.team;
         toggleGroupPick(group, teamId);
@@ -111,7 +117,44 @@ function renderGroupGrid(byGroup, groupPicks, thirdPlaceAdvancing, locked) {
         toggleThirdPlace(cb.dataset.group);
       });
     });
+
+    // Desktop drag-and-drop (only for fully-ranked groups)
+    initDragAndDrop(grid, groupPicks);
   }
+}
+
+/** Initialize SortableJS on each fully-ranked group tbody (desktop only). */
+function initDragAndDrop(grid, groupPicks) {
+  if (!IS_DESKTOP) return;
+
+  grid.querySelectorAll('.group-card').forEach(card => {
+    const group = card.dataset.group;
+    const selected = groupPicks[group] ?? [];
+    if (selected.length < 4) return;
+
+    const tbody = card.querySelector('tbody');
+    if (!tbody) return;
+
+    Sortable.create(tbody, {
+      animation: 150,
+      handle: '.drag-handle',
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      onEnd: () => {
+        const rows = [...tbody.querySelectorAll('.team-row')];
+        const newOrder = rows.map(r => r.dataset.team);
+
+        const { picks } = getState();
+        const gp = { ...(picks?.groupPicks ?? {}) };
+        gp[group] = newOrder;
+        setState({ picks: { ...(picks ?? {}), groupPicks: gp } });
+
+        const updatedPicks = getState().picks;
+        renderGroupGrid(getByGroup(), gp, updatedPicks?.thirdPlaceAdvancing ?? [], false);
+        checkAuthPrompt();
+      },
+    });
+  });
 }
 
 function toggleGroupPick(group, teamId) {
@@ -121,19 +164,17 @@ function toggleGroupPick(group, teamId) {
 
   const idx = selected.indexOf(teamId);
   if (idx !== -1) {
-    // Deselect — remove and shift later teams up
     selected.splice(idx, 1);
   } else if (selected.length < 4) {
-    // Add as next rank
     selected.push(teamId);
   }
-  // If already 4 ranked, must deselect one first
 
   groupPicks[group] = selected;
   setState({ picks: { ...(picks ?? {}), groupPicks } });
 
   const { picks: updatedPicks } = getState();
   renderGroupGrid(getByGroup(), groupPicks, updatedPicks?.thirdPlaceAdvancing ?? [], false);
+  checkAuthPrompt();
 }
 
 function toggleThirdPlace(letter) {
@@ -146,44 +187,11 @@ function toggleThirdPlace(letter) {
   } else if (prev.length < MAX_THIRD_ADVANCING) {
     next = [...prev, letter];
   } else {
-    return; // already at max
+    return;
   }
   setState({ picks: { ...(picks ?? {}), thirdPlaceAdvancing: next } });
 
-  // Re-render grid to update checkboxes
   const groupPicks = picks?.groupPicks ?? {};
   renderGroupGrid(getByGroup(), groupPicks, next, false);
-}
-
-async function savePicks() {
-  await savePicksToServer(document.getElementById('save-status'));
-}
-
-async function lockPicks() {
-  const { picks } = getState();
-  const groupPicks = picks?.groupPicks ?? {};
-  const thirdPlace = picks?.thirdPlaceAdvancing ?? [];
-
-  // Basic validation
-  const missingGroups = GROUP_LETTERS.filter(g => (groupPicks[g]?.length ?? 0) < 4);
-  if (missingGroups.length > 0) {
-    alert(`Please rank all 4 teams in groups: ${missingGroups.join(', ')}`);
-    return;
-  }
-  if (thirdPlace.length !== MAX_THIRD_ADVANCING) {
-    alert(`Please select exactly ${MAX_THIRD_ADVANCING} third-place groups to advance.`);
-    return;
-  }
-
-  if (!confirm('Lock your picks? This cannot be undone.')) return;
-
-  try {
-    await savePicks();
-    const result = await api.lockPicks();
-    setState({ picks: { ...picks, lockedAt: result.lockedAt }, locked: true });
-    alert('Your picks are locked! ✓');
-    location.reload();
-  } catch (err) {
-    alert(`Error locking picks: ${err.message}`);
-  }
+  checkAuthPrompt();
 }

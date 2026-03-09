@@ -8,6 +8,7 @@ import { renderGroupsPage } from './pages/groups.js';
 import { renderBracketPage, renderBracketContent } from './pages/bracket.js';
 import { renderLeaderboardPage } from './pages/leaderboard.js';
 import { renderLeaguesPage } from './pages/leagues.js';
+import { initAutoSave, loadLocalPicks, clearLocalPicks, syncToServer } from './autosave.js';
 
 const LOCK_DEADLINE_DEV = '2026-06-11T19:00:00Z'; // fallback
 
@@ -65,16 +66,44 @@ async function init() {
 
   setState({ user: authUser, teams, locked, lockDeadline: deadline });
 
-  // Render auth header
+  // Render auth header & countdown
   renderAuthHeader(authUser);
+  startCountdown(deadline);
 
-  // Load user picks if authenticated
+  // Load picks: server (if logged in) or localStorage (if anonymous)
   if (authUser) {
     try {
-      const picks = await api.getPicks();
-      setState({ picks, locked: locked || !!picks?.lockedAt });
-    } catch { /* not logged in or no picks yet */ }
+      const serverPicks = await api.getPicks();
+      if (serverPicks) {
+        setState({ picks: serverPicks });
+      } else {
+        // No server picks — check for pre-auth local drafts to sync
+        const localPicks = loadLocalPicks();
+        if (localPicks) {
+          setState({ picks: localPicks });
+          await syncToServer();
+          clearLocalPicks();
+        }
+      }
+    } catch {
+      // Server error — try local picks
+      const localPicks = loadLocalPicks();
+      if (localPicks) {
+        setState({ picks: localPicks });
+        await syncToServer().catch(() => {});
+        clearLocalPicks();
+      }
+    }
+  } else {
+    // Not logged in — load from localStorage
+    const localPicks = loadLocalPicks();
+    if (localPicks) {
+      setState({ picks: localPicks });
+    }
   }
+
+  // Start auto-save (must be after initial picks load so it doesn't re-save immediately)
+  initAutoSave();
 
   // Set up navigation
   setupNavigation();
@@ -159,6 +188,10 @@ function ensureSlidePanel(app, initialPage) {
     <div class="slide-tabs" id="slide-tabs">
       <button class="active" data-slide="groups">Groups</button>
       <button data-slide="bracket">Bracket</button>
+      <span id="save-indicator" class="save-indicator"></span>
+      <button class="tab-icon-btn" id="export-pdf-btn" title="Export picks to PDF">
+        <i class="fa-solid fa-file-pdf"></i>
+      </button>
     </div>
     <div class="slide-container">
       <div class="slide-track">
@@ -201,6 +234,12 @@ function ensureSlidePanel(app, initialPage) {
       btn.addEventListener('click', () => slideTo(btn.dataset.slide));
     });
   }
+
+  // PDF export (lazy-loaded)
+  document.getElementById('export-pdf-btn')?.addEventListener('click', async () => {
+    const { exportPicksPDF } = await import('./pdf-export.js');
+    await exportPicksPDF();
+  });
 
   // Keep bracket in sync with group picks
   let lastGroupSnap = serializeGroupState();
@@ -359,6 +398,34 @@ function initSwipeGesture(container) {
       slideTo('groups');
     }
   }, { passive: true });
+}
+
+// ─── Countdown Timer ────────────────────────────────────────
+let countdownInterval = null;
+
+function startCountdown(deadline) {
+  updateCountdown(deadline);
+  countdownInterval = setInterval(() => updateCountdown(deadline), 60000);
+}
+
+function updateCountdown(deadline) {
+  const el = document.getElementById('header-countdown');
+  if (!el) return;
+  const now = new Date();
+  const diff = deadline - now;
+  if (diff <= 0) {
+    el.textContent = '';
+    clearInterval(countdownInterval);
+    return;
+  }
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  if (days > 0) {
+    el.textContent = `⏱ ${days}d ${hours}h`;
+  } else {
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    el.textContent = `⏱ ${hours}h ${mins}m`;
+  }
 }
 
 init().catch(console.error);

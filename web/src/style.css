@@ -591,31 +591,38 @@ body {
   border-top: 2px solid var(--border);
 }
 
-/* ── Mirrored half (right pathway): connectors go LEFT ── */
-.bk-round-col.bk-mirrored .bk-slot:nth-child(odd)::after {
-  right: auto;
-  left: -6px;
-  border-right: none;
-  border-left: 2px solid var(--border);
+/* ── Final column: champion above, match in middle, TPM + 3rd below ── */
+.bk-final-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 4px 0;
 }
 
-.bk-round-col.bk-mirrored .bk-slot:nth-child(even)::after {
-  right: auto;
-  left: -6px;
-  border-right: none;
-  border-left: 2px solid var(--border);
+.bk-final-wrap .bk-slots {
+  width: 100%;
 }
 
-.bk-round-col.bk-mirrored .bk-slot:only-child::after {
-  right: auto;
-  left: -6px;
-  border-left: none;
+.bk-final-wrap .bk-slot {
+  min-height: auto;
 }
 
-/* Mirrored: incoming from RIGHT instead of left */
-.bk-round-col.bk-mirrored:not(.bk-col-first) .bk-slot::before {
-  left: auto;
-  right: -6px;
+.bk-final-below {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+}
+
+.bk-tpm-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
 }
 
 /* Match card — two team rows stacked with info bar between */
@@ -669,42 +676,21 @@ body {
   font-size: .72rem;
 }
 
-/* ── Awards section below bracket ── */
-.bk-awards {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 0;
-}
-
-.bk-awards-secondary {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  min-width: min-content;
-}
-
+/* ── Award cards (champion / 3rd place) ── */
 .bk-center-hdr {
   font-size: .7rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: .04em;
+  text-align: center;
 }
 
 .bk-award {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  align-self: center;
-}
-
-.bk-award-tpm {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 170px;
+  gap: 6px;
+  align-items: center;
 }
 
 .bk-champ-team,

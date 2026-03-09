@@ -297,7 +297,7 @@ function _drawGroupCard(doc, letter, x, y, w, groupPicks, thirdAdvancing) {
 }
 
 // ─── Knockout Bracket ───────────────────────────────────────
-// Layout: [P1 R32|R16|QF|SF | Center (F+Champion+TPM+3rd) | P2 SF|QF|R16|R32]
+// Layout: R32 (16) → R16 (8) → QF (4) → SF (2) → F (1), left-to-right
 
 function _drawBracket(doc, W, H, margin, bp, mt) {
   const top = margin + 18;
@@ -308,40 +308,21 @@ function _drawBracket(doc, W, H, margin, bp, mt) {
   doc.setFont('helvetica', 'bold');
   doc.text('Knockout Stage', margin, top - 2);
 
-  const centerW = 46;
-  const sideW = (usableW - centerW) / 2;
   const colGap = 3;
-  const colsPerSide = 4; // R32, R16, QF, SF
-  const colW = (sideW - colGap * (colsPerSide - 1)) / colsPerSide;
+  const numCols = 5; // R32, R16, QF, SF, F
+  const colW = (usableW - colGap * (numCols - 1)) / numCols;
 
-  const labels = ['Round of 32', 'Round of 16', 'Quarter-Finals', 'Semi-Final'];
+  const roundDefs = [
+    { ids: [...PATHWAY_1_R32, ...PATHWAY_2_R32], round: 'R32', label: 'Round of 32' },
+    { ids: [...PATHWAY_1_R16, ...PATHWAY_2_R16], round: 'R16', label: 'Round of 16' },
+    { ids: [...PATHWAY_1_QF,  ...PATHWAY_2_QF],  round: 'QF',  label: 'Quarter-Finals' },
+    { ids: [...PATHWAY_1_SF,  ...PATHWAY_2_SF],  round: 'SF',  label: 'Semi-Finals' },
+    { ids: [104],                                 round: 'F',   label: 'Final' },
+  ];
 
-  // Pathway 1 (left)
-  _drawHalf(doc, bp, mt, margin, top, colW, colGap, usableH,
-    [PATHWAY_1_R32, PATHWAY_1_R16, PATHWAY_1_QF, PATHWAY_1_SF],
-    ['R32', 'R16', 'QF', 'SF'], labels, false);
-
-  // Pathway 2 (right, mirrored)
-  _drawHalf(doc, bp, mt, margin + sideW + centerW, top, colW, colGap, usableH,
-    [PATHWAY_2_R32, PATHWAY_2_R16, PATHWAY_2_QF, PATHWAY_2_SF],
-    ['R32', 'R16', 'QF', 'SF'], labels, true);
-
-  // Center (Final + Champion + TPM + 3rd)
-  _drawCenter(doc, bp, mt, margin + sideW, top, centerW, usableH);
-}
-
-// ─── Half bracket (one pathway) ─────────────────────────────
-
-function _drawHalf(doc, bp, mt, startX, top, colW, colGap, usableH,
-                   idArrays, roundNames, labels, mirrored) {
-  const rounds = idArrays.map((ids, i) => ({
-    ids, round: roundNames[i], label: labels[i],
-  }));
-  const order = mirrored ? [...rounds].reverse() : rounds;
-
-  for (let c = 0; c < order.length; c++) {
-    const { ids, round, label } = order[c];
-    const x = startX + c * (colW + colGap);
+  for (let c = 0; c < roundDefs.length; c++) {
+    const { ids, round, label } = roundDefs[c];
+    const x = margin + c * (colW + colGap);
     const matchStartY = top + 5;
     const matchH = usableH - 5;
     const slotH = matchH / ids.length;
@@ -364,92 +345,86 @@ function _drawHalf(doc, bp, mt, startX, top, colW, colGap, usableH,
       _drawMatchCard(doc, x, cardY, colW, cardH, matchId, teamA, teamB, picked);
 
       // Connector lines to next round
-      if (c < order.length - 1) {
-        const exitX = mirrored ? x : x + colW;
-        const gapMidX = mirrored ? x - colGap / 2 : x + colW + colGap / 2;
+      if (c < roundDefs.length - 1) {
+        const exitX = x + colW;
+        const gapMidX = x + colW + colGap / 2;
 
         doc.setDrawColor(180);
         doc.setLineWidth(0.3);
         doc.line(exitX, slotCY, gapMidX, slotCY);
 
         if (ids.length === 1) {
-          // Single match → single match: extend horizontal to next column
-          const nextX = mirrored ? gapMidX - colGap / 2 : gapMidX + colGap / 2;
+          const nextX = gapMidX + colGap / 2;
           doc.line(gapMidX, slotCY, nextX, slotCY);
         } else if (i % 2 === 0 && i + 1 < ids.length) {
           const pairCY = matchStartY + (i + 1) * slotH + slotH / 2;
           doc.line(gapMidX, slotCY, gapMidX, pairCY);
           const midY = (slotCY + pairCY) / 2;
-          const nextX = mirrored ? gapMidX - colGap / 2 : gapMidX + colGap / 2;
+          const nextX = gapMidX + colGap / 2;
           doc.line(gapMidX, midY, nextX, midY);
         }
       }
     }
+
+    // For the Final column, draw Champion above and TPM/3rd below
+    if (round === 'F') {
+      const slotCY = matchStartY + matchH / 2;
+      const cardH = Math.min(slotH * 0.85, 14);
+      _drawFinalExtras(doc, bp, mt, x, slotCY, colW, cardH);
+    }
   }
 }
 
-// ─── Center section: Final + Champion above, TPM + 3rd below ─
+// ─── Champion + TPM + 3rd Place (around the Final card) ────
 
-function _drawCenter(doc, bp, mt, cx, top, centerW, usableH) {
-  const matchStartY = top + 5;
-  const matchH = usableH - 5;
-  const cW = centerW * 0.88;
-  const cX = cx + (centerW - cW) / 2;
-  const cardH = Math.min(14, matchH * 0.08);
-
-  // Final at vertical center
-  const finalCY = matchStartY + matchH / 2;
-  const finalCardH = Math.min(16, cardH * 1.2);
-  _label(doc, 'Final', cX + cW / 2, finalCY - finalCardH / 2 - 2);
-  const [fA, fB] = mt[104] || [null, null];
+function _drawFinalExtras(doc, bp, mt, x, finalCY, colW, cardH) {
   const finalPick = bp['F_104'] ?? null;
-  _drawMatchCard(doc, cX, finalCY - finalCardH / 2, cW, finalCardH, 104,
-    fA, fB, finalPick);
 
-  // ── Champion card (above Final) ──
+  // Champion card (above Final)
   const champTeam = finalPick ? TEAMS_BY_ID[finalPick] : null;
-  const champY = finalCY - finalCardH / 2 - 14;
+  const champY = finalCY - cardH / 2 - 14;
 
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(180, 150, 0);
-  doc.text('Champion', cX + cW / 2, champY, { align: 'center' });
+  doc.text('Champion', x + colW / 2, champY, { align: 'center' });
   doc.setTextColor(0);
 
   if (champTeam) {
     doc.setDrawColor(200, 170, 0);
     doc.setLineWidth(0.5);
-    doc.roundedRect(cX + 2, champY + 1, cW - 4, 9, 2, 2, 'S');
-    _drawFlag(doc, champTeam.id, cX + 5, champY + 8);
+    doc.roundedRect(x + 2, champY + 1, colW - 4, 9, 2, 2, 'S');
+    _drawFlag(doc, champTeam.id, x + 5, champY + 8);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.text(champTeam.name, cX + 13, champY + 7);
+    doc.text(champTeam.name, x + 13, champY + 7);
   }
 
-  // ── TPM (below Final) ──
-  const tpmY = finalCY + finalCardH / 2 + 8;
-  _label(doc, '3rd Place Match', cX + cW / 2, tpmY - 2);
+  // TPM (below Final)
+  const tpmY = finalCY + cardH / 2 + 8;
+  _label(doc, '3rd Place Match', x + colW / 2, tpmY - 2);
   const [tpmA, tpmB] = mt[103] || [null, null];
   const tpmPick = bp['TPM_103'] ?? null;
-  _drawMatchCard(doc, cX, tpmY, cW, cardH, 103, tpmA, tpmB, tpmPick);
+  const tpmCardH = Math.min(14, cardH);
+  _drawMatchCard(doc, x, tpmY, colW, tpmCardH, 103, tpmA, tpmB, tpmPick);
 
   // 3rd place winner
   const thirdTeam = tpmPick ? TEAMS_BY_ID[tpmPick] : null;
-  const thirdY = tpmY + cardH + 4;
+  const thirdY = tpmY + tpmCardH + 4;
   doc.setFontSize(6);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(205, 127, 50);
-  doc.text('3rd Place', cX + cW / 2, thirdY, { align: 'center' });
+  doc.text('3rd Place', x + colW / 2, thirdY, { align: 'center' });
   doc.setTextColor(0);
 
   if (thirdTeam) {
     doc.setDrawColor(205, 127, 50);
     doc.setLineWidth(0.5);
-    doc.roundedRect(cX + 2, thirdY + 1, cW - 4, 8, 2, 2, 'S');
-    _drawFlag(doc, thirdTeam.id, cX + 5, thirdY + 7);
+    doc.roundedRect(x + 2, thirdY + 1, colW - 4, 8, 2, 2, 'S');
+    _drawFlag(doc, thirdTeam.id, x + 5, thirdY + 7);
     doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
-    doc.text(thirdTeam.name, cX + 13, thirdY + 6);
+    doc.text(thirdTeam.name, x + 13, thirdY + 6);
   }
 }
 

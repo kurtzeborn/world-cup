@@ -11,6 +11,7 @@ const ROUND_NAMES = {
   R16: 'Round of 16',
   QF:  'Quarter-Finals',
   SF:  'Semi-Finals',
+  F:   'Final',
 };
 
 /** Lookup match definition by id */
@@ -18,8 +19,7 @@ const MATCH_BY_ID = Object.fromEntries(BRACKET_STRUCTURE.map(m => [m.id, m]));
 
 /**
  * Bracket pathway definitions — match IDs in top-to-bottom visual order.
- * Adjacent pairs in each round feed into the same next-round match
- * (e.g. R32[0]+R32[1] → R16[0]).
+ * Adjacent pairs in each round feed into the same next-round match.
  */
 const PATHWAY_1 = {
   R32: [74, 77, 73, 75, 83, 84, 81, 82],
@@ -35,7 +35,8 @@ const PATHWAY_2 = {
   SF:  [102],
 };
 
-const HALF_ROUNDS = ['R32', 'R16', 'QF', 'SF'];
+/** Rounds in left-to-right order (merged P1+P2 for R32–SF, then single Final) */
+const ROUNDS = ['R32', 'R16', 'QF', 'SF', 'F'];
 
 // ─── Page entry point ───────────────────────────────────────
 
@@ -76,49 +77,98 @@ export function renderBracketContent() {
   el.innerHTML = `
     <div class="bk-scroll">
       <div class="bk-bracket">
-        ${renderHalfCols(PATHWAY_1, bp, mt, locked, false)}
-        ${renderFinalCol(bp, mt, locked)}
-        ${renderHalfCols(PATHWAY_2, bp, mt, locked, true)}
+        ${renderBracketCols(bp, mt, locked)}
       </div>
     </div>
-    ${renderAwards(bp, mt, locked)}
   `;
 }
 
 // ─── Rendering helpers ──────────────────────────────────────
 
-function renderHalfCols(pathway, bp, mt, locked, mirrored) {
-  const rounds = mirrored ? [...HALF_ROUNDS].reverse() : [...HALF_ROUNDS];
+/** Build all columns: R32(16) → R16(8) → QF(4) → SF(2) → F(1) */
+function renderBracketCols(bp, mt, locked) {
   let html = '';
 
-  for (let r = 0; r < rounds.length; r++) {
-    const round = rounds[r];
-    const ids = pathway[round];
-    const isOuter = mirrored ? (r === rounds.length - 1) : (r === 0);
+  for (let r = 0; r < ROUNDS.length; r++) {
+    const round = ROUNDS[r];
+    const isFirst = r === 0;
+    const isLast = r === ROUNDS.length - 1;
+
+    // Merge P1 + P2 ids for R32–SF; Final is just [104]
+    const ids = round === 'F' ? [104]
+      : [...PATHWAY_1[round], ...PATHWAY_2[round]];
 
     const cls = ['bk-round-col'];
-    if (isOuter) cls.push('bk-col-first');
-    if (mirrored) cls.push('bk-mirrored');
+    if (isFirst) cls.push('bk-col-first');
+    if (isLast) cls.push('bk-col-last');
 
     html += `<div class="${cls.join(' ')}">`;
     html += `<div class="bk-round-hdr">${ROUND_NAMES[round]}</div>`;
-    html += '<div class="bk-slots">';
-    for (const id of ids) {
-      html += renderSlot(MATCH_BY_ID[id], round, bp, mt, locked);
+
+    if (isLast) {
+      // Final column: Champion above, Final match, TPM + 3rd below
+      html += renderFinalColumn(bp, mt, locked);
+    } else {
+      html += '<div class="bk-slots">';
+      for (const id of ids) {
+        html += renderSlot(MATCH_BY_ID[id], round, bp, mt, locked);
+      }
+      html += '</div>';
     }
-    html += '</div></div>';
+
+    html += '</div>';
   }
 
   return html;
 }
 
-function renderFinalCol(bp, mt, locked) {
-  return `<div class="bk-round-col bk-final-col">
-    <div class="bk-round-hdr">Final</div>
-    <div class="bk-slots">
-      ${renderSlot(MATCH_BY_ID[104], 'F', bp, mt, locked)}
+/** Final column: champion card → Final match → TPM + 3rd place */
+function renderFinalColumn(bp, mt, locked) {
+  const finalPick = bp['F_104'] ?? null;
+  const champTeam = finalPick ? TEAMS_BY_ID[finalPick] : null;
+  const champHtml = champTeam
+    ? `<div class="bk-champ-team">${getFlag(champTeam.flagCode)} ${champTeam.name}</div>`
+    : `<div class="bk-champ-team bk-tbd"></div>`;
+
+  const tpmPick = bp['TPM_103'] ?? null;
+  const thirdTeam = tpmPick ? TEAMS_BY_ID[tpmPick] : null;
+  const thirdHtml = thirdTeam
+    ? `<div class="bk-third-team">${getFlag(thirdTeam.flagCode)} ${thirdTeam.name}</div>`
+    : `<div class="bk-third-team bk-tbd"></div>`;
+
+  const tpmMatch = MATCH_BY_ID[103];
+  const [tpmA, tpmB] = mt[103] || [null, null];
+  const tpmKey = 'TPM_103';
+  const tpmPicked = bp[tpmKey] ?? '';
+  const tpmCanPick = !locked && (tpmA || tpmB);
+
+  return `
+    <div class="bk-final-wrap">
+      <div class="bk-award">
+        <div class="bk-center-hdr">🏆 Champion</div>
+        ${champHtml}
+      </div>
+
+      <div class="bk-slots">
+        ${renderSlot(MATCH_BY_ID[104], 'F', bp, mt, locked)}
+      </div>
+
+      <div class="bk-final-below">
+        <div class="bk-tpm-wrap">
+          <div class="bk-center-hdr">3rd Place Match</div>
+          <div class="bk-match">
+            ${teamRow(tpmA, tpmMatch.teamA, tpmPicked, tpmCanPick, tpmKey)}
+            ${matchInfoBar(103)}
+            ${teamRow(tpmB, tpmMatch.teamB, tpmPicked, tpmCanPick, tpmKey)}
+          </div>
+        </div>
+        <div class="bk-award">
+          <div class="bk-center-hdr">🥉 3rd Place</div>
+          ${thirdHtml}
+        </div>
+      </div>
     </div>
-  </div>`;
+  `;
 }
 
 function renderSlot(match, round, bracketPicks, matchTeams, locked) {
@@ -168,57 +218,6 @@ function slotDesc(slot) {
   if (rank === 1) return `<span class="bk-tbd">1st ${group}</span>`;
   if (rank === 2) return `<span class="bk-tbd">2nd ${group}</span>`;
   return `<span class="bk-tbd">${slot}</span>`;
-}
-
-function renderAwards(bp, mt, locked) {
-  const tpm = renderCenterMatch(103, 'TPM', bp, mt, locked);
-
-  // Champion (winner of Final)
-  const finalPick = bp['F_104'] ?? null;
-  const champTeam = finalPick ? TEAMS_BY_ID[finalPick] : null;
-  const champHtml = champTeam
-    ? `<div class="bk-champ-team">${getFlag(champTeam.flagCode)} ${champTeam.name}</div>`
-    : `<div class="bk-champ-team bk-tbd"></div>`;
-
-  // 3rd Place winner
-  const tpmPick = bp['TPM_103'] ?? null;
-  const thirdTeam = tpmPick ? TEAMS_BY_ID[tpmPick] : null;
-  const thirdHtml = thirdTeam
-    ? `<div class="bk-third-team">${getFlag(thirdTeam.flagCode)} ${thirdTeam.name}</div>`
-    : `<div class="bk-third-team bk-tbd"></div>`;
-
-  return `
-    <div class="bk-awards">
-      <div class="bk-award">
-        <div class="bk-center-hdr">🏆 Champion</div>
-        ${champHtml}
-      </div>
-      <div class="bk-awards-secondary">
-        <div class="bk-award-tpm">
-          <div class="bk-center-hdr">3rd Place Match</div>
-          ${tpm}
-        </div>
-        <div class="bk-award">
-          <div class="bk-center-hdr">🥉 3rd Place</div>
-          ${thirdHtml}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function renderCenterMatch(matchId, round, bp, mt, locked) {
-  const match = MATCH_BY_ID[matchId];
-  const [a, b] = mt[matchId] || [null, null];
-  const key = `${round}_${matchId}`;
-  const picked = bp[key] ?? '';
-  const canPick = !locked && (a || b);
-
-  return `<div class="bk-match">
-    ${teamRow(a, match.teamA, picked, canPick, key)}
-    ${matchInfoBar(matchId)}
-    ${teamRow(b, match.teamB, picked, canPick, key)}
-  </div>`;
 }
 
 // ─── State & persistence ────────────────────────────────────

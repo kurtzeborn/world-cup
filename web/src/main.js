@@ -88,7 +88,7 @@ function renderAuthHeader(user) {
   const el = document.getElementById('auth-status');
   if (!el) return;
   if (user) {
-    el.innerHTML = `${escapeHtml(user.displayName)} · <a href="${api.logoutUrl}">Sign out</a>`;
+    el.innerHTML = `<span class="auth-name">${escapeHtml(user.displayName)}</span> · <a href="${api.logoutUrl}">Sign out</a>`;
   } else {
     el.innerHTML = `<a href="${api.loginUrl}">Sign in</a>`;
   }

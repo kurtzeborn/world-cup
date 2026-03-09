@@ -92,7 +92,8 @@ body {
 }
 .header-auth { font-size: .8rem; display: flex; align-items: center; gap: .5rem; min-width: 0; }
 .header-auth a { color: var(--gold); white-space: nowrap; }
-#auth-status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#auth-status { display: flex; align-items: center; gap: .25rem; min-width: 0; white-space: nowrap; }
+#auth-status .auth-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
 /* Theme toggle */
 .theme-toggle {

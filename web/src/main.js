@@ -454,7 +454,7 @@ function updateCountdown(target) {
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
   const secs = Math.floor((diff % (1000 * 60)) / 1000);
-  el.textContent = `⏱ ${days}d ${hours}h ${mins}m ${secs}s until kickoff`;
+  el.textContent = `⏱ ${days}d ${hours}h ${mins}m ${secs}s`;
 }
 
 init().catch(console.error);

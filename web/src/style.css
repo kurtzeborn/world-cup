@@ -75,6 +75,7 @@ body {
 }
 .header-row-nav {
   height: 32px;
+  justify-content: space-between;
 }
 .site-title { font-size: 1rem; font-weight: 700; white-space: nowrap; }
 .header-nav { display: flex; gap: .75rem; }
@@ -95,16 +96,12 @@ body {
 #auth-status { display: flex; align-items: center; gap: .25rem; min-width: 0; white-space: nowrap; }
 #auth-status .auth-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
-/* Countdown timer row */
-.header-row-countdown {
-  height: auto;
-  justify-content: center;
-  padding-bottom: 2px;
-}
+/* Countdown timer (inside nav row) */
 .header-countdown {
   font-size: .7rem;
   opacity: .75;
   white-space: nowrap;
+  margin-left: auto;
 }
 
 /* Theme toggle */

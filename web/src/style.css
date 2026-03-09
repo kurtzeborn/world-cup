@@ -516,6 +516,11 @@ body {
   min-width: 150px;
 }
 
+/* Last column (Final): center contents vertically to align with SF */
+.bk-col-last {
+  justify-content: center;
+}
+
 /* Small round header above each column */
 .bk-round-hdr {
   text-align: center;
@@ -601,11 +606,9 @@ body {
 
 /* ── Final column: champion above, match in middle, TPM + 3rd below ── */
 .bk-final-wrap {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 4px;
   padding: 4px 0;
 }

@@ -314,9 +314,9 @@ body {
   margin-bottom: .5rem;
 }
 .card-title {
-  font-size: .82rem;
+  font-size: .72rem;
   font-weight: 600;
-  margin-bottom: .3rem;
+  margin-bottom: .2rem;
   color: var(--green-dark);
 }
 
@@ -531,7 +531,7 @@ body {
 
 /* Add vertical breathing room in R32 (first column) without breaking connector alignment */
 .bk-col-first .bk-slot {
-  padding: 6px 0;
+  padding: 10px 0;
 }
 
 .bk-slot {

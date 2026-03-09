@@ -493,8 +493,8 @@ body {
   padding-bottom: 4px;
 }
 
-/* Flex row of round columns */
-.bk-half {
+/* Flex row of round columns — unified bracket */
+.bk-bracket {
   display: flex;
   gap: 12px;
   min-width: min-content;
@@ -591,6 +591,33 @@ body {
   border-top: 2px solid var(--border);
 }
 
+/* ── Mirrored half (right pathway): connectors go LEFT ── */
+.bk-round-col.bk-mirrored .bk-slot:nth-child(odd)::after {
+  right: auto;
+  left: -6px;
+  border-right: none;
+  border-left: 2px solid var(--border);
+}
+
+.bk-round-col.bk-mirrored .bk-slot:nth-child(even)::after {
+  right: auto;
+  left: -6px;
+  border-right: none;
+  border-left: 2px solid var(--border);
+}
+
+.bk-round-col.bk-mirrored .bk-slot:only-child::after {
+  right: auto;
+  left: -6px;
+  border-left: none;
+}
+
+/* Mirrored: incoming from RIGHT instead of left */
+.bk-round-col.bk-mirrored:not(.bk-col-first) .bk-slot::before {
+  left: auto;
+  right: -6px;
+}
+
 /* Match card — two team rows stacked with info bar between */
 .bk-match {
   border: 1px solid var(--border);
@@ -642,22 +669,20 @@ body {
   font-size: .72rem;
 }
 
-/* ── Center section: Champion above, Final, TPM + 3rd below ── */
-.bk-center {
-  padding: 0;
+/* ── Awards section below bracket ── */
+.bk-awards {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 100%;
+  gap: 1rem;
+  padding: 1rem 0;
 }
 
-.bk-center-secondary {
+.bk-awards-secondary {
   display: flex;
   align-items: center;
   gap: 1rem;
   min-width: min-content;
-  margin-top: 1rem;
 }
 
 .bk-center-hdr {
@@ -675,7 +700,7 @@ body {
   align-self: center;
 }
 
-.bk-center-tpm-wrap {
+.bk-award-tpm {
   display: flex;
   flex-direction: column;
   gap: 8px;

@@ -15,13 +15,11 @@ const PATHWAY_1_R32 = [74, 77, 73, 75, 83, 84, 81, 82];
 const PATHWAY_1_R16 = [89, 90, 93, 94];
 const PATHWAY_1_QF  = [97, 98];
 const PATHWAY_1_SF  = [101];
-const PATHWAY_1_F   = [104];
 
 const PATHWAY_2_R32 = [76, 78, 79, 80, 86, 88, 85, 87];
 const PATHWAY_2_R16 = [91, 92, 95, 96];
 const PATHWAY_2_QF  = [99, 100];
 const PATHWAY_2_SF  = [102];
-const PATHWAY_2_F   = [104];
 
 const MATCH_BY_ID = Object.fromEntries(BRACKET_STRUCTURE.map(m => [m.id, m]));
 
@@ -299,7 +297,7 @@ function _drawGroupCard(doc, letter, x, y, w, groupPicks, thirdAdvancing) {
 }
 
 // ─── Knockout Bracket ───────────────────────────────────────
-// Layout: [P1 R32|R16|QF|SF|F | Center (Champion+TPM+3rd) | P2 F|SF|QF|R16|R32]
+// Layout: [P1 R32|R16|QF|SF | Center (F+Champion+TPM+3rd) | P2 SF|QF|R16|R32]
 
 function _drawBracket(doc, W, H, margin, bp, mt) {
   const top = margin + 18;
@@ -310,25 +308,25 @@ function _drawBracket(doc, W, H, margin, bp, mt) {
   doc.setFont('helvetica', 'bold');
   doc.text('Knockout Stage', margin, top - 2);
 
-  const centerW = 36;
+  const centerW = 46;
   const sideW = (usableW - centerW) / 2;
   const colGap = 3;
-  const colsPerSide = 5; // R32, R16, QF, SF, F
+  const colsPerSide = 4; // R32, R16, QF, SF
   const colW = (sideW - colGap * (colsPerSide - 1)) / colsPerSide;
 
-  const labels = ['Round of 32', 'Round of 16', 'Quarter-Finals', 'Semi-Final', 'Final'];
+  const labels = ['Round of 32', 'Round of 16', 'Quarter-Finals', 'Semi-Final'];
 
   // Pathway 1 (left)
   _drawHalf(doc, bp, mt, margin, top, colW, colGap, usableH,
-    [PATHWAY_1_R32, PATHWAY_1_R16, PATHWAY_1_QF, PATHWAY_1_SF, PATHWAY_1_F],
-    ['R32', 'R16', 'QF', 'SF', 'F'], labels, false);
+    [PATHWAY_1_R32, PATHWAY_1_R16, PATHWAY_1_QF, PATHWAY_1_SF],
+    ['R32', 'R16', 'QF', 'SF'], labels, false);
 
   // Pathway 2 (right, mirrored)
   _drawHalf(doc, bp, mt, margin + sideW + centerW, top, colW, colGap, usableH,
-    [PATHWAY_2_R32, PATHWAY_2_R16, PATHWAY_2_QF, PATHWAY_2_SF, PATHWAY_2_F],
-    ['R32', 'R16', 'QF', 'SF', 'F'], labels, true);
+    [PATHWAY_2_R32, PATHWAY_2_R16, PATHWAY_2_QF, PATHWAY_2_SF],
+    ['R32', 'R16', 'QF', 'SF'], labels, true);
 
-  // Center (Champion + TPM + 3rd — no Final)
+  // Center (Final + Champion + TPM + 3rd)
   _drawCenter(doc, bp, mt, margin + sideW, top, centerW, usableH);
 }
 
@@ -390,20 +388,27 @@ function _drawHalf(doc, bp, mt, startX, top, colW, colGap, usableH,
   }
 }
 
-// ─── Center section: Champion above, TPM + 3rd below ───────
+// ─── Center section: Final + Champion above, TPM + 3rd below ─
 
 function _drawCenter(doc, bp, mt, cx, top, centerW, usableH) {
   const matchStartY = top + 5;
   const matchH = usableH - 5;
-  const cW = centerW * 0.92;
+  const cW = centerW * 0.88;
   const cX = cx + (centerW - cW) / 2;
-  const centerY = matchStartY + matchH / 2;
   const cardH = Math.min(14, matchH * 0.08);
 
-  // ── Champion card (above center) ──
+  // Final at vertical center
+  const finalCY = matchStartY + matchH / 2;
+  const finalCardH = Math.min(16, cardH * 1.2);
+  _label(doc, 'Final', cX + cW / 2, finalCY - finalCardH / 2 - 2);
+  const [fA, fB] = mt[104] || [null, null];
   const finalPick = bp['F_104'] ?? null;
+  _drawMatchCard(doc, cX, finalCY - finalCardH / 2, cW, finalCardH, 104,
+    fA, fB, finalPick);
+
+  // ── Champion card (above Final) ──
   const champTeam = finalPick ? TEAMS_BY_ID[finalPick] : null;
-  const champY = centerY - 14;
+  const champY = finalCY - finalCardH / 2 - 14;
 
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
@@ -421,8 +426,8 @@ function _drawCenter(doc, bp, mt, cx, top, centerW, usableH) {
     doc.text(champTeam.name, cX + 13, champY + 7);
   }
 
-  // ── TPM (below center) ──
-  const tpmY = centerY + 6;
+  // ── TPM (below Final) ──
+  const tpmY = finalCY + finalCardH / 2 + 8;
   _label(doc, '3rd Place Match', cX + cW / 2, tpmY - 2);
   const [tpmA, tpmB] = mt[103] || [null, null];
   const tpmPick = bp['TPM_103'] ?? null;

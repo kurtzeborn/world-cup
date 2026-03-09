@@ -11,7 +11,6 @@ const ROUND_NAMES = {
   R16: 'Round of 16',
   QF:  'Quarter-Finals',
   SF:  'Semi-Finals',
-  F:   'Final',
 };
 
 /** Lookup match definition by id */
@@ -27,7 +26,6 @@ const PATHWAY_1 = {
   R16: [89, 90, 93, 94],
   QF:  [97, 98],
   SF:  [101],
-  F:   [104],
 };
 
 const PATHWAY_2 = {
@@ -35,10 +33,9 @@ const PATHWAY_2 = {
   R16: [91, 92, 95, 96],
   QF:  [99, 100],
   SF:  [102],
-  F:   [104],
 };
 
-const HALF_ROUNDS = ['R32', 'R16', 'QF', 'SF', 'F'];
+const HALF_ROUNDS = ['R32', 'R16', 'QF', 'SF'];
 
 // ─── Page entry point ───────────────────────────────────────
 
@@ -77,37 +74,51 @@ export function renderBracketContent() {
   if (!el) return;
 
   el.innerHTML = `
-    <div class="bk-scroll">${renderHalf(PATHWAY_1, bp, mt, locked)}</div>
-    <div class="bk-scroll">${renderCenter(bp, mt, locked)}</div>
-    <div class="bk-scroll">${renderHalf(PATHWAY_2, bp, mt, locked)}</div>
+    <div class="bk-scroll">
+      <div class="bk-bracket">
+        ${renderHalfCols(PATHWAY_1, bp, mt, locked, false)}
+        ${renderFinalCol(bp, mt, locked)}
+        ${renderHalfCols(PATHWAY_2, bp, mt, locked, true)}
+      </div>
+    </div>
+    ${renderAwards(bp, mt, locked)}
   `;
 }
 
 // ─── Rendering helpers ──────────────────────────────────────
 
-function renderHalf(pathway, bracketPicks, matchTeams, locked) {
-  let html = '<div class="bk-half">';
+function renderHalfCols(pathway, bp, mt, locked, mirrored) {
+  const rounds = mirrored ? [...HALF_ROUNDS].reverse() : [...HALF_ROUNDS];
+  let html = '';
 
-  for (let r = 0; r < HALF_ROUNDS.length; r++) {
-    const round = HALF_ROUNDS[r];
+  for (let r = 0; r < rounds.length; r++) {
+    const round = rounds[r];
     const ids = pathway[round];
-    const isFirst = r === 0;
-    const isLast = r === HALF_ROUNDS.length - 1;
+    const isOuter = mirrored ? (r === rounds.length - 1) : (r === 0);
 
     const cls = ['bk-round-col'];
-    if (isFirst) cls.push('bk-col-first');
-    if (isLast) cls.push('bk-col-last');
+    if (isOuter) cls.push('bk-col-first');
+    if (mirrored) cls.push('bk-mirrored');
 
     html += `<div class="${cls.join(' ')}">`;
     html += `<div class="bk-round-hdr">${ROUND_NAMES[round]}</div>`;
     html += '<div class="bk-slots">';
     for (const id of ids) {
-      html += renderSlot(MATCH_BY_ID[id], round, bracketPicks, matchTeams, locked);
+      html += renderSlot(MATCH_BY_ID[id], round, bp, mt, locked);
     }
     html += '</div></div>';
   }
 
-  return html + '</div>';
+  return html;
+}
+
+function renderFinalCol(bp, mt, locked) {
+  return `<div class="bk-round-col bk-final-col">
+    <div class="bk-round-hdr">Final</div>
+    <div class="bk-slots">
+      ${renderSlot(MATCH_BY_ID[104], 'F', bp, mt, locked)}
+    </div>
+  </div>`;
 }
 
 function renderSlot(match, round, bracketPicks, matchTeams, locked) {
@@ -159,7 +170,7 @@ function slotDesc(slot) {
   return `<span class="bk-tbd">${slot}</span>`;
 }
 
-function renderCenter(bp, mt, locked) {
+function renderAwards(bp, mt, locked) {
   const tpm = renderCenterMatch(103, 'TPM', bp, mt, locked);
 
   // Champion (winner of Final)
@@ -177,13 +188,13 @@ function renderCenter(bp, mt, locked) {
     : `<div class="bk-third-team bk-tbd"></div>`;
 
   return `
-    <div class="bk-center">
+    <div class="bk-awards">
       <div class="bk-award">
         <div class="bk-center-hdr">🏆 Champion</div>
         ${champHtml}
       </div>
-      <div class="bk-center-secondary">
-        <div class="bk-center-tpm-wrap">
+      <div class="bk-awards-secondary">
+        <div class="bk-award-tpm">
           <div class="bk-center-hdr">3rd Place Match</div>
           ${tpm}
         </div>

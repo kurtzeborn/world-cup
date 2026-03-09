@@ -142,8 +142,33 @@ function renderAuthHeader(user) {
   if (user) {
     el.innerHTML = `<span class="auth-name">${escapeHtml(user.userDetails)}</span> · <a href="${api.logoutUrl}">Sign out</a>`;
   } else {
-    el.innerHTML = `<a href="${api.loginUrl}">Sign in</a>`;
+    el.innerHTML = `<button class="auth-login-btn" id="show-login-modal">Sign in</button>`;
+    document.getElementById('show-login-modal').addEventListener('click', showLoginModal);
   }
+}
+
+function showLoginModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box" style="max-width:400px">
+      <h3>Sign In</h3>
+      <p style="color:var(--text-muted); font-size:.9rem; margin-bottom:1.5rem;">Choose your login method:</p>
+      <div class="login-options">
+        <a href="${api.loginUrl}" class="btn btn-primary login-btn">
+          <i class="fa-brands fa-microsoft"></i> Sign in with Azure AD
+        </a>
+        <a href="${api.loginGoogleUrl}" class="btn btn-secondary login-btn">
+          <i class="fa-brands fa-google"></i> Sign in with Google
+        </a>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="btn-close-login">Cancel</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('btn-close-login').addEventListener('click', () => overlay.remove());
 }
 
 function setupNavigation() {

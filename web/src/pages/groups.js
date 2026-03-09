@@ -27,7 +27,6 @@ export function renderGroupsPage(container) {
   container.innerHTML = `
     <div class="page active" id="page-groups">
       ${locked ? '<div class="lock-banner locked">🔒 Picks are locked</div>' : ''}
-      <h2 class="slide-section-hdr">Group Stage</h2>
       <div class="groups-grid" id="groups-grid"></div>
 
       ${!locked ? `<div class="groups-actions">

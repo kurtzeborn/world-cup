@@ -113,12 +113,16 @@ function setupNavigation() {
 }
 
 function setActiveNav(page) {
+  const navPage = (page === 'groups' || page === 'bracket') ? 'picks' : page;
   document.querySelectorAll('.header-nav a').forEach(a => {
-    a.classList.toggle('active', a.dataset.page === page);
+    a.classList.toggle('active', a.dataset.page === navPage);
   });
 }
 
 async function navigateTo(page) {
+  // Map 'picks' to 'groups' (slide panel entry point)
+  if (page === 'picks') page = 'groups';
+
   setActiveNav(page);
   const app = document.getElementById('app');
 
@@ -152,6 +156,10 @@ function ensureSlidePanel(app, initialPage) {
   if (sliderActive) return;
 
   app.innerHTML = `
+    <div class="slide-tabs" id="slide-tabs">
+      <button class="active" data-slide="groups">Groups</button>
+      <button data-slide="bracket">Bracket</button>
+    </div>
     <div class="slide-container">
       <div class="slide-track">
         <div class="slide-panel slide-panel-groups"></div>
@@ -159,7 +167,6 @@ function ensureSlidePanel(app, initialPage) {
       </div>
       <div class="slide-peek-overlay slide-peek-right"></div>
       <div class="slide-peek-overlay slide-peek-left"></div>
-      <div class="slide-indicator" aria-hidden="true">Knockout Stage →</div>
     </div>
   `;
 
@@ -186,6 +193,14 @@ function ensureSlidePanel(app, initialPage) {
   app.querySelector('.slide-panel-bracket')?.addEventListener('click', () => {
     if (currentSlide === 'groups') slideTo('bracket');
   });
+
+  // Tab bar click handlers
+  const tabBar = document.getElementById('slide-tabs');
+  if (tabBar) {
+    tabBar.querySelectorAll('button[data-slide]').forEach(btn => {
+      btn.addEventListener('click', () => slideTo(btn.dataset.slide));
+    });
+  }
 
   // Keep bracket in sync with group picks
   let lastGroupSnap = serializeGroupState();
@@ -271,11 +286,10 @@ function updateOverlay(page) {
     leftOv.classList.toggle('active', page === 'bracket' && leftPeek > 0);
   }
 
-  // Update swipe indicator for mobile
-  const indicator = document.querySelector('.slide-indicator');
-  if (indicator) {
-    indicator.textContent = page === 'groups' ? 'Knockout Stage →' : '← Group Stage';
-  }
+  // Update tab bar active state
+  document.querySelectorAll('#slide-tabs button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.slide === page);
+  });
 }
 
 function getPeekWidth() {

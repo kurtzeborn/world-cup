@@ -42,7 +42,6 @@ export function renderBracketPage(container) {
   container.innerHTML = `
     <div class="page active" id="page-bracket">
       ${locked ? '<div class="lock-banner locked">🔒 Picks are locked</div>' : ''}
-      <h2 class="slide-section-hdr">Knockout Stage</h2>
       <div id="bracket-content"></div>
       ${!locked ? `<div style="margin-top:1.5rem">
         <button class="btn btn-primary" id="save-bracket-btn">Save Bracket</button>

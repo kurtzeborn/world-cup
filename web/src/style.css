@@ -63,21 +63,26 @@ body {
   background: #1a1a1a;
   box-shadow: 0 2px 6px rgba(0,0,0,.6);
 }
-.header-inner {
+.header-row {
   max-width: 1100px;
   margin: 0 auto;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  height: 56px;
 }
-.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
-.header-nav { display: flex; gap: 1rem; flex: 1; }
+.header-row-top {
+  height: 36px;
+  justify-content: space-between;
+}
+.header-row-nav {
+  height: 32px;
+}
+.site-title { font-size: 1rem; font-weight: 700; white-space: nowrap; }
+.header-nav { display: flex; gap: .75rem; }
 .header-nav a {
   color: rgba(255,255,255,.85);
   text-decoration: none;
-  font-size: .9rem;
-  padding: .25rem .5rem;
+  font-size: .85rem;
+  padding: .2rem .5rem;
   border-radius: 4px;
   transition: background .15s;
 }
@@ -85,8 +90,9 @@ body {
   background: rgba(255,255,255,.2);
   color: #fff;
 }
-.header-auth { font-size: .85rem; white-space: nowrap; display: flex; align-items: center; gap: .5rem; }
-.header-auth a { color: var(--gold); }
+.header-auth { font-size: .8rem; display: flex; align-items: center; gap: .5rem; min-width: 0; }
+.header-auth a { color: var(--gold); white-space: nowrap; }
+#auth-status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Theme toggle */
 .theme-toggle {
@@ -162,48 +168,45 @@ body {
   pointer-events: auto;
 }
 
-/* Section headings inside slide panels */
-.slide-section-hdr {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--green-dark);
-  margin-bottom: .75rem;
+/* Sticky tab bar for Groups ↔ Bracket switching */
+.slide-tabs {
+  display: flex;
+  position: sticky;
+  top: 68px;  /* below the two-row header */
+  z-index: 50;
+  background: var(--surface);
+  border-bottom: 2px solid var(--border);
+  margin: -1.5rem -1rem .75rem -1rem;  /* pull into #app padding */
+  padding: 0 1rem;
 }
-
-/* Swipe indicator – visible only when peek overlays are hidden (<900px) */
-.slide-indicator {
-  display: none;
-  position: fixed;
-  bottom: 1rem;
-  right: 1rem;
-  background: var(--green-dark);
-  color: #fff;
-  font-size: .8rem;
+.slide-tabs button {
+  flex: 1;
+  padding: .45rem 0;
+  font-size: .85rem;
   font-weight: 600;
-  padding: .4rem .75rem;
-  border-radius: 999px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.25);
-  z-index: 100;
-  pointer-events: none;
-  opacity: .85;
-  transition: opacity .3s;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
 }
+.slide-tabs button:hover { color: var(--text); }
+.slide-tabs button.active {
+  color: var(--green);
+  border-bottom-color: var(--green);
+}
+[data-theme="dark"] .slide-tabs { background: var(--surface); }
 
-/* Tablets: 2-column groups without peek */
-@media (min-width: 600px) and (max-width: 899px) {
+/* Hide peek overlays and tab bar adjustments on smaller screens */
+@media (max-width: 899px) {
   .slide-peek-overlay { display: none; }
-  .slide-indicator { display: block; }
-  .slide-panel-groups .groups-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
-/* Small screens: single column, no peek */
+/* Small screens: single column groups */
 @media (max-width: 599px) {
-  .slide-peek-overlay { display: none; }
-  .slide-indicator { display: block; }
   .slide-panel-groups .groups-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 }
 
@@ -255,7 +258,7 @@ body {
   gap: 1rem;
 }
 
-/* Inside the slide panel, force exactly 2 columns with tighter spacing */
+/* Inside the slide panel, 2 columns with tighter spacing (overridden to 1-col at 599px) */
 .slide-panel-groups .groups-grid {
   grid-template-columns: repeat(2, 1fr);
   gap: .65rem;
@@ -636,9 +639,7 @@ body {
 /* ----------------------------------------
    Responsive
 -----------------------------------------*/
-@media (max-width: 600px) {
-  .header-inner { gap: .75rem; }
-  .site-title { font-size: .95rem; }
-  .header-nav { gap: .5rem; }
-  .header-nav a { font-size: .8rem; padding: .2rem .35rem; }
+@media (max-width: 500px) {
+  .site-title { font-size: .9rem; }
+  .header-nav a { font-size: .8rem; padding: .15rem .35rem; }
 }

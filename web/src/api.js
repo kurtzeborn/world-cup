@@ -41,7 +41,12 @@ export const api = {
   createLeague:  (data)   => request('POST', '/api/leagues', data),
   joinLeague:    (data)   => request('POST', '/api/leagues/join', data),
 
+  // Admin
+  submitAdminResults: (data) => request('POST', '/api/admin/results', data),
+  recalculateScores: ()      => request('POST', '/api/admin/recalculate', {}),
+
   // Auth helpers
   loginUrl:  '/.auth/login/aad?post_login_redirect_uri=/',
+  loginGoogleUrl: '/.auth/login/google?post_login_redirect_uri=/',
   logoutUrl: '/.auth/logout?post_logout_redirect_uri=/',
 };

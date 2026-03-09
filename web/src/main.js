@@ -9,6 +9,8 @@ import { renderBracketPage, renderBracketContent } from './pages/bracket.js';
 import { renderLeaderboardPage } from './pages/leaderboard.js';
 import { renderLeaguesPage } from './pages/leagues.js';
 import { renderViewPicksPage } from './pages/view-picks.js';
+import { renderAdminPage } from './pages/admin.js';
+import { renderDashboardPage } from './pages/dashboard.js';
 import { initAutoSave, loadLocalPicks, clearLocalPicks, syncToServer } from './autosave.js';
 import { initPicksStatus } from './picks-status.js';
 
@@ -205,6 +207,24 @@ async function navigateTo(page) {
   app.innerHTML = '<div class="loading-screen"><p>Loading…</p></div>';
 
   switch (page) {
+    case 'admin':
+      // Check admin access
+      const { user } = getState();
+      if (!user?.userRoles?.includes('admin')) {
+        app.innerHTML = '<div class="card"><p style="color:#f44336">Access denied: Admin role required</p></div>';
+        return;
+      }
+      await renderAdminPage(app);
+      break;
+    case 'dashboard':
+      if (!isLocked()) {
+        // Before lock, redirect to picks
+        history.replaceState(null, '', '#picks');
+        navigateTo('picks');
+        return;
+      }
+      await renderDashboardPage(app);
+      break;
     case 'leaderboard':
       await renderLeaderboardPage(app);
       break;

@@ -5,6 +5,10 @@
       "rewrite": "/.auth/login/aad"
     },
     {
+      "route": "/.auth/login/google",
+      "rewrite": "/.auth/login/google"
+    },
+    {
       "route": "/.auth/logout",
       "rewrite": "/.auth/logout"
     },

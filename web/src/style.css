@@ -886,10 +886,239 @@ body {
 }
 
 /* ----------------------------------------
+   Admin Page
+-----------------------------------------*/
+.admin-section { margin-bottom: 2.5rem; }
+.admin-section h3 { margin-bottom: 1rem; font-size: 1.2rem; }
+
+.admin-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.admin-group-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  background: var(--surface);
+}
+
+.admin-group-label {
+  font-weight: bold;
+  margin-bottom: .75rem;
+}
+
+.admin-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin-bottom: .75rem;
+}
+
+.admin-form-row label {
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.admin-form-row select {
+  padding: .5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: .9rem;
+}
+
+.admin-3rdplace-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.admin-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem;
+  cursor: pointer;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  font-size: .9rem;
+}
+
+.admin-checkbox-label:hover {
+  background: var(--row-hover);
+}
+
+.admin-checkbox-label input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.admin-round-section { margin-bottom: 2rem; }
+.admin-round-section h4 { margin-bottom: 1rem; font-size: 1rem; }
+
+.admin-matches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.admin-match-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  background: var(--surface);
+}
+
+.admin-match-num {
+  font-weight: bold;
+  font-size: .85rem;
+  color: var(--text-muted);
+  margin-bottom: .35rem;
+}
+
+.admin-match-date {
+  font-size: .75rem;
+  color: var(--text-muted);
+  margin-bottom: .5rem;
+}
+
+.admin-match-teams {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin-bottom: .75rem;
+  font-size: .9rem;
+}
+
+.admin-match-card select {
+  width: 100%;
+  padding: .5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: .9rem;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+/* ----------------------------------------
+   Dashboard Page
+-----------------------------------------*/
+.dashboard-wrapper {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-groups {
+  flex: 1;
+  min-width: 300px;
+}
+
+.dashboard-bracket {
+  flex: 1;
+  min-width: 400px;
+  overflow-x: auto;
+}
+
+.dashboard-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.dashboard-group-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: .75rem;
+  background: var(--surface);
+}
+
+.dashboard-group-title {
+  font-weight: bold;
+  font-size: .9rem;
+  margin-bottom: .5rem;
+  color: var(--text);
+}
+
+.dashboard-group-teams {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  font-size: .85rem;
+}
+
+.dashboard-team-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .35rem;
+  border-radius: 3px;
+}
+
+.dashboard-team-row.correct {
+  background: rgba(76, 175, 80, 0.15);
+}
+
+.dashboard-team-row.partial {
+  background: rgba(255, 193, 7, 0.15);
+}
+
+.dashboard-team-row.incorrect {
+  background: rgba(244, 67, 54, 0.15);
+}
+
+.dashboard-pos {
+  display: inline-block;
+  width: 20px;
+  text-align: center;
+  font-weight: bold;
+  color: var(--text-muted);
+}
+
+.dashboard-picked, .dashboard-actual {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-actual {
+  font-weight: 600;
+}
+
+/* ----------------------------------------
    Responsive
 -----------------------------------------*/
+@media (max-width: 900px) {
+  .dashboard-wrapper {
+    flex-direction: column;
+  }
+  .dashboard-bracket {
+    min-width: 100%;
+  }
+  .admin-groups-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-matches-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
 @media (max-width: 500px) {
   .site-title { font-size: .9rem; }
   .header-nav a { font-size: .8rem; padding: .15rem .35rem; }
   .header-countdown { font-size: .6rem; }
+  .admin-3rdplace-grid {
+    grid-template-columns: 1fr;
+  }
 }

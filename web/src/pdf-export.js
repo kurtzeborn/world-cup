@@ -16,7 +16,7 @@ const ROUND_LABELS = {
 };
 
 export async function exportPicksPDF() {
-  const { picks, user } = getState();
+  const { picks, user, displayName } = getState();
   if (!picks) return;
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -34,7 +34,7 @@ export async function exportPicksPDF() {
   // ── Subtitle ──
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  const name = user?.displayName ?? 'Anonymous';
+  const name = displayName || user?.userDetails || 'Anonymous';
   const date = new Date().toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric',
   });

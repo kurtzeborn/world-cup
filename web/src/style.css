@@ -176,15 +176,20 @@ body {
   pointer-events: auto;
 }
 
-/* Sticky tab bar for Groups ↔ Bracket switching */
-.slide-tabs {
-  display: flex;
+/* Sticky header group for picks view (tabs + status bar) */
+.picks-sticky-header {
   position: sticky;
   top: 68px;  /* below the two-row header */
   z-index: 50;
   background: var(--surface);
+  margin: -1.5rem -1rem 0 -1rem;  /* pull into #app padding */
+}
+[data-theme="dark"] .picks-sticky-header { background: var(--surface); }
+
+/* Tab bar for Groups ↔ Bracket switching */
+.slide-tabs {
+  display: flex;
   border-bottom: 2px solid var(--border);
-  margin: -1.5rem -1rem .75rem -1rem;  /* pull into #app padding */
   padding: 0 1rem;
 }
 .slide-tabs button {
@@ -204,7 +209,48 @@ body {
   color: var(--green);
   border-bottom-color: var(--green);
 }
-[data-theme="dark"] .slide-tabs { background: var(--surface); }
+
+/* Picks status bar (display name + completeness) */
+.picks-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .3rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: .8rem;
+  min-height: 26px;
+  margin-bottom: .75rem;  /* space before slide content */
+}
+.picks-status-name {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  min-width: 0;
+}
+.picks-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  max-width: 180px;
+}
+.edit-name-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: .1rem .3rem;
+  font-size: .65rem;
+  line-height: 1;
+}
+.edit-name-btn:hover { color: var(--text); }
+.picks-status-completeness {
+  flex: 0 0 auto;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.picks-status-completeness.complete { color: var(--green); }
 
 /* Save indicator in tab bar */
 .save-indicator {

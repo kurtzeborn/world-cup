@@ -13,7 +13,7 @@ export async function fetchAuthUser() {
     if (!cp) return null;
     return {
       userId: cp.userId,
-      displayName: cp.userDetails,
+      userDetails: cp.userDetails,
       identityProvider: cp.identityProvider,
       roles: cp.userRoles ?? [],
       isAdmin: (cp.userRoles ?? []).includes('admin'),

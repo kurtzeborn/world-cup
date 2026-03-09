@@ -1,7 +1,8 @@
 // state.js — simple reactive state store
 
 let _state = {
-  user: null,          // { userId, displayName } | null
+  user: null,          // { userId, userDetails, ... } | null
+  displayName: null,   // custom display name (from server profile)
   teams: [],           // all 48 teams
   picks: null,         // current user's picks (or null)
   results: null,       // match results

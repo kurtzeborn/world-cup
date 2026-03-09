@@ -1,6 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { getAuthUser, requireAuth, isAdmin, AuthError } from '../shared/auth.js';
-import { getEntity, upsertEntity } from '../shared/storage.js';
+import { getEntity, upsertEntity, usersTable } from '../shared/storage.js';
 import { UserEntity } from '../shared/types.js';
 
 // GET /api/me
@@ -44,6 +44,17 @@ app.http('updateMe', {
 
       if (!displayName || displayName.length < 2 || displayName.length > 30) {
         return { status: 400, jsonBody: { error: 'Display name must be 2–30 characters' } };
+      }
+
+      // Lazy uniqueness check (single query; race conditions accepted)
+      const tableClient = await usersTable();
+      const safeName = displayName.replace(/'/g, "''");
+      const filter = `PartitionKey eq 'user' and displayName eq '${safeName}'`;
+      const iter = tableClient.listEntities<UserEntity>({ queryOptions: { filter } });
+      for await (const entity of iter) {
+        if (entity.rowKey !== user.userId) {
+          return { status: 409, jsonBody: { error: 'Display name is already taken' } };
+        }
       }
 
       const now = new Date().toISOString();

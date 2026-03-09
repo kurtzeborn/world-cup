@@ -724,7 +724,8 @@ If the user changes group rankings or 3rd-place selections, **only the affected 
 - [x] PDF export (jsPDF text API, lazy-loaded via dynamic import, group + knockout picks, no QR code)
 - [x] Save indicator in tab bar ("Saving…" / "✓ Saved" / "⚠ Save failed")
 - [x] Display ordering (ranked teams shown first in rank order, then unranked in draw order)
-- [ ] Custom display name prompt on first login
+- [x] Custom display name prompt on first login (blocking modal after auth, lazy uniqueness check, editable via pencil icon)
+- [x] Picks status bar (sticky below tabs: display name + pencil left, completeness X/88 right)
 
 ### Phase 3 — Social & Scoring (Target: Late May 2026)
 - [x] Leaderboard API and UI
@@ -789,9 +790,10 @@ If the user changes group rankings or 3rd-place selections, **only the affected 
 | Progressive auth | **Modal after 4 groups** — anonymous users see a sign-in prompt modal after completing 4 group rankings. Dismissible (tracked in sessionStorage). Picks saved to localStorage for anonymous users, synced to server on login. |
 | PDF export | **jsPDF text API, lazy-loaded** — code-split via dynamic import (~393KB only loaded on click). Page 1: group stage (4-col layout, color-coded ranks, 3rd-place advance markers). Page 2: knockout stage by round. No QR code for now. |
 | Bracket warnings | **Skipped** — cascade-clear remains silent. Warning + undo adds complexity for minimal user value. |
+| Display name | **Blocking modal after first login** — required before interacting with picks. 2–30 chars, lazy uniqueness check (single query, race conditions OK). Changeable via pencil icon in picks status bar. Stored in Users table. Header keeps showing email; display name only in picks status bar. |
+| Picks status bar | **Sticky below tabs** — `.picks-sticky-header` wraps tab bar + status bar. Left: display name + pencil edit icon. Right: completeness counter (X/88 = 48 group ranks + 8 third-place advances + 32 bracket winners). Turns green when complete. |
 
 ## 12. Open Questions
 
 1. **League size limits:** Should there be a max number of members per league?
 2. **Scoring rules page:** Should the rules page be accessible before login (public) or only after auth?
-3. **Display name uniqueness:** Should display names be unique across all users, or allow duplicates?

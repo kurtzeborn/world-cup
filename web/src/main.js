@@ -9,6 +9,7 @@ import { renderBracketPage, renderBracketContent } from './pages/bracket.js';
 import { renderLeaderboardPage } from './pages/leaderboard.js';
 import { renderLeaguesPage } from './pages/leagues.js';
 import { initAutoSave, loadLocalPicks, clearLocalPicks, syncToServer } from './autosave.js';
+import { initPicksStatus } from './picks-status.js';
 
 const LOCK_DEADLINE_DEV = '2026-06-11T19:00:00Z'; // fallback
 
@@ -70,6 +71,18 @@ async function init() {
   renderAuthHeader(authUser);
   startCountdown(deadline);
 
+  // If authenticated, fetch server profile for display name
+  let hasDisplayName = false;
+  if (authUser) {
+    try {
+      const me = await api.getMe();
+      if (me?.hasDisplayName) {
+        setState({ displayName: me.displayName });
+        hasDisplayName = true;
+      }
+    } catch { /* profile fetch failed — will prompt for name */ }
+  }
+
   // Load picks: server (if logged in) or localStorage (if anonymous)
   if (authUser) {
     try {
@@ -111,13 +124,20 @@ async function init() {
   // Route to initial page
   const hash = location.hash.replace('#', '') || 'groups';
   navigateTo(hash);
+
+  // Gate: authenticated users must set a display name before interacting
+  if (authUser && !hasDisplayName) {
+    const { showDisplayNameModal } = await import('./display-name-modal.js');
+    const name = await showDisplayNameModal();
+    if (name) setState({ displayName: name });
+  }
 }
 
 function renderAuthHeader(user) {
   const el = document.getElementById('auth-status');
   if (!el) return;
   if (user) {
-    el.innerHTML = `<span class="auth-name">${escapeHtml(user.displayName)}</span> · <a href="${api.logoutUrl}">Sign out</a>`;
+    el.innerHTML = `<span class="auth-name">${escapeHtml(user.userDetails)}</span> · <a href="${api.logoutUrl}">Sign out</a>`;
   } else {
     el.innerHTML = `<a href="${api.loginUrl}">Sign in</a>`;
   }
@@ -185,13 +205,19 @@ function ensureSlidePanel(app, initialPage) {
   if (sliderActive) return;
 
   app.innerHTML = `
-    <div class="slide-tabs" id="slide-tabs">
-      <button class="active" data-slide="groups">Groups</button>
-      <button data-slide="bracket">Bracket</button>
-      <span id="save-indicator" class="save-indicator"></span>
-      <button class="tab-icon-btn" id="export-pdf-btn" title="Export picks to PDF">
-        <i class="fa-solid fa-file-pdf"></i>
-      </button>
+    <div class="picks-sticky-header" id="picks-sticky-header">
+      <div class="slide-tabs" id="slide-tabs">
+        <button class="active" data-slide="groups">Groups</button>
+        <button data-slide="bracket">Bracket</button>
+        <span id="save-indicator" class="save-indicator"></span>
+        <button class="tab-icon-btn" id="export-pdf-btn" title="Export picks to PDF">
+          <i class="fa-solid fa-file-pdf"></i>
+        </button>
+      </div>
+      <div class="picks-status-bar" id="picks-status-bar">
+        <div class="picks-status-name" id="picks-status-name"></div>
+        <div class="picks-status-completeness" id="picks-status-completeness"></div>
+      </div>
     </div>
     <div class="slide-container">
       <div class="slide-track">
@@ -205,6 +231,9 @@ function ensureSlidePanel(app, initialPage) {
 
   renderGroupsPage(app.querySelector('.slide-panel-groups'));
   renderBracketPage(app.querySelector('.slide-panel-bracket'));
+
+  // Initialize picks status bar (name + completeness)
+  initPicksStatus();
 
   sizeSlidePanels();
   sliderActive = true;

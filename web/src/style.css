@@ -290,10 +290,10 @@ body {
   .slide-peek-overlay { display: none; }
 }
 
-/* Small screens: single column groups */
+/* Small screens: full-width single column groups */
 @media (max-width: 599px) {
   .slide-panel-groups .groups-grid {
-    grid-template-columns: 1fr !important;
+    max-width: none;
   }
 }
 
@@ -345,10 +345,11 @@ body {
   gap: 1rem;
 }
 
-/* Inside the slide panel, 2 columns with tighter spacing (overridden to 1-col at 599px) */
+/* Inside the slide panel, single column layout */
 .slide-panel-groups .groups-grid {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: .65rem;
+  max-width: 340px;
 }
 .slide-panel-groups .card {
   padding: .75rem;

@@ -1,217 +1,533 @@
-// pdf-export.js — Export picks to PDF (client-side, no server cost)
+// pdf-export.js — Export picks to visual PDF with bracket and flags
+// Landscape A3: page 1 = group stage, page 2 = knockout bracket
 
 import { jsPDF } from 'jspdf';
 import { getState } from './state.js';
 import { GROUP_LETTERS, TEAMS_BY_ID, TEAMS_BY_GROUP } from './data/teams.js';
-import { BRACKET_STRUCTURE, MATCH_SCHEDULE } from './data/bracket-structure.js';
+import {
+  BRACKET_STRUCTURE, MATCH_SCHEDULE, THIRD_PLACE_SLOTS,
+} from './data/bracket-structure.js';
+import { getThirdPlacePlacements } from './data/third-place-table.js';
 
-const ROUND_ORDER = ['R32', 'R16', 'QF', 'SF', 'TPM', 'F'];
-const ROUND_LABELS = {
-  R32: 'Round of 32',
-  R16: 'Round of 16',
-  QF:  'Quarter-Finals',
-  SF:  'Semi-Finals',
-  TPM: '3rd Place Match',
-  F:   'Final',
-};
+// ─── Bracket pathway definitions (mirrors bracket.js) ───────
+
+const PATHWAY_1_R32 = [74, 77, 73, 75, 83, 84, 81, 82];
+const PATHWAY_1_R16 = [89, 90, 93, 94];
+const PATHWAY_1_QF  = [97, 98];
+
+const PATHWAY_2_R32 = [76, 78, 79, 80, 86, 88, 85, 87];
+const PATHWAY_2_R16 = [91, 92, 95, 96];
+const PATHWAY_2_QF  = [99, 100];
+
+const MATCH_BY_ID = Object.fromEntries(BRACKET_STRUCTURE.map(m => [m.id, m]));
+
+// ─── Flag image cache ───────────────────────────────────────
+
+const _flagCache = new Map();
+
+async function _loadFlag(flagCode) {
+  if (!flagCode || flagCode === 'xx') return null;
+  if (_flagCache.has(flagCode)) return _flagCache.get(flagCode);
+  try {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = `https://flagcdn.com/w80/${flagCode}.png`;
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    c.getContext('2d').drawImage(img, 0, 0);
+    const dataUrl = c.toDataURL('image/png');
+    _flagCache.set(flagCode, dataUrl);
+    return dataUrl;
+  } catch {
+    _flagCache.set(flagCode, null);
+    return null;
+  }
+}
+
+async function _preloadFlags(teamIds) {
+  const codes = new Set();
+  for (const id of teamIds) {
+    const t = TEAMS_BY_ID[id];
+    if (t?.flagCode && t.flagCode !== 'xx') codes.add(t.flagCode);
+  }
+  await Promise.all([...codes].map(c => _loadFlag(c)));
+}
+
+// ─── Match resolution (same as bracket.js, which doesn't export it) ─
+
+function resolveMatchTeams(groupPicks, thirdPlaceAdvancing, bracketPicks) {
+  const result = {};
+  let thirdPlaceBySlot = {};
+  if (thirdPlaceAdvancing.length === 8) {
+    const placements = getThirdPlacePlacements(thirdPlaceAdvancing);
+    if (placements) {
+      THIRD_PLACE_SLOTS.forEach((matchId, i) => {
+        const groupLetter = placements[i];
+        thirdPlaceBySlot[matchId] = (groupPicks[groupLetter] ?? [])[2] ?? null;
+      });
+    }
+  }
+  for (const match of BRACKET_STRUCTURE) {
+    if (match.round !== 'R32') continue;
+    result[match.id] = [
+      _resolveSlot(match.teamA, groupPicks, thirdPlaceBySlot),
+      _resolveSlot(match.teamB, groupPicks, thirdPlaceBySlot),
+    ];
+  }
+  for (const round of ['R16', 'QF', 'SF', 'TPM', 'F']) {
+    for (const match of BRACKET_STRUCTURE.filter(m => m.round === round)) {
+      result[match.id] = [
+        _resolveKnockoutSlot(match.teamA, bracketPicks, result),
+        _resolveKnockoutSlot(match.teamB, bracketPicks, result),
+      ];
+    }
+  }
+  return result;
+}
+
+function _resolveSlot(slot, groupPicks, thirdPlaceBySlot) {
+  if (!slot) return null;
+  if (slot.startsWith('3P_')) {
+    return thirdPlaceBySlot[parseInt(slot.replace('3P_', ''))] ?? null;
+  }
+  const rank = parseInt(slot[0]);
+  const group = slot.slice(1);
+  if (rank === 1 || rank === 2) return groupPicks[group]?.[rank - 1] ?? null;
+  return null;
+}
+
+function _resolveKnockoutSlot(slot, bracketPicks, resolved) {
+  if (!slot) return null;
+  if (slot.startsWith('W')) {
+    const matchId = parseInt(slot.slice(1));
+    const match = MATCH_BY_ID[matchId];
+    return match ? bracketPicks[`${match.round}_${matchId}`] ?? null : null;
+  }
+  if (slot.startsWith('L')) {
+    const matchId = parseInt(slot.slice(1));
+    const match = MATCH_BY_ID[matchId];
+    if (!match) return null;
+    const winner = bracketPicks[`${match.round}_${matchId}`];
+    const [a, b] = resolved[matchId] ?? [];
+    if (!winner || (!a && !b)) return null;
+    return winner === a ? b : a;
+  }
+  return null;
+}
+
+// ─── Drawing primitives ─────────────────────────────────────
+
+const FLAG_W = 7;
+const FLAG_H = 5;
+
+function _drawFlag(doc, teamId, x, y) {
+  const t = TEAMS_BY_ID[teamId];
+  if (!t) return;
+  const dataUrl = _flagCache.get(t.flagCode);
+  if (dataUrl) {
+    try { doc.addImage(dataUrl, 'PNG', x, y - FLAG_H + 1, FLAG_W, FLAG_H); } catch { /* skip */ }
+  }
+}
+
+function _teamName(id) { return TEAMS_BY_ID[id]?.name ?? 'TBD'; }
+
+// ─── Public export ──────────────────────────────────────────
 
 export async function exportPicksPDF() {
   const { picks, user, displayName } = getState();
   if (!picks) return;
 
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const gp = picks.groupPicks ?? {};
+  const tpa = picks.thirdPlaceAdvancing ?? [];
+  const bp = picks.bracketPicks ?? {};
+  const mt = resolveMatchTeams(gp, tpa, bp);
+
+  // Collect every team ID and preload flags
+  const ids = new Set();
+  for (const l of GROUP_LETTERS) {
+    for (const id of gp[l] ?? []) ids.add(id);
+    for (const t of TEAMS_BY_GROUP[l]) ids.add(t.id);
+  }
+  for (const v of Object.values(bp)) { if (v) ids.add(v); }
+  for (const arr of Object.values(mt)) {
+    if (Array.isArray(arr)) arr.forEach(id => { if (id) ids.add(id); });
+  }
+  await _preloadFlags(ids);
+
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
-  const margin = 15;
-  let y = margin;
-
-  // ── Title ──
-  doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  doc.text('FIFA World Cup 2026 Picks', W / 2, y, { align: 'center' });
-  y += 8;
-
-  // ── Subtitle ──
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
+  const margin = 10;
   const name = displayName || user?.userDetails || 'Anonymous';
-  const date = new Date().toLocaleDateString('en-US', {
-    year: 'numeric', month: 'long', day: 'numeric',
-  });
-  doc.text(`${name}  |  ${date}`, W / 2, y, { align: 'center' });
-  y += 3;
 
-  // Divider
-  doc.setDrawColor(180);
-  doc.line(margin, y, W - margin, y);
-  y += 6;
+  // PAGE 1 — Group Stage
+  _drawHeader(doc, W, margin, name);
+  _drawGroupStage(doc, W, H, margin, gp, tpa);
 
-  // ── Group Stage ──
-  doc.setFontSize(13);
+  // PAGE 2 — Knockout Bracket
+  doc.addPage('a3', 'landscape');
+  _drawHeader(doc, W, margin, name);
+  _drawBracket(doc, W, H, margin, bp, mt);
+
+  // Footer on every page
+  const pages = doc.getNumberOfPages();
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p);
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(150);
+    doc.text('wc.k61.dev', W / 2, H - 4, { align: 'center' });
+    doc.text(`Page ${p} of ${pages}`, W - margin, H - 4, { align: 'right' });
+    doc.setTextColor(0);
+  }
+
+  const safeName = name.replace(/[^a-zA-Z0-9]/g, '');
+  doc.save(`world-cup-2026-picks${safeName ? '-' + safeName : ''}.pdf`);
+}
+
+// ─── Header ─────────────────────────────────────────────────
+
+function _drawHeader(doc, W, margin, name) {
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('Group Stage', margin, y);
-  y += 7;
+  doc.text('FIFA World Cup 2026 Picks', W / 2, margin + 5, { align: 'center' });
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  const date = new Date().toLocaleDateString('en-US',
+    { year: 'numeric', month: 'long', day: 'numeric' });
+  doc.text(`${name}  |  ${date}`, W / 2, margin + 10, { align: 'center' });
+  doc.setDrawColor(180);
+  doc.line(margin, margin + 13, W - margin, margin + 13);
+}
 
-  const groupPicks = picks.groupPicks ?? {};
-  const thirdAdvancing = picks.thirdPlaceAdvancing ?? [];
+// ─── Group Stage (12 groups — 4 cols × 3 rows) ─────────────
+
+function _drawGroupStage(doc, W, H, margin, groupPicks, thirdAdvancing) {
+  const top = margin + 18;
   const cols = 4;
+  const rows = 3;
   const colW = (W - margin * 2) / cols;
-  const groupH = 26;
+  const rowH = (H - top - margin - 8) / rows;
+
+  // Section label
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Group Stage', margin, top - 2);
+
+  // 3rd-place advancing summary (right-aligned)
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100);
+  const advText = thirdAdvancing.length > 0
+    ? `3rd Place Advancing (${thirdAdvancing.length}/8): ${[...thirdAdvancing].sort().join(', ')}`
+    : '3rd Place Advancing: None selected';
+  doc.text(advText, W - margin, top - 2, { align: 'right' });
+  doc.setTextColor(0);
 
   for (let i = 0; i < GROUP_LETTERS.length; i++) {
     const letter = GROUP_LETTERS[i];
     const col = i % cols;
-    if (col === 0 && i > 0) y += groupH + 2;
-
-    if (y + groupH > H - margin - 10) {
-      doc.addPage();
-      y = margin;
-    }
-
-    const x = margin + col * colW;
-    const selected = groupPicks[letter] ?? [];
-    const teams = TEAMS_BY_GROUP[letter] ?? [];
-
-    // Group header
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(26, 122, 60); // green
-    doc.text(`Group ${letter}`, x + 1, y);
-    doc.setTextColor(0);
-
-    // Teams in display order (ranked first, then unranked)
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'normal');
-
-    const ranked = selected.map(id => TEAMS_BY_ID[id]).filter(Boolean);
-    const unranked = teams.filter(t => !selected.includes(t.id));
-    const ordered = [...ranked, ...unranked];
-
-    for (let j = 0; j < ordered.length; j++) {
-      const team = ordered[j];
-      const ty = y + 5 + j * 4.5;
-      const rank = selected.indexOf(team.id);
-
-      let prefix = rank >= 0 ? `${rank + 1}.` : '  ';
-      let suffix = '';
-      if (rank === 2 && thirdAdvancing.includes(letter)) suffix = '  [adv]';
-
-      // Color code by rank
-      if (rank === 0 || rank === 1) doc.setTextColor(26, 122, 60);
-      else if (rank === 2) doc.setTextColor(180, 120, 0);
-      else doc.setTextColor(80);
-
-      doc.text(`${prefix} ${team?.name ?? 'TBD'}${suffix}`, x + 2, ty);
-      doc.setTextColor(0);
-    }
+    const row = Math.floor(i / cols);
+    _drawGroupCard(doc, letter, margin + col * colW, top + row * rowH,
+      colW - 4, groupPicks, thirdAdvancing);
   }
+}
 
-  y += groupH + 6;
+function _drawGroupCard(doc, letter, x, y, w, groupPicks, thirdAdvancing) {
+  const selected = groupPicks[letter] ?? [];
+  const teams = TEAMS_BY_GROUP[letter] ?? [];
+  const thirdAdv = thirdAdvancing.includes(letter);
 
-  // ── 3rd Place Summary ──
-  if (y + 10 > H - margin) { doc.addPage(); y = margin; }
+  // Header
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  const advGroups = thirdAdvancing.length > 0
-    ? [...thirdAdvancing].sort().join(', ')
-    : 'None selected';
-  doc.text(`3rd Place Advancing (${thirdAdvancing.length}/8):  ${advGroups}`, margin, y);
-  y += 8;
+  doc.setTextColor(26, 122, 60);
+  doc.text(`Group ${letter}`, x + 1, y + 4);
+  doc.setTextColor(0);
+  doc.setDrawColor(200);
+  doc.line(x + 1, y + 5.5, x + w, y + 5.5);
 
-  // ── Knockout Stage ──
-  doc.addPage();
-  y = margin;
+  // Teams ordered: ranked first, then unranked
+  const ranked = selected.map(id => TEAMS_BY_ID[id]).filter(Boolean);
+  const unranked = teams.filter(t => !selected.includes(t.id));
+  const ordered = [...ranked, ...unranked];
+  const lineH = 6;
 
-  doc.setFontSize(13);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Knockout Stage', margin, y);
-  y += 8;
+  for (let j = 0; j < ordered.length; j++) {
+    const team = ordered[j];
+    const ty = y + 8 + j * lineH;
+    const rank = selected.indexOf(team.id);
 
-  const bp = picks.bracketPicks ?? {};
-
-  for (const round of ROUND_ORDER) {
-    const matches = BRACKET_STRUCTURE.filter(m => m.round === round);
-    if (matches.length === 0) continue;
-
-    if (y + 10 > H - margin) { doc.addPage(); y = margin; }
-
-    // Round header
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(26, 122, 60);
-    doc.text(ROUND_LABELS[round], margin, y);
-    doc.setTextColor(0);
-    y += 5;
-
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'normal');
-
-    // Two-column layout for R32 (16 matches), single for others
-    const useTwoCol = round === 'R32';
-    const matchColW = useTwoCol ? (W - margin * 2) / 2 : W - margin * 2;
-
-    for (let m = 0; m < matches.length; m++) {
-      const match = matches[m];
-      const col = useTwoCol ? m % 2 : 0;
-      if (useTwoCol && col === 0 && m > 0) y += 4.5;
-      if (!useTwoCol && m > 0) y += 4.5;
-
-      if (y + 5 > H - margin) { doc.addPage(); y = margin; }
-
-      const key = `${round}_${match.id}`;
-      const pick = bp[key];
-      const pickTeam = pick ? TEAMS_BY_ID[pick] : null;
-      const sched = MATCH_SCHEDULE[match.id];
-
-      const x = margin + col * matchColW;
-      const info = sched ? `M${match.id} ${sched.date}` : `M${match.id}`;
-      const pickText = pickTeam ? pickTeam.name : '\u2014';
-
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(100);
-      doc.text(info, x + 1, y);
-      doc.setTextColor(0);
+    // Rank badge (circle with number)
+    if (rank >= 0) {
+      const colors = [
+        [26, 122, 60],   // 1st green
+        [33, 150, 243],  // 2nd blue
+        [255, 152, 0],   // 3rd orange
+        [158, 158, 158], // 4th grey
+      ];
+      const [r, g, b] = colors[rank] ?? [158, 158, 158];
+      doc.setFillColor(r, g, b);
+      doc.circle(x + 4, ty - 1.2, 2, 'F');
+      doc.setFontSize(5.5);
+      doc.setTextColor(255);
       doc.setFont('helvetica', 'bold');
-      doc.text(pickText, x + 30, y);
-      doc.setFont('helvetica', 'normal');
+      doc.text(`${rank + 1}`, x + 4, ty - 0.5, { align: 'center' });
+      doc.setTextColor(0);
     }
-    if (useTwoCol) y += 4.5;
-    y += 4;
+
+    // Flag
+    _drawFlag(doc, team.id, x + 8, ty);
+
+    // Name
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', rank >= 0 ? 'bold' : 'normal');
+    if (rank === 0 || rank === 1) doc.setTextColor(26, 122, 60);
+    else if (rank === 2) doc.setTextColor(180, 120, 0);
+    else doc.setTextColor(80);
+    let text = team.name;
+    if (rank === 2 && thirdAdv) text += '  \u25B2';
+    doc.text(text, x + 16, ty, { maxWidth: w - 20 });
+    doc.setTextColor(0);
   }
+}
 
-  // ── Champion & 3rd Place ──
-  if (y + 20 > H - margin) { doc.addPage(); y = margin; }
-  y += 4;
+// ─── Knockout Bracket ───────────────────────────────────────
+// Layout: [P1 R32 | P1 R16 | P1 QF | Center (SF+F+TPM) | P2 QF | P2 R16 | P2 R32]
 
-  doc.setDrawColor(180);
-  doc.line(margin, y, W - margin, y);
-  y += 6;
+function _drawBracket(doc, W, H, margin, bp, mt) {
+  const top = margin + 18;
+  const usableH = H - top - margin - 8;
+  const usableW = W - margin * 2;
 
-  const champPick = bp['F_104'];
-  const champTeam = champPick ? TEAMS_BY_ID[champPick] : null;
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Champion:  ${champTeam?.name ?? '\u2014'}`, margin, y);
-  y += 7;
+  doc.text('Knockout Stage', margin, top - 2);
 
-  const thirdPick = bp['TPM_103'];
-  const thirdTeam = thirdPick ? TEAMS_BY_ID[thirdPick] : null;
-  doc.setFontSize(10);
-  doc.text(`3rd Place:  ${thirdTeam?.name ?? '\u2014'}`, margin, y);
+  const centerW = 56;
+  const sideW = (usableW - centerW) / 2;
+  const colGap = 3;
+  const colsPerSide = 3;
+  const colW = (sideW - colGap * (colsPerSide - 1)) / colsPerSide;
 
-  // ── Footer on every page ──
-  const totalPages = doc.getNumberOfPages();
-  for (let p = 1; p <= totalPages; p++) {
-    doc.setPage(p);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'italic');
-    doc.setTextColor(150);
-    doc.text('wc.k61.dev', W / 2, H - 5, { align: 'center' });
-    doc.text(`Page ${p} of ${totalPages}`, W - margin, H - 5, { align: 'right' });
+  const labels = ['Round of 32', 'Round of 16', 'Quarter-Finals'];
+
+  // Pathway 1 (left)
+  _drawHalf(doc, bp, mt, margin, top, colW, colGap, usableH,
+    PATHWAY_1_R32, PATHWAY_1_R16, PATHWAY_1_QF, labels, false);
+
+  // Pathway 2 (right, mirrored)
+  _drawHalf(doc, bp, mt, margin + sideW + centerW, top, colW, colGap, usableH,
+    PATHWAY_2_R32, PATHWAY_2_R16, PATHWAY_2_QF, labels, true);
+
+  // Center (SF, F, TPM)
+  _drawCenter(doc, bp, mt, margin + sideW, top, centerW, usableH);
+}
+
+// ─── Half bracket (one pathway) ─────────────────────────────
+
+function _drawHalf(doc, bp, mt, startX, top, colW, colGap, usableH,
+                   r32, r16, qf, labels, mirrored) {
+  const rounds = [
+    { ids: r32, round: 'R32', label: labels[0] },
+    { ids: r16, round: 'R16', label: labels[1] },
+    { ids: qf,  round: 'QF',  label: labels[2] },
+  ];
+  const order = mirrored ? [...rounds].reverse() : rounds;
+
+  for (let c = 0; c < order.length; c++) {
+    const { ids, round, label } = order[c];
+    const x = startX + c * (colW + colGap);
+    const matchStartY = top + 5;
+    const matchH = usableH - 5;
+    const slotH = matchH / ids.length;
+
+    // Round label
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(100);
+    doc.text(label, x + colW / 2, top + 2, { align: 'center' });
     doc.setTextColor(0);
+
+    for (let i = 0; i < ids.length; i++) {
+      const matchId = ids[i];
+      const [teamA, teamB] = mt[matchId] || [null, null];
+      const picked = bp[`${round}_${matchId}`] ?? null;
+      const slotCY = matchStartY + i * slotH + slotH / 2;
+      const cardH = Math.min(slotH * 0.85, 14);
+      const cardY = slotCY - cardH / 2;
+
+      _drawMatchCard(doc, x, cardY, colW, cardH, matchId, teamA, teamB, picked);
+
+      // Connector lines to next round
+      if (c < order.length - 1) {
+        const exitX = mirrored ? x : x + colW;
+        const gapMidX = mirrored ? x - colGap / 2 : x + colW + colGap / 2;
+
+        doc.setDrawColor(180);
+        doc.setLineWidth(0.3);
+        doc.line(exitX, slotCY, gapMidX, slotCY);
+
+        if (i % 2 === 0 && i + 1 < ids.length) {
+          const pairCY = matchStartY + (i + 1) * slotH + slotH / 2;
+          doc.line(gapMidX, slotCY, gapMidX, pairCY);
+          const midY = (slotCY + pairCY) / 2;
+          const nextX = mirrored ? gapMidX - colGap / 2 : gapMidX + colGap / 2;
+          doc.line(gapMidX, midY, nextX, midY);
+        }
+      }
+    }
+  }
+}
+
+// ─── Center section (SF → Final → Champion, TPM → 3rd) ─────
+
+function _drawCenter(doc, bp, mt, cx, top, centerW, usableH) {
+  const matchStartY = top + 5;
+  const matchH = usableH - 5;
+  const sfSlotH = matchH / 2;
+  const cardH = Math.min(14, sfSlotH * 0.3);
+  const sfW = centerW * 0.82;
+  const sfX = cx + (centerW - sfW) / 2;
+
+  // ── SF 1 (top half) ──
+  const sf1CY = matchStartY + sfSlotH * 0.35;
+  _label(doc, 'Semi-Final', sfX + sfW / 2, sf1CY - cardH / 2 - 2);
+  const [sf1a, sf1b] = mt[101] || [null, null];
+  _drawMatchCard(doc, sfX, sf1CY - cardH / 2, sfW, cardH, 101,
+    sf1a, sf1b, bp['SF_101'] ?? null);
+
+  // ── SF 2 (bottom half) ──
+  const sf2CY = matchStartY + sfSlotH + sfSlotH * 0.65;
+  _label(doc, 'Semi-Final', sfX + sfW / 2, sf2CY - cardH / 2 - 2);
+  const [sf2a, sf2b] = mt[102] || [null, null];
+  _drawMatchCard(doc, sfX, sf2CY - cardH / 2, sfW, cardH, 102,
+    sf2a, sf2b, bp['SF_102'] ?? null);
+
+  // ── Connector lines from SFs to Final ──
+  const connX = sfX + sfW / 2;
+  doc.setDrawColor(180);
+  doc.setLineWidth(0.3);
+  doc.line(connX, sf1CY + cardH / 2 + 1, connX, sf2CY - cardH / 2 - 1);
+
+  // ── Final ──
+  const finalCY = (sf1CY + sf2CY) / 2;
+  const finalCardH = Math.min(16, cardH * 1.2);
+  _label(doc, 'Final', sfX + sfW / 2, finalCY - finalCardH / 2 - 2);
+  const [fA, fB] = mt[104] || [null, null];
+  const finalPick = bp['F_104'] ?? null;
+  _drawMatchCard(doc, sfX, finalCY - finalCardH / 2, sfW, finalCardH, 104,
+    fA, fB, finalPick);
+
+  // ── Champion card ──
+  const champY = finalCY + finalCardH / 2 + 5;
+  const champTeam = finalPick ? TEAMS_BY_ID[finalPick] : null;
+
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(180, 150, 0);
+  doc.text('Champion', sfX + sfW / 2, champY, { align: 'center' });
+  doc.setTextColor(0);
+
+  if (champTeam) {
+    doc.setDrawColor(200, 170, 0);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(sfX + 2, champY + 1, sfW - 4, 9, 2, 2, 'S');
+    _drawFlag(doc, champTeam.id, sfX + 5, champY + 8);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text(champTeam.name, sfX + 13, champY + 7);
   }
 
-  // Save
-  const safeName = name.replace(/[^a-zA-Z0-9]/g, '');
-  doc.save(`world-cup-2026-picks${safeName ? '-' + safeName : ''}.pdf`);
+  // ── TPM  ──
+  const tpmY = champY + 16;
+  _label(doc, '3rd Place Match', sfX + sfW / 2, tpmY - 2);
+  const [tpmA, tpmB] = mt[103] || [null, null];
+  const tpmPick = bp['TPM_103'] ?? null;
+  _drawMatchCard(doc, sfX, tpmY, sfW, cardH, 103, tpmA, tpmB, tpmPick);
+
+  // 3rd place winner
+  const thirdTeam = tpmPick ? TEAMS_BY_ID[tpmPick] : null;
+  const thirdY = tpmY + cardH + 4;
+  doc.setFontSize(6);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(205, 127, 50);
+  doc.text('3rd Place', sfX + sfW / 2, thirdY, { align: 'center' });
+  doc.setTextColor(0);
+
+  if (thirdTeam) {
+    doc.setDrawColor(205, 127, 50);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(sfX + 2, thirdY + 1, sfW - 4, 8, 2, 2, 'S');
+    _drawFlag(doc, thirdTeam.id, sfX + 5, thirdY + 7);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text(thirdTeam.name, sfX + 13, thirdY + 6);
+  }
+}
+
+function _label(doc, text, x, y) {
+  doc.setFontSize(6);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(100);
+  doc.text(text, x, y, { align: 'center' });
+  doc.setTextColor(0);
+}
+
+// ─── Match card ─────────────────────────────────────────────
+
+function _drawMatchCard(doc, x, y, w, h, matchId, teamA, teamB, picked) {
+  doc.setDrawColor(200);
+  doc.setLineWidth(0.2);
+  doc.setFillColor(255);
+  doc.roundedRect(x, y, w, h, 1, 1, 'FD');
+
+  const half = h / 2;
+  const ts = Math.min(6, h * 0.28);
+
+  // Team A (top half)
+  const aY = y + half / 2 + ts * 0.3;
+  if (teamA && picked === teamA) {
+    doc.setFillColor(212, 237, 218);
+    doc.rect(x + 0.5, y + 0.5, w - 1, half - 0.5, 'F');
+  }
+  _drawTeamRow(doc, teamA, x, aY, w, ts, picked === teamA);
+
+  // Divider
+  doc.setDrawColor(220);
+  doc.setLineWidth(0.15);
+  doc.line(x + 1, y + half, x + w - 1, y + half);
+
+  // Match number label (tiny)
+  doc.setFontSize(3.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(170);
+  doc.text(`M${matchId}`, x + w - 1, y + half + 0.3, { align: 'right' });
+  doc.setTextColor(0);
+
+  // Team B (bottom half)
+  const bY = y + half + half / 2 + ts * 0.3;
+  if (teamB && picked === teamB) {
+    doc.setFillColor(212, 237, 218);
+    doc.rect(x + 0.5, y + half + 0.5, w - 1, half - 1, 'F');
+  }
+  _drawTeamRow(doc, teamB, x, bY, w, ts, picked === teamB);
+  doc.setFont('helvetica', 'normal');
+}
+
+function _drawTeamRow(doc, teamId, x, baseY, w, fontSize, isBold) {
+  if (teamId) {
+    _drawFlag(doc, teamId, x + 2, baseY);
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+    doc.text(_teamName(teamId), x + 10, baseY - 0.5, { maxWidth: w - 14 });
+  } else {
+    doc.setFontSize(fontSize - 0.5);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(150);
+    doc.text('TBD', x + 3, baseY - 0.5);
+    doc.setTextColor(0);
+  }
 }

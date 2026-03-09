@@ -207,7 +207,7 @@ function _drawHeader(doc, W, margin, name) {
 // ─── Group Stage (12 groups — 4 cols × 3 rows) ─────────────
 
 function _drawGroupStage(doc, W, H, margin, groupPicks, thirdAdvancing) {
-  const top = margin + 18;
+  const top = margin + 20;
   const cols = 4;
   const rows = 3;
   const colW = (W - margin * 2) / cols;
@@ -217,16 +217,6 @@ function _drawGroupStage(doc, W, H, margin, groupPicks, thirdAdvancing) {
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('Group Stage', margin, top - 2);
-
-  // 3rd-place advancing summary (right-aligned)
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100);
-  const advText = thirdAdvancing.length > 0
-    ? `3rd Place Advancing (${thirdAdvancing.length}/8): ${[...thirdAdvancing].sort().join(', ')}`
-    : '3rd Place Advancing: None selected';
-  doc.text(advText, W - margin, top - 2, { align: 'right' });
-  doc.setTextColor(0);
 
   for (let i = 0; i < GROUP_LETTERS.length; i++) {
     const letter = GROUP_LETTERS[i];
@@ -259,7 +249,7 @@ function _drawGroupCard(doc, letter, x, y, w, groupPicks, thirdAdvancing) {
 
   for (let j = 0; j < ordered.length; j++) {
     const team = ordered[j];
-    const ty = y + 8 + j * lineH;
+    const ty = y + 10 + j * lineH;
     const rank = selected.indexOf(team.id);
 
     // Rank badge (circle with number)
@@ -290,7 +280,8 @@ function _drawGroupCard(doc, letter, x, y, w, groupPicks, thirdAdvancing) {
     else if (rank === 2) doc.setTextColor(180, 120, 0);
     else doc.setTextColor(80);
     let text = team.name;
-    if (rank === 2 && thirdAdv) text += '  \u25B2';
+    if (rank === 0 || rank === 1) text += '  \u25C0 Advancing';
+    else if (rank === 2 && thirdAdv) text += '  \u25B2 Advancing';
     doc.text(text, x + 16, ty, { maxWidth: w - 20 });
     doc.setTextColor(0);
   }
@@ -300,7 +291,7 @@ function _drawGroupCard(doc, letter, x, y, w, groupPicks, thirdAdvancing) {
 // Layout: R32 (16) → R16 (8) → QF (4) → SF (2) → F (1), left-to-right
 
 function _drawBracket(doc, W, H, margin, bp, mt) {
-  const top = margin + 18;
+  const top = margin + 20;
   const usableH = H - top - margin - 8;
   const usableW = W - margin * 2;
 
@@ -445,7 +436,7 @@ function _drawMatchCard(doc, x, y, w, h, matchId, teamA, teamB, picked) {
   doc.roundedRect(x, y, w, h, 1, 1, 'FD');
 
   const half = h / 2;
-  const ts = Math.min(6, h * 0.28);
+  const ts = Math.max(7, Math.min(8, h * 0.45));
 
   // Team A (top half)
   const aY = y + half / 2 + ts * 0.3;
@@ -460,8 +451,8 @@ function _drawMatchCard(doc, x, y, w, h, matchId, teamA, teamB, picked) {
   doc.setLineWidth(0.15);
   doc.line(x + 1, y + half, x + w - 1, y + half);
 
-  // Match number label (tiny)
-  doc.setFontSize(3.5);
+  // Match number label
+  doc.setFontSize(5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(170);
   doc.text(`M${matchId}`, x + w - 1, y + half + 0.3, { align: 'right' });

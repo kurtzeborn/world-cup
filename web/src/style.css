@@ -245,12 +245,18 @@ body {
 }
 .edit-name-btn:hover { color: var(--text); }
 .picks-status-completeness {
-  flex: 0 0 auto;
   font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
 }
 .picks-status-completeness.complete { color: var(--green); }
+
+.picks-status-right {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+}
 
 /* Save indicator in tab bar */
 .save-indicator {

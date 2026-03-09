@@ -210,13 +210,15 @@ function ensureSlidePanel(app, initialPage) {
         <button class="active" data-slide="groups">Groups</button>
         <button data-slide="bracket">Bracket</button>
         <span id="save-indicator" class="save-indicator"></span>
-        <button class="tab-icon-btn" id="export-pdf-btn" title="Export picks to PDF">
-          <i class="fa-solid fa-file-pdf"></i>
-        </button>
       </div>
       <div class="picks-status-bar" id="picks-status-bar">
         <div class="picks-status-name" id="picks-status-name"></div>
-        <div class="picks-status-completeness" id="picks-status-completeness"></div>
+        <div class="picks-status-right">
+          <div class="picks-status-completeness" id="picks-status-completeness"></div>
+          <button class="tab-icon-btn" id="export-pdf-btn" title="Export picks to PDF">
+            <i class="fa-solid fa-file-pdf"></i>
+          </button>
+        </div>
       </div>
     </div>
     <div class="slide-container">

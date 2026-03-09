@@ -730,8 +730,8 @@ If the user changes group rankings or 3rd-place selections, **only the affected 
 ### Phase 3 — Social & Scoring (Target: Late May 2026)
 - [x] Leaderboard API and UI
 - [x] League create/join flow API and UI
-- [ ] Scoring engine (server-side, `admin-results.ts` exists but recalculation not yet wired)
-- [ ] View other users' picks (post-lock)
+- [x] Scoring engine (server-side, full scoring logic implemented with breakdown tracking)
+- [x] View other users' picks (post-lock, read-only picks page with groups + bracket)
 
 ### Phase 4 — Admin & Polish (Target: Early June 2026)
 - [x] Admin result entry API (`admin-results.ts`)

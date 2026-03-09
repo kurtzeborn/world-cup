@@ -531,7 +531,7 @@ body {
 
 /* Add vertical breathing room in R32 (first column) without breaking connector alignment */
 .bk-col-first .bk-slot {
-  padding: 14px 0;
+  padding: 18px 0;
 }
 
 .bk-slot {

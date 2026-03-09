@@ -310,7 +310,7 @@ body {
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: .65rem;
+  padding: .3rem .65rem .65rem;
   margin-bottom: .5rem;
 }
 .card-title {
@@ -531,7 +531,7 @@ body {
 
 /* Add vertical breathing room in R32 (first column) without breaking connector alignment */
 .bk-col-first .bk-slot {
-  padding: 10px 0;
+  padding: 14px 0;
 }
 
 .bk-slot {

@@ -310,13 +310,13 @@ body {
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 1.25rem;
-  margin-bottom: 1rem;
+  padding: .65rem;
+  margin-bottom: .5rem;
 }
 .card-title {
-  font-size: 1rem;
+  font-size: .82rem;
   font-weight: 600;
-  margin-bottom: .75rem;
+  margin-bottom: .3rem;
   color: var(--green-dark);
 }
 
@@ -341,8 +341,8 @@ body {
 -----------------------------------------*/
 .groups-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: .5rem;
 }
 
 /* Inside the slide panel, single column layout */
@@ -359,18 +359,19 @@ body {
   font-size: .9rem;
   margin-bottom: .25rem;
 }
-.group-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.group-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
 .group-table th {
   text-align: left;
-  padding: .3rem .4rem;
+  padding: .15rem .4rem;
   border-bottom: 2px solid var(--border);
   color: var(--text-muted);
   font-weight: 600;
+  font-size: .82rem;
 }
 .group-table td {
-  padding: .35rem .4rem;
+  padding: .15rem .4rem;
   border-bottom: 1px solid var(--border);
-  line-height: 18px;     /* match rank-badge – prevents height shift on select */
+  line-height: 16px;     /* match rank-badge – prevents height shift on select */
 }
 .group-table tr:last-child td { border-bottom: none; }
 .team-row { cursor: pointer; transition: background .1s; }
@@ -411,13 +412,13 @@ body {
   line-height: 1;
 }
 .fifa-rank:hover { color: var(--green); text-decoration: underline; }
-.rank-cell { white-space: nowrap; text-align: right; line-height: 18px; }
+.rank-cell { white-space: nowrap; text-align: right; line-height: 16px; }
 /* Zero-width spacer so empty cells have the same line-box height as filled ones */
 .rank-cell::after {
   content: '';
   display: inline-block;
   width: 0;
-  height: 18px;
+  height: 16px;
   vertical-align: middle;
 }
 .advance-toggle {
@@ -449,12 +450,12 @@ body {
 }
 .rank-badge {
   display: inline-block;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   text-align: center;
-  line-height: 18px;
-  font-size: .7rem;
+  line-height: 16px;
+  font-size: .65rem;
   font-weight: 700;
   vertical-align: middle;
 }
@@ -530,7 +531,7 @@ body {
 
 /* Add vertical breathing room in R32 (first column) without breaking connector alignment */
 .bk-col-first .bk-slot {
-  padding: 2px 0;
+  padding: 6px 0;
 }
 
 .bk-slot {

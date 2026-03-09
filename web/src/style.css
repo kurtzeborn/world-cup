@@ -569,6 +569,18 @@ body {
   border-right: 2px solid var(--border);
 }
 
+/* Single-slot columns: horizontal-only connector (no vertical bracket leg) */
+.bk-round-col:not(.bk-col-last) .bk-slot:only-child::after {
+  content: '';
+  position: absolute;
+  top: calc(50% - 1px);
+  right: -6px;
+  width: 6px;
+  height: 0;
+  border-top: 2px solid var(--border);
+  border-right: none;
+}
+
 /* Horizontal line incoming from previous round's junction */
 .bk-round-col:not(.bk-col-first) .bk-slot::before {
   content: '';
@@ -638,19 +650,6 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 100%;
-}
-
-.bk-center-final {
-  width: 100%;
-  min-width: 170px;
-}
-
-.bk-center-final .bk-round-hdr {
-  margin-bottom: 4px;
-}
-
-.bk-center-final .bk-slot {
-  min-height: auto;
 }
 
 .bk-center-secondary {

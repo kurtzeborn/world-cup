@@ -11,6 +11,7 @@ const ROUND_NAMES = {
   R16: 'Round of 16',
   QF:  'Quarter-Finals',
   SF:  'Semi-Finals',
+  F:   'Final',
 };
 
 /** Lookup match definition by id */
@@ -26,6 +27,7 @@ const PATHWAY_1 = {
   R16: [89, 90, 93, 94],
   QF:  [97, 98],
   SF:  [101],
+  F:   [104],
 };
 
 const PATHWAY_2 = {
@@ -33,9 +35,10 @@ const PATHWAY_2 = {
   R16: [91, 92, 95, 96],
   QF:  [99, 100],
   SF:  [102],
+  F:   [104],
 };
 
-const HALF_ROUNDS = ['R32', 'R16', 'QF', 'SF'];
+const HALF_ROUNDS = ['R32', 'R16', 'QF', 'SF', 'F'];
 
 // ─── Page entry point ───────────────────────────────────────
 
@@ -157,10 +160,9 @@ function slotDesc(slot) {
 }
 
 function renderCenter(bp, mt, locked) {
-  const finalSlot = renderSlot(MATCH_BY_ID[104], 'F', bp, mt, locked);
   const tpm = renderCenterMatch(103, 'TPM', bp, mt, locked);
 
-  // Champion
+  // Champion (winner of Final)
   const finalPick = bp['F_104'] ?? null;
   const champTeam = finalPick ? TEAMS_BY_ID[finalPick] : null;
   const champHtml = champTeam
@@ -179,10 +181,6 @@ function renderCenter(bp, mt, locked) {
       <div class="bk-award">
         <div class="bk-center-hdr">🏆 Champion</div>
         ${champHtml}
-      </div>
-      <div class="bk-center-final">
-        <div class="bk-round-hdr">Final</div>
-        ${finalSlot}
       </div>
       <div class="bk-center-secondary">
         <div class="bk-center-tpm-wrap">

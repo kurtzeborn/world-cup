@@ -348,16 +348,16 @@ body {
 /* Inside the slide panel, single column layout */
 .slide-panel-groups .groups-grid {
   grid-template-columns: 1fr;
-  gap: .65rem;
+  gap: .35rem;
   max-width: 340px;
 }
 .slide-panel-groups .card {
-  padding: .75rem;
+  padding: .4rem;
   margin-bottom: 0;
 }
 .slide-panel-groups .card-title {
   font-size: .9rem;
-  margin-bottom: .5rem;
+  margin-bottom: .25rem;
 }
 .group-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
 .group-table th {
@@ -496,7 +496,7 @@ body {
 /* Flex row of round columns */
 .bk-half {
   display: flex;
-  gap: 24px;
+  gap: 12px;
   min-width: min-content;
 }
 
@@ -551,8 +551,8 @@ body {
   content: '';
   position: absolute;
   top: 50%;
-  right: -12px;
-  width: 12px;
+  right: -6px;
+  width: 6px;
   height: 50%;
   border-top: 2px solid var(--border);
   border-right: 2px solid var(--border);
@@ -562,8 +562,8 @@ body {
   content: '';
   position: absolute;
   bottom: 50%;
-  right: -12px;
-  width: 12px;
+  right: -6px;
+  width: 6px;
   height: 50%;
   border-bottom: 2px solid var(--border);
   border-right: 2px solid var(--border);
@@ -574,8 +574,8 @@ body {
   content: '';
   position: absolute;
   top: calc(50% - 1px);
-  left: -12px;
-  width: 12px;
+  left: -6px;
+  width: 6px;
   border-top: 2px solid var(--border);
 }
 
@@ -603,7 +603,7 @@ body {
 
 /* Individual team row inside a match */
 .bk-team {
-  padding: 6px 10px;
+  padding: 3px 5px;
   font-size: .78rem;
   white-space: nowrap;
   display: flex;
@@ -630,20 +630,34 @@ body {
   font-size: .72rem;
 }
 
-/* ── Center section: SF → Final → Champion, TPM → 3rd Place ── */
+/* ── Center section: Champion above, Final, TPM + 3rd below ── */
 .bk-center {
-  padding: 1.25rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
 }
 
-.bk-center-main,
+.bk-center-final {
+  width: 100%;
+  min-width: 170px;
+}
+
+.bk-center-final .bk-round-hdr {
+  margin-bottom: 4px;
+}
+
+.bk-center-final .bk-slot {
+  min-height: auto;
+}
+
 .bk-center-secondary {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
   min-width: min-content;
-}
-
-.bk-center-secondary {
   margin-top: 1rem;
 }
 

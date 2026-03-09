@@ -10,6 +10,7 @@ const ROUND_NAMES = {
   R32: 'Round of 32',
   R16: 'Round of 16',
   QF:  'Quarter-Finals',
+  SF:  'Semi-Finals',
 };
 
 /** Lookup match definition by id */
@@ -24,15 +25,17 @@ const PATHWAY_1 = {
   R32: [74, 77, 73, 75, 83, 84, 81, 82],
   R16: [89, 90, 93, 94],
   QF:  [97, 98],
+  SF:  [101],
 };
 
 const PATHWAY_2 = {
   R32: [76, 78, 79, 80, 86, 88, 85, 87],
   R16: [91, 92, 95, 96],
   QF:  [99, 100],
+  SF:  [102],
 };
 
-const HALF_ROUNDS = ['R32', 'R16', 'QF'];
+const HALF_ROUNDS = ['R32', 'R16', 'QF', 'SF'];
 
 // ─── Page entry point ───────────────────────────────────────
 
@@ -154,8 +157,6 @@ function slotDesc(slot) {
 }
 
 function renderCenter(bp, mt, locked) {
-  const sf1 = renderSlot(MATCH_BY_ID[101], 'SF', bp, mt, locked);
-  const sf2 = renderSlot(MATCH_BY_ID[102], 'SF', bp, mt, locked);
   const finalSlot = renderSlot(MATCH_BY_ID[104], 'F', bp, mt, locked);
   const tpm = renderCenterMatch(103, 'TPM', bp, mt, locked);
 
@@ -175,26 +176,13 @@ function renderCenter(bp, mt, locked) {
 
   return `
     <div class="bk-center">
-      <div class="bk-center-main">
-        <div class="bk-half bk-center-bracket">
-          <div class="bk-round-col bk-col-first">
-            <div class="bk-round-hdr">Semi-Finals</div>
-            <div class="bk-slots">
-              ${sf1}
-              ${sf2}
-            </div>
-          </div>
-          <div class="bk-round-col bk-col-last">
-            <div class="bk-round-hdr">Final</div>
-            <div class="bk-slots">
-              ${finalSlot}
-            </div>
-          </div>
-        </div>
-        <div class="bk-award">
-          <div class="bk-center-hdr">🏆 Champion</div>
-          ${champHtml}
-        </div>
+      <div class="bk-award">
+        <div class="bk-center-hdr">🏆 Champion</div>
+        ${champHtml}
+      </div>
+      <div class="bk-center-final">
+        <div class="bk-round-hdr">Final</div>
+        ${finalSlot}
       </div>
       <div class="bk-center-secondary">
         <div class="bk-center-tpm-wrap">

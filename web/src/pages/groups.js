@@ -61,7 +61,6 @@ function renderGroupGrid(byGroup, groupPicks, thirdPlaceAdvancing, locked) {
       <div class="card group-card" data-group="${letter}">
         <div class="card-title">Group ${letter}</div>
         <table class="group-table">
-          <thead><tr><th>Team</th><th></th></tr></thead>
           <tbody>
             ${ordered.map(team => {
               const pos = selected.indexOf(team.id);

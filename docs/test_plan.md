@@ -5,6 +5,29 @@
 
 ---
 
+## Automated Test Coverage
+
+The following scenarios are covered by automated tests in `functions/src/tests/` and do **not** require manual testing:
+
+| Scenario | Test File | Coverage |
+|----------|-----------|----------|
+| T1 — Group Stage: All Exact Positions | `scoring.test.ts` | `calculateScore` exact order → 9 pts |
+| T2 — Group Stage: Top-2 Swap | `scoring.test.ts` | `calculateScore` swap → 5 pts |
+| T3 — Picks Top-2, Finishes as Advancing 3rd | `scoring.test.ts` | correct advance partial credit |
+| T4 — 3rd Pick + Advance Box, Finishes Top-2 | `scoring.test.ts` | 3rd-place pick partial credit |
+| T5 — Zero Points (Completely Wrong) | `scoring.test.ts` | no matches → 0 pts |
+| T6 — 3rd-Place Advancement Scoring | `scoring.test.ts` | 0/4/8 correct → 0/8/16 pts |
+| T7 — Knockout: Full Credit | `scoring.test.ts` | exact bracket slot → full pts |
+| T8 — Knockout: Partial Credit | `scoring.test.ts` | correct round, wrong slot → partial pts |
+| T9 — Knockout: No Credit | `scoring.test.ts` | team eliminated early → 0 pts |
+| T10 — Perfect Score (300 pts) | `scoring.test.ts` | end-to-end perfect calculation |
+| T12 — Picks Visibility Gate | `picks.test.ts` | 403 pre-deadline, 200 post-deadline |
+| Lock completeness validation | `picks.test.ts` | 400 on incomplete groups/3rd/bracket |
+
+Run with: `cd functions && npm test`
+
+---
+
 ## Pre-Test Fixes Applied
 
 The following scoring bugs were found and fixed in `functions/src/functions/admin-results.ts` before this test plan was written:
@@ -79,281 +102,9 @@ After entering results and recalculating:
 
 ## 2. Test Scenarios
 
-Each scenario defines: the picks to enter, the results to enter as admin, and the expected scores.
+> **T1–T10 and T12 are covered by automated tests** — see the Automated Test Coverage section above. Run `npm test` in the `functions/` directory.
 
-Use **Group A** for group-stage-focused tests (teams: Mexico seed 1, South Africa seed 2, South Korea seed 3, UEFA Path D seed 4).
-
----
-
-### T1 — Group Stage: All Exact Positions
-
-**Purpose:** Verify exact-position scoring gives 3 pts per position (max 9 pts, positions 1–3 only; 4th = 0).
-
-**Picks (Group A only — pick the exact correct order):**
-- 1st: Mexico
-- 2nd: South Africa
-- 3rd: South Korea
-- 4th: UEFA Path D
-
-**Results to enter:**
-- Group A: 1st = Mexico, 2nd = South Africa  
-  (Admin infers: 3rd = South Korea [seed 3], 4th = UEFA Path D [seed 4] ✓ matches picks)
-- 3rd-place advancing: check South Korea (Group A's 3rd-place team)
-- Knockout: fill all 32 matches with any teams
-
-**Expected Group A score:** 3 + 3 + 3 + 0 = **9 pts**
-
-**Pass criteria:**
-- [ ] Dashboard shows all four Group A rows as **green** for positions 1–3
-- [ ] Dashboard shows 4th-place row as **gray/no color** (correct but zero points)
-- [ ] Group points total includes 9 from Group A
-
----
-
-### T2 — Group Stage: Advance Partial Credit (Top-2 Swap)
-
-**Purpose:** Verify 1 pt awarded when user picks both 1st and 2nd correctly but swapped.
-
-**Picks (Group A):**
-- 1st: South Africa
-- 2nd: Mexico
-- 3rd: South Korea
-- 4th: UEFA Path D
-
-**Results to enter:**
-- Group A: 1st = Mexico, 2nd = South Africa  
-  (Admin infers: 3rd = South Korea, 4th = UEFA Path D)
-- 3rd-place advancing: check South Korea
-
-**Expected Group A score:** 1 + 1 + 3 + 0 = **5 pts**
-- Mexico: picked 2nd, finished 1st — both in top 2, wrong position → 1 pt
-- South Africa: picked 1st, finished 2nd — both in top 2, wrong position → 1 pt
-- South Korea: picked 3rd, finished 3rd → exact → 3 pts
-- UEFA Path D: 4th, always 0
-
-**Pass criteria:**
-- [ ] Mexico row shows **yellow** (partial)
-- [ ] South Africa row shows **yellow** (partial)
-- [ ] South Korea row shows **green** (exact)
-- [ ] UEFA Path D row shows no scoring indicator
-
----
-
-### T3 — Group Stage: Advance Partial Credit (Picks Top-2 Team Who Finishes 3rd + Advances)
-
-**Purpose:** Verify 1 pt when a team you picked in the top 2 actually finishes 3rd but qualifies as one of the 8 advancing 3rd-place teams.
-
-**Picks (Group A):**
-- 1st: Mexico
-- 2nd: South Korea  ← picked to finish 2nd
-- 3rd: South Africa
-- 4th: UEFA Path D
-
-**Results to enter:**
-- Group A: 1st = Mexico, 2nd = South Africa  
-  (Admin infers: 3rd = South Korea [seed 3], 4th = UEFA Path D [seed 4])
-- **3rd-place advancing: check South Korea** (they DID finish 3rd and DO advance)
-
-**Expected Group A score:**
-- Mexico: picked 1st, finished 1st → **3 pts** (exact)
-- South Korea: picked 2nd, finished 3rd AND advancing → **1 pt** (predicted top-2, they advanced as 3rd-place qualifier)
-- South Africa: picked 3rd, finished 2nd → user had advance box unchecked for South Africa's group position... 
-
-Wait — let me clarify. The advance checkbox is per GROUP (does group A's 3rd-place team advance?), not per team. South Africa is your 3rd-place pick but South Korea actually finishes 3rd. The "advance" checkbox in this scenario is checked for Group A (meaning "yes, Group A's 3rd-place team advances"). South Korea is the actual 3rd-place finisher.
-
-So South Africa was your 3rd pick, but South Africa actually finished 2nd. Did you "predict South Africa would advance"? You picked them 3rd, and your advance box was checked for Group A. But the advance box really means "the team I ranked 3rd will be one of the 8" — and that team in your picks is South Africa, not South Korea.
-
-Given the engine implementation: for South Africa (pos=2), `userPredictedAdvance = thirdPlaceGroups.has("A")` = true (you checked the Group A advance box). The actual position of South Africa = index 1 (2nd place). `teamActuallyAdvanced = actualPos < 2` = true. So South Africa gets 1 pt partial. ✓
-
-Revised expected:
-- Mexico: **3 pts** (exact 1st)
-- South Korea: picked 2nd (pos=1), finished 3rd (actualPos=2). `userPredictedAdvance = pos < 2` = true. `teamActuallyAdvanced = index 2 is advancing3rdSet` = yes (checked the box). → **1 pt**
-- South Africa: picked 3rd (pos=2), finished 2nd (actualPos=1). `userPredictedAdvance = thirdPlaceGroups.has("A")` = true. `teamActuallyAdvanced = actualPos < 2` = true. → **1 pt**
-- UEFA Path D: 4th, 0
-
-Total Group A = **5 pts**
-
-**Pass criteria:**
-- [ ] Mexico: green (3)
-- [ ] South Korea: yellow (1)
-- [ ] South Africa: yellow (1)
-- [ ] UEFA Path D: no indicator
-
----
-
-### T4 — Group Stage: 3rd Pick + Advance Box, Team Finished 1st/2nd
-
-**Purpose:** Verify 1 pt when the user picked a team 3rd with the advance box checked, but that team actually finished 1st or 2nd.
-
-**Picks (Group A):**
-- 1st: South Africa
-- 2nd: South Korea
-- 3rd: Mexico (with advance box checked for Group A)
-- 4th: UEFA Path D
-
-**Results to enter:**
-- Group A: 1st = Mexico, 2nd = South Africa
-
-**Expected Group A score:**
-- South Africa: picked 1st, finished 2nd — both top 2, wrong position → **1 pt**
-- South Korea: picked 2nd, finished 3rd + advancing (Group A box checked) — wait: South Korea is not the user's 3rd pick. South Korea actually finished 3rd. But the user picked South Korea 2nd. Does South Korea advance? In this scenario, the admin marks Group A's 3rd-place team (South Korea, inferred as seed 3) as advancing. The user picked South Korea 2nd — `userPredictedAdvance = pos < 2` = true. `teamActuallyAdvanced = actualPos=2 && advancing3rdSet.has(SKO)` = yes → **1 pt**
-- Mexico: picked 3rd (pos=2), advance box checked. Finished 1st (actualPos=0). `userPredictedAdvance = thirdPlaceGroups.has("A")` = true. `teamActuallyAdvanced = actualPos < 2` = true → **1 pt**
-- UEFA Path D: 0
-
-Total = **3 pts**
-
-**Pass criteria:**
-- [ ] Mexico: yellow (1)
-- [ ] South Africa: yellow (1)
-- [ ] South Korea: yellow (1)
-- [ ] UEFA Path D: no indicator
-
----
-
-### T5 — Group Stage: Zero Points (Completely Wrong)
-
-**Purpose:** Verify 0 pts when picks have no correct teams in their predicted positions and no teams advance as predicted.
-
-**Picks (Group A):**
-- 1st: UEFA Path D
-- 2nd: South Korea
-- 3rd: South Africa (with advance box **unchecked** for Group A)
-- 4th: Mexico
-
-**Results to enter:**
-- Group A: 1st = Mexico, 2nd = South Africa
-  (Admin infers: 3rd = South Korea, 4th = UEFA Path D)
-- 3rd-place advancing: **do NOT check Group A**
-
-**Expected Group A score:**
-- UEFA Path D: picked 1st, finished 4th — not in top 2 of actual → **0 pts**
-- South Korea: picked 2nd, finished 3rd — `userPredictedAdvance = pos < 2` = true. `teamActuallyAdvanced = pos 2 && NOT in advancing3rdSet` = false → **0 pts**
-- South Africa: picked 3rd, advance box unchecked → `userPredictedAdvance = false` → **0 pts** (even though they finished 2nd)
-- Mexico: 4th pick, always 0
-
-Total Group A = **0 pts**
-
-**Pass criteria:**
-- [ ] All Group A rows show **red** (incorrect)
-
----
-
-### T6 — 3rd-Place Advancement Scoring
-
-**Purpose:** Verify the 2-point advancement picks score correctly.
-
-**Setup:** Use a fresh test account. Complete picks for all 12 groups with Group A–H 3rd-place checked (8 picks).
-
-**Results to enter (focus on advancement):**
-- Make sure Group A's actual 3rd-place team (Mexico per seed inference, if you enter South Africa 1st + South Korea 2nd) **is** in the 8 advancing teams you check.
-- Make sure Group I–L's 3rd-place teams are **not** in the 8 you mark as advancing.
-
-| Group | User checked advance | Admin marks advancing | Expected |
-|-------|---------------------|----------------------|---------|
-| A | ✓ | ✓ (Group A's 3rd team included) | 2 pts |
-| B | ✓ | ✓ | 2 pts |
-| C | ✓ | ✓ | 2 pts |
-| D | ✓ | ✓ | 2 pts |
-| E | ✓ | ✓ | 2 pts |
-| F | ✓ | ✓ | 2 pts |
-| G | ✓ | ✓ | 2 pts |
-| H | ✓ | ✓ | 2 pts |
-| I | ✗ | ✗ | 0 pts |
-| J | ✗ | ✗ | 0 pts |
-| K | ✗ | ✗ | 0 pts |
-| L | ✗ | ✗ | 0 pts |
-
-**Expected 3rd-place total: 16 pts** (all 8 correct)
-
-To get partial: use a mix — e.g., check only A–D (4 correct → 8 pts).
-
-**Pass criteria:**
-- [ ] Leaderboard shows correct `thirdPlacePoints`
-- [ ] Score breakdown in table storage shows `3rd_advance_A` through `3rd_advance_H` each = 2
-
----
-
-### T7 — Knockout Stage: Full Credit
-
-**Purpose:** Verify exact bracket picks give full credit.
-
-**Setup:** Create a bracket where you predict (and the results confirm) the exact bracket path for several teams.
-
-**Picks:** Choose Team X to win R32 Match 73. Choose the same Team X to win R16 Match 90.
-
-**Results to enter:** Mark Team X as the winner of M73 and M90.
-
-**Expected:**
-- R32 slot (2 pts full) + R16 slot (4 pts full) = **6 pts** for Team X's path
-
-**Pass criteria:**
-- [ ] Dashboard bracket shows Match 73 and Match 90 slots for Team X as **green**
-- [ ] Score breakdown shows `ko_R32_73_full = 2` and `ko_R16_90_full = 4`
-
----
-
-### T8 — Knockout Stage: Partial Credit
-
-**Purpose:** Verify a team that wins in the correct round but wrong bracket slot gives partial credit.
-
-**Picks:** Choose Germany (`GER`) to win R32 Match 74.
-
-**Results to enter:** Mark Germany as the winner of **Match 73** (not 74 — a different R32 match).
-
-**Expected:** Germany won Round of 32, just not the slot you predicted → **1 pt** (partial R32)
-
-**Pass criteria:**
-- [ ] Dashboard bracket shows Match 74 slot as **yellow** (partial)
-- [ ] Score breakdown shows `ko_R32_74_partial = 1`
-
----
-
-### T9 — Knockout Stage: No Credit (Early Elimination)
-
-**Purpose:** Verify 0 pts when a team is eliminated before the round you predicted.
-
-**Picks:** Choose Brazil (`BRA`) to win R16 Match 91.
-
-**Results to enter:** Mark Brazil as the **loser** of their R32 match (eliminated before R16).
-
-**Expected:** Brazil didn't even reach R16 → **0 pts**
-
-**Pass criteria:**
-- [ ] Dashboard bracket shows Match 91 as **red** (incorrect)
-- [ ] Score breakdown has no entry for `ko_R16_91`
-
----
-
-### T10 — End-to-End: Full Score Calculation
-
-**Purpose:** Verify the total of all scoring categories adds up correctly in the leaderboard.
-
-**Setup:** Use a complete set of picks with a known expected score across all categories.
-
-Suggested test data — designed for easy arithmetic:
-
-**Group picks:** For every group, pick the 4 teams in exact seed order (1st = seed 1, 2nd = seed 2, etc.).
-
-**Results to enter:** For every group, enter 1st = seed 1, 2nd = seed 2.
-- Admin infers 3rd = seed 3, 4th = seed 4 → all 12 groups exact for positions 1–3.
-- Expected group score: 12 groups × 9 pts = **108 pts**
-
-**3rd-place picks:** Check all 12 groups.
-
-**Results:** Mark 8 of those 12 groups' seed-3 teams as advancing.
-- Expected 3rd-place score: 8 × 2 = **16 pts**
-
-**Bracket picks:** Pick every match winner to be the team listed first in each R32 slot (teams seeded higher in the draw).
-
-**Results:** Mark those same teams as winners for all 32 knockout matches in the exact same slots.
-- Expected knockout score: 16×2 + 8×4 + 4×8 + 2×16 + 1×16 + 1×32 = 32+32+32+32+16+32 = **176 pts**
-
-**Expected total: 108 + 16 + 176 = 300 pts** (perfect score)
-
-**Pass criteria:**
-- [ ] Leaderboard shows 300 pts for this test account
-- [ ] Group points = 108, 3rd-place points = 16, knockout points = 176
-- [ ] Dashboard shows all rows green
+Only one manual scenario remains:
 
 ---
 
@@ -372,25 +123,6 @@ Design the picks and results so Account A has more exact group position hits.
 
 **Pass criteria:**
 - [ ] Leaderboard shows Account A above Account B at the same point total
-
----
-
-### T12 — Picks Visibility (Post-Lock Gate)
-
-**Purpose:** Verify that other users' picks are only visible after picks are locked.
-
-**Steps:**
-1. Create a second test account with picks but **not yet locked**
-2. From your admin account, navigate to the leaderboard and click on the second account's name
-3. Verify you see a "not visible before lock deadline" message (or 403 response)
-4. Lock the second account's picks using the force-lock method from section 1.2
-5. Recalculate scores
-6. From your admin account, click on the second account's name again
-7. Verify you can now see their full group and bracket picks
-
-**Pass criteria:**
-- [ ] Pre-lock: picks are not viewable by others
-- [ ] Post-lock: picks are viewable, showing correct group rankings and bracket
 
 ---
 
@@ -456,20 +188,14 @@ Record issues found during testing here. Include: date, test scenario, steps to 
 
 ## 6. Sign-Off
 
-All tests passing:
+Automated tests passing (`cd functions && npm test`):
 
-- [ ] T1 Group exact scoring
-- [ ] T2 Group top-2 swap partial
-- [ ] T3 Group top-2 pick finishes as advancing 3rd
-- [ ] T4 Group 3rd pick + advance → finished top 2
-- [ ] T5 Group zero points
-- [ ] T6 3rd-place advancement scoring (full and partial)
-- [ ] T7 Knockout full credit
-- [ ] T8 Knockout partial credit
-- [ ] T9 Knockout no credit
-- [ ] T10 Full 300-point perfect score
+- [ ] All scoring unit tests (`scoring.test.ts`) — T1–T10
+- [ ] All handler tests (`picks.test.ts`) — T12 + lock validation
+
+Manual tests passing:
+
 - [ ] T11 Tiebreaker sort
-- [ ] T12 Picks visibility gate
 - [ ] All regression checklist items
 
 **Tested by:** ________________________  **Date:** ________________________

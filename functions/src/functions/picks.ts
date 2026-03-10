@@ -88,96 +88,100 @@ app.http('savePicks', {
 });
 
 // POST /api/picks/lock — lock picks (one-way)
+export async function lockPicksHandler(request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> {
+  try {
+    const user = requireAuth(request);
+
+    // Already past lock deadline — system locks picks automatically
+    const deadline = getLockDeadline();
+
+    const existing = await getEntity<PicksEntity>('Picks', user.userId, 'picks');
+    if (!existing) {
+      return { status: 400, jsonBody: { error: 'No picks to lock' } };
+    }
+    if (existing.lockedAt) {
+      return { status: 200, jsonBody: { lockedAt: existing.lockedAt } };
+    }
+
+    // Validate completeness
+    const groupPicks = JSON.parse(existing.groupPicks || '{}');
+    const thirdPlace = JSON.parse(existing.thirdPlaceAdvancing || '[]');
+    const bracket = JSON.parse(existing.bracketPicks || '{}');
+
+    const groupCount = Object.keys(groupPicks).length;
+    const thirdPlaceCount = thirdPlace.length;
+    const bracketCount = Object.keys(bracket).length;
+
+    if (groupCount < 12) {
+      return { status: 400, jsonBody: { error: `Must rank all 12 groups (${groupCount}/12 done)` } };
+    }
+    if (thirdPlaceCount !== 8) {
+      return { status: 400, jsonBody: { error: `Must select exactly 8 third-place teams (${thirdPlaceCount}/8 done)` } };
+    }
+    if (bracketCount < 32) {
+      return { status: 400, jsonBody: { error: `Must complete the knockout bracket (${bracketCount}/32 picks done)` } };
+    }
+
+    const now = new Date().toISOString();
+    await upsertEntity<PicksEntity>('Picks', user.userId, 'picks', {
+      groupPicks: existing.groupPicks,
+      thirdPlaceAdvancing: existing.thirdPlaceAdvancing,
+      bracketPicks: existing.bracketPicks,
+      lockedAt: now,
+      updatedAt: now,
+    });
+
+    return { status: 200, jsonBody: { lockedAt: now, deadline: deadline.toISOString() } };
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return { status: err.statusCode, jsonBody: { error: err.message } };
+    }
+    throw err;
+  }
+}
+
 app.http('lockPicks', {
   methods: ['POST'],
   authLevel: 'anonymous',
   route: 'picks/lock',
-  handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
-    try {
-      const user = requireAuth(request);
-
-      // Already past lock deadline — system locks picks automatically
-      const deadline = getLockDeadline();
-
-      const existing = await getEntity<PicksEntity>('Picks', user.userId, 'picks');
-      if (!existing) {
-        return { status: 400, jsonBody: { error: 'No picks to lock' } };
-      }
-      if (existing.lockedAt) {
-        return { status: 200, jsonBody: { lockedAt: existing.lockedAt } };
-      }
-
-      // Validate completeness
-      const groupPicks = JSON.parse(existing.groupPicks || '{}');
-      const thirdPlace = JSON.parse(existing.thirdPlaceAdvancing || '[]');
-      const bracket = JSON.parse(existing.bracketPicks || '{}');
-
-      const groupCount = Object.keys(groupPicks).length;
-      const thirdPlaceCount = thirdPlace.length;
-      const bracketCount = Object.keys(bracket).length;
-
-      if (groupCount < 12) {
-        return { status: 400, jsonBody: { error: `Must rank all 12 groups (${groupCount}/12 done)` } };
-      }
-      if (thirdPlaceCount !== 8) {
-        return { status: 400, jsonBody: { error: `Must select exactly 8 third-place teams (${thirdPlaceCount}/8 done)` } };
-      }
-      if (bracketCount < 32) {
-        return { status: 400, jsonBody: { error: `Must complete the knockout bracket (${bracketCount}/32 picks done)` } };
-      }
-
-      const now = new Date().toISOString();
-      await upsertEntity<PicksEntity>('Picks', user.userId, 'picks', {
-        groupPicks: existing.groupPicks,
-        thirdPlaceAdvancing: existing.thirdPlaceAdvancing,
-        bracketPicks: existing.bracketPicks,
-        lockedAt: now,
-        updatedAt: now,
-      });
-
-      return { status: 200, jsonBody: { lockedAt: now, deadline: deadline.toISOString() } };
-    } catch (err) {
-      if (err instanceof AuthError) {
-        return { status: err.statusCode, jsonBody: { error: err.message } };
-      }
-      throw err;
-    }
-  },
+  handler: lockPicksHandler,
 });
 
 // GET /api/picks/:userId — view another user's picks (post-lock only)
+export async function getPicksForUserHandler(request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> {
+  try {
+    requireAuth(request);
+
+    if (!isLocked()) {
+      return { status: 403, jsonBody: { error: 'Picks are not yet visible before the lock deadline' } };
+    }
+
+    const targetUserId = request.params.userId;
+    const entity = await getEntity<PicksEntity>('Picks', targetUserId, 'picks');
+    if (!entity || !entity.lockedAt) {
+      return { status: 404, jsonBody: { error: 'No locked picks found for this user' } };
+    }
+
+    return {
+      status: 200,
+      jsonBody: {
+        groupPicks: JSON.parse(entity.groupPicks || '{}'),
+        thirdPlaceAdvancing: JSON.parse(entity.thirdPlaceAdvancing || '[]'),
+        bracketPicks: JSON.parse(entity.bracketPicks || '{}'),
+        lockedAt: entity.lockedAt,
+      },
+    };
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return { status: err.statusCode, jsonBody: { error: err.message } };
+    }
+    throw err;
+  }
+}
+
 app.http('getPicksForUser', {
   methods: ['GET'],
   authLevel: 'anonymous',
   route: 'picks/{userId}',
-  handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
-    try {
-      requireAuth(request);
-
-      if (!isLocked()) {
-        return { status: 403, jsonBody: { error: 'Picks are not yet visible before the lock deadline' } };
-      }
-
-      const targetUserId = request.params.userId;
-      const entity = await getEntity<PicksEntity>('Picks', targetUserId, 'picks');
-      if (!entity || !entity.lockedAt) {
-        return { status: 404, jsonBody: { error: 'No locked picks found for this user' } };
-      }
-
-      return {
-        status: 200,
-        jsonBody: {
-          groupPicks: JSON.parse(entity.groupPicks || '{}'),
-          thirdPlaceAdvancing: JSON.parse(entity.thirdPlaceAdvancing || '[]'),
-          bracketPicks: JSON.parse(entity.bracketPicks || '{}'),
-          lockedAt: entity.lockedAt,
-        },
-      };
-    } catch (err) {
-      if (err instanceof AuthError) {
-        return { status: err.statusCode, jsonBody: { error: err.message } };
-      }
-      throw err;
-    }
-  },
+  handler: getPicksForUserHandler,
 });

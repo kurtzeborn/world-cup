@@ -129,51 +129,70 @@ function calculateScore(picks: PicksEntity, results: Results): Omit<ScoreEntity,
   // === GROUP STAGE SCORING ===
   try {
     const groupPicks = JSON.parse(picks.groupPicks || '{}') as Record<string, string[]>;
+    // thirdPlaceAdvancing stores GROUP LETTERS (e.g. ["A","C","E",...]) — which groups'
+    // 3rd-place team the user predicted would qualify as one of the 8 advancing teams.
+    const thirdPlaceGroups = new Set(JSON.parse(picks.thirdPlaceAdvancing || '[]') as string[]);
+    // advancing3rdPlace stores TEAM IDs of the 8 teams that actually advanced.
+    const advancing3rdSet = new Set(results.advancing3rdPlace);
     const { groupStandings } = results;
 
-    // For each group the user picked
     for (const [groupId, predictedOrder] of Object.entries(groupPicks)) {
       const actualOrder = groupStandings[groupId];
       if (!actualOrder) continue;
 
-      // Score each position (1st, 2nd, 3rd, 4th)
-      // predictedOrder is a user's ranking: [1st, 2nd, 3rd, 4th]
-      // actualOrder is the actual final standing: [1st, 2nd, 3rd, 4th]
       for (let pos = 0; pos < 4; pos++) {
         const predictedTeam = predictedOrder[pos];
-        const actualTeam = actualOrder[pos];
+        if (!predictedTeam) continue;
 
-        if (predictedTeam === actualTeam) {
-          // Exact position match
+        // 4th place never scores (rules: "4th place — no points regardless of correctness")
+        if (pos === 3) continue;
+
+        const actualPos = actualOrder.indexOf(predictedTeam);
+        if (actualPos === -1) continue;
+
+        if (actualPos === pos) {
+          // Exact position match (positions 1st, 2nd, or 3rd)
           groupPoints += POINTS.GROUP_EXACT_POSITION;
-          breakdown[`group_${groupId}_${pos + 1}st_exact`] = POINTS.GROUP_EXACT_POSITION;
-        } else if (pos < 2 && actualOrder.slice(0, 2).includes(predictedTeam)) {
-          // Top 2 team predicted, but wrong position (only score if they're in top 2)
+          breakdown[`group_${groupId}_pos${pos + 1}_exact`] = POINTS.GROUP_EXACT_POSITION;
+          continue;
+        }
+
+        // Did the user predict this team would advance?
+        //   Picking 1st or 2nd = predicting top-2 advance.
+        //   Picking 3rd AND checking the advance box = predicting qualifying 3rd-place advance.
+        const userPredictedAdvance =
+          pos < 2 ||
+          (pos === 2 && thirdPlaceGroups.has(groupId));
+
+        if (!userPredictedAdvance) continue;
+
+        // Did the team actually advance?
+        const teamActuallyAdvanced =
+          actualPos < 2 ||                                       // finished top 2
+          (actualPos === 2 && advancing3rdSet.has(predictedTeam)); // finished 3rd + is one of 8
+
+        if (teamActuallyAdvanced) {
           groupPoints += POINTS.GROUP_CORRECT_ADVANCE;
-          breakdown[`group_${groupId}_${pos + 1}st_advance`] = POINTS.GROUP_CORRECT_ADVANCE;
-        } else if (pos === 2 && actualOrder[2] === predictedTeam) {
-          // Special case: 3rd place position match (even if not advancing, still 3 pts)
-          groupPoints += POINTS.GROUP_EXACT_POSITION;
-          breakdown[`group_${groupId}_3rd_exact`] = POINTS.GROUP_EXACT_POSITION;
-        } else if (pos === 2 && results.advancing3rdPlace.includes(predictedTeam) && actualOrder[2] === predictedTeam) {
-          // Predicted 3rd-place team that actually finished 3rd AND advanced
-          groupPoints += POINTS.GROUP_CORRECT_ADVANCE;
-          breakdown[`group_${groupId}_3rd_advance`] = POINTS.GROUP_CORRECT_ADVANCE;
+          breakdown[`group_${groupId}_pos${pos + 1}_advance`] = POINTS.GROUP_CORRECT_ADVANCE;
         }
       }
     }
   } catch { /* ignore parse errors */ }
 
   // === 3RD-PLACE ADVANCEMENT SCORING ===
+  // picks.thirdPlaceAdvancing = group letters; results.advancing3rdPlace = team IDs.
+  // Convert via groupStandings to compare correctly.
   try {
-    const predicted3rd = JSON.parse(picks.thirdPlaceAdvancing || '[]') as string[];
-    const { advancing3rdPlace } = results;
-    const actualAdvancingSet = new Set(advancing3rdPlace);
+    const predicted3rdGroups = JSON.parse(picks.thirdPlaceAdvancing || '[]') as string[];
+    const advancing3rdSet = new Set(results.advancing3rdPlace);
+    const { groupStandings } = results;
 
-    for (const teamId of predicted3rd) {
-      if (actualAdvancingSet.has(teamId)) {
+    for (const groupLetter of predicted3rdGroups) {
+      // Find which team actually finished 3rd in this group
+      const actualThirdTeam = groupStandings[groupLetter]?.[2];
+      if (actualThirdTeam && advancing3rdSet.has(actualThirdTeam)) {
         thirdPlacePoints += POINTS.THIRD_PLACE_CORRECT;
-        breakdown[`3rd_advance_${teamId}`] = POINTS.THIRD_PLACE_CORRECT;
+        breakdown[`3rd_advance_${groupLetter}`] = POINTS.THIRD_PLACE_CORRECT;
       }
     }
   } catch { /* ignore parse errors */ }

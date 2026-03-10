@@ -183,8 +183,8 @@ If two or more users have the same total points, ties are broken in this order:
 
 ## 6. Important Notes
 
-- **All picks lock before the first match.** There are no live/in-play predictions.
-- **Picks are all-or-nothing at submission time.** You must complete all group rankings, 3rd-place selections, and the full knockout bracket before locking.
+- **All picks lock before the first match.** There are no live/in-play predictions. The lock deadline is **June 11, 2026** (first match kickoff).
+- **Picks auto-save as you go.** You do not need to submit all at once — changes are saved automatically. However, you should complete all group rankings, 3rd-place selections, and the full knockout bracket before the deadline to maximize your score.
 - **Results are entered by the admin** as matches complete. Scores update in real-time on the leaderboard.
 - **No bonus picks or special predictions** beyond the group/3rd-place/knockout structure described above.
 - **Private leagues** use the same scoring system — they simply filter the leaderboard to league members.

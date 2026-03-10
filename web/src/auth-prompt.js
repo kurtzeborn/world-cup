@@ -39,6 +39,9 @@ function showAuthModal() {
         <a class="btn btn-primary" href="${api.loginUrl}" style="text-decoration:none;text-align:center">
           <i class="fa-brands fa-microsoft"></i> Sign in with Microsoft
         </a>
+        <a class="btn btn-secondary" href="${api.loginGoogleUrl}" style="text-decoration:none;text-align:center">
+          <i class="fa-brands fa-google"></i> Sign in with Google
+        </a>
       </div>
     </div>
   `;

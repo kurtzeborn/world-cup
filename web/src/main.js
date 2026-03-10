@@ -235,7 +235,7 @@ async function navigateTo(page) {
     case 'admin':
       // Check admin access
       const { user } = getState();
-      if (!user?.userRoles?.includes('admin')) {
+      if (!user?.isAdmin) {
         app.innerHTML = '<div class="card"><p style="color:#f44336">Access denied: Admin role required</p></div>';
         return;
       }

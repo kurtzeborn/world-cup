@@ -43,3 +43,6 @@ __queuestorage__/
 
 # TypeScript
 *.tsbuildinfo
+
+cookies*.txt
+temp_cookies*.txt

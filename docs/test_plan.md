@@ -3,41 +3,7 @@
 **Goal:** Verify that picks, result entry, score calculation, dashboard display, and leaderboard all work end-to-end before opening to real users.  
 **Window:** March 9–12, 2026 (before playoff results are finalized on ~March 26)
 
----
-
-## Automated Test Coverage
-
-The following scenarios are covered by automated tests in `functions/src/tests/` and do **not** require manual testing:
-
-| Scenario | Test File | Coverage |
-|----------|-----------|----------|
-| T1 — Group Stage: All Exact Positions | `scoring.test.ts` | `calculateScore` exact order → 9 pts |
-| T2 — Group Stage: Top-2 Swap | `scoring.test.ts` | `calculateScore` swap → 5 pts |
-| T3 — Picks Top-2, Finishes as Advancing 3rd | `scoring.test.ts` | correct advance partial credit |
-| T4 — 3rd Pick + Advance Box, Finishes Top-2 | `scoring.test.ts` | 3rd-place pick partial credit |
-| T5 — Zero Points (Completely Wrong) | `scoring.test.ts` | no matches → 0 pts |
-| T6 — 3rd-Place Advancement Scoring | `scoring.test.ts` | 0/4/8 correct → 0/8/16 pts |
-| T7 — Knockout: Full Credit | `scoring.test.ts` | exact bracket slot → full pts |
-| T8 — Knockout: Partial Credit | `scoring.test.ts` | correct round, wrong slot → partial pts |
-| T9 — Knockout: No Credit | `scoring.test.ts` | team eliminated early → 0 pts |
-| T10 — Perfect Score (300 pts) | `scoring.test.ts` | end-to-end perfect calculation |
-| T12 — Picks Visibility Gate | `picks.test.ts` | 403 pre-deadline, 200 post-deadline |
-| Lock completeness validation | `picks.test.ts` | 400 on incomplete groups/3rd/bracket |
-
-Run with: `cd functions && npm test`
-
----
-
-## Pre-Test Fixes Applied
-
-The following scoring bugs were found and fixed in `functions/src/functions/admin-results.ts` before this test plan was written:
-
-| # | Bug | Impact |
-|---|-----|--------|
-| 1 | Exact 4th-place pick gave 3 pts (rules say 0) | Inflated scores |
-| 2 | Group partial credit: picking a 1st/2nd team who finished 3rd + advanced scored 0 (should be 1) | Missed points |
-| 3 | Group partial credit: picking a team 3rd + advance box when they finished 1st/2nd scored 0 (should be 1) | Missed points |
-| 4 | 3rd-place advancement scoring compared group letters to team IDs — always scored 0 | Critical: broken feature |
+> **Scoring logic is covered by automated tests** (`cd functions && npm test`). This plan covers the UI and end-to-end flow only.
 
 ---
 
@@ -45,10 +11,9 @@ The following scoring bugs were found and fixed in `functions/src/functions/admi
 
 ### 1.1 Test Accounts
 
-You need **at least 3 test accounts** to test the leaderboard and tiebreakers. Options:
+You need **at least 2 test accounts** (one for T1, two for T2). Options:
 - Your normal admin account (scott@kurtzeborn.org via Microsoft)
-- A second Google account
-- A third Microsoft or Google account
+- A second Google or Microsoft account
 
 For each account, sign in at [wc.k61.dev](https://wc.k61.dev), set a display name, and create picks as described in the test scenarios below.
 
@@ -102,24 +67,52 @@ After entering results and recalculating:
 
 ## 2. Test Scenarios
 
-> **T1–T10 and T12 are covered by automated tests** — see the Automated Test Coverage section above. Run `npm test` in the `functions/` directory.
-
-Only one manual scenario remains:
+Use **Group A** for group-stage tests (teams: Mexico seed 1, South Africa seed 2, South Korea seed 3, UEFA Path D seed 4).
 
 ---
 
-### T11 — Tiebreaker Verification
+### T1 — Scoring UI: Green / Yellow / Red Across All Categories
+
+**Purpose:** See all three scoring states (exact, partial, zero) in the dashboard across group, 3rd-place, and knockout categories in a single pass.
+
+**Account A picks (Group A):**
+- 1st: Mexico, 2nd: South Africa, 3rd: South Korea, 4th: UEFA Path D
+- Check Group A 3rd-place advance box
+- Bracket: pick **Germany** to win R32 Match 74, pick **Brazil** to win R16 Match 89, pick any team to win all other knockout slots
+
+**Results to enter as admin:**
+- Group A: 1st = Mexico, 2nd = **South Korea**  
+  (infers: 3rd = South Africa [seed 2 < seed 4], 4th = UEFA Path D)  
+  → Mexico exact (green), South Africa picked 2nd but finished 3rd + advance box checked (yellow), South Korea picked 3rd but finished 2nd (yellow), UEFA Path D 4th (no points)
+- 3rd-place advancing: check Group A (South Africa is the actual 3rd — she advances → 2 pts)
+- Knockout: Mark **Germany** as winner of Match **73** (not 74 — different R32 slot) → partial credit on R32_74
+- Mark any team other than Brazil as winner of Match 89 → Brazil doesn't appear as winner anywhere → 0 pts on R16_89
+- Fill remaining knockout matches with any teams
+
+**Expected:**
+- Group A: Mexico green (3 pts), South Africa yellow (1 pt), South Korea yellow (1 pt), UEFA Path D none
+- 3rd-place: Group A correct → 2 pts
+- Knockout: R32_74 Germany yellow (1 pt partial), R16_89 Brazil red (0 pts)
+
+**Pass criteria:**
+- [ ] Dashboard group rows show mix of green, yellow, and no-indicator
+- [ ] Knockout bracket shows a yellow (partial) slot for Match 74 and red for Match 89
+- [ ] Score breakdown in leaderboard reflects correct point totals
+
+---
+
+### T2 — Tiebreaker Verification
 
 **Purpose:** Verify that tied total scores are ranked by correct exact group positions.
 
 **Setup:** Two test accounts with the same total points but different distributions.
 
-**Account A picks:** All exact group positions + some partial knockout picks → 150 pts total
-**Account B picks:** Half exact + half partial group picks + more exact knockout picks → 150 pts total
+**Account A picks:** Maximize exact group positions + accept some partial knockout picks → target ~150 pts total  
+**Account B picks:** More partial group positions + more exact knockout picks → same ~150 pts total
 
-Design the picks and results so Account A has more exact group position hits.
+Design picks and results so Account A ends up with more exact group position hits.
 
-**Expected:** Account A ranks above Account B on the leaderboard.
+**Expected:** Account A ranks above Account B on the leaderboard despite equal total points.
 
 **Pass criteria:**
 - [ ] Leaderboard shows Account A above Account B at the same point total
@@ -190,12 +183,13 @@ Record issues found during testing here. Include: date, test scenario, steps to 
 
 Automated tests passing (`cd functions && npm test`):
 
-- [ ] All scoring unit tests (`scoring.test.ts`) — T1–T10
-- [ ] All handler tests (`picks.test.ts`) — T12 + lock validation
+- [ ] All scoring unit tests (`scoring.test.ts`)
+- [ ] All handler tests (`picks.test.ts`)
 
 Manual tests passing:
 
-- [ ] T11 Tiebreaker sort
+- [ ] T1 Scoring UI (green/yellow/red across all categories)
+- [ ] T2 Tiebreaker sort
 - [ ] All regression checklist items
 
 **Tested by:** ________________________  **Date:** ________________________

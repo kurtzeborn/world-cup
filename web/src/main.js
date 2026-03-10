@@ -140,7 +140,12 @@ function renderAuthHeader(user) {
   const el = document.getElementById('auth-status');
   if (!el) return;
   if (user) {
-    el.innerHTML = `<span class="auth-name">${escapeHtml(user.userDetails)}</span> · <a href="${api.logoutUrl}">Sign out</a>`;
+    const providerIcon = user.identityProvider === 'google'
+      ? '<i class="fa-brands fa-google auth-provider-icon" title="Signed in with Google"></i>'
+      : user.identityProvider === 'aad'
+        ? '<i class="fa-brands fa-microsoft auth-provider-icon" title="Signed in with Microsoft"></i>'
+        : '';
+    el.innerHTML = `${providerIcon}<span class="auth-name">${escapeHtml(user.userDetails)}</span> · <a href="${api.logoutUrl}">Sign out</a>`;
   } else {
     el.innerHTML = `<button class="auth-login-btn" id="show-login-modal">Sign in</button>`;
     document.getElementById('show-login-modal').addEventListener('click', showLoginModal);

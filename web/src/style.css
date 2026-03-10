@@ -72,6 +72,7 @@ body {
 .header-row-top {
   height: 36px;
   justify-content: space-between;
+  gap: .5rem;
 }
 .header-row-nav {
   height: 32px;
@@ -95,6 +96,7 @@ body {
 .header-auth a { color: var(--gold); white-space: nowrap; }
 #auth-status { display: flex; align-items: center; gap: .25rem; min-width: 0; white-space: nowrap; }
 #auth-status .auth-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+#auth-status .auth-provider-icon { opacity: .8; flex-shrink: 0; }
 
 /* Countdown timer (inside nav row, pushed right by space-between) */
 .header-countdown {

@@ -34,3 +34,17 @@ jobs:
           template: infra/main.bicep
           parameters: infra/main.bicepparam
           failOnStdErr: false
+
+      - name: Restore auth app settings
+        # Bicep appsettings resource does a full PUT and wipes any settings not
+        # declared in the template. Re-apply secrets from GitHub Secrets here.
+        run: |
+          az staticwebapp appsettings set \
+            --name swa-wc-prod \
+            --resource-group rg-world-cup \
+            --setting-names \
+              GOOGLE_CLIENT_ID="${{ secrets.SWA_GOOGLE_CLIENT_ID }}" \
+              GOOGLE_CLIENT_SECRET="${{ secrets.SWA_GOOGLE_CLIENT_SECRET }}" \
+              AZURE_CLIENT_ID="${{ secrets.SWA_ENTRA_CLIENT_ID }}" \
+              AZURE_CLIENT_SECRET="${{ secrets.SWA_ENTRA_CLIENT_SECRET }}" \
+              ADMIN_EMAILS="${{ secrets.SWA_ADMIN_EMAILS }}"

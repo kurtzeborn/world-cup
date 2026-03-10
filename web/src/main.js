@@ -161,7 +161,7 @@ function showLoginModal() {
       <p style="color:var(--text-muted); font-size:.9rem; margin-bottom:1.5rem;">Choose your login method:</p>
       <div class="login-options">
         <a href="${api.loginUrl}" class="btn btn-primary login-btn">
-          <i class="fa-brands fa-microsoft"></i> Sign in with Azure AD
+          <i class="fa-brands fa-microsoft"></i> Sign in with Microsoft
         </a>
         <a href="${api.loginGoogleUrl}" class="btn btn-secondary login-btn">
           <i class="fa-brands fa-google"></i> Sign in with Google

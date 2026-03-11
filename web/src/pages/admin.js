@@ -1,12 +1,16 @@
 // pages/admin.js — Admin page for entering match results
 
 import { api } from '../api.js';
-import { TEAMS_BY_ID } from '../data/teams.js';
+import { GROUP_LETTERS } from '../data/teams.js';
 import { BRACKET_STRUCTURE, MATCH_SCHEDULE } from '../data/bracket-structure.js';
-import { escapeHtml, getFlag } from '../utils.js';
+import { escapeHtml } from '../utils.js';
+import { renderGroupRanking } from '../components/group-ranking.js';
 
-const GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 const MATCH_BY_ID = Object.fromEntries(BRACKET_STRUCTURE.map(m => [m.id, m]));
+
+// Local admin state for group standings + 3rd-place advancing
+let adminGroupPicks = {};
+let adminThirdPlace = [];
 
 export async function renderAdminPage(container) {
   container.innerHTML = `
@@ -21,45 +25,23 @@ export async function renderAdminPage(container) {
   const contentEl = document.getElementById('admin-content');
   if (!contentEl) return;
 
-  try {
-    const teams = (await api.getTeams()) || [];
-    renderAdminForm(contentEl, teams);
-  } catch (err) {
-    contentEl.innerHTML = `<p style="color:#f44336">Error loading admin page: ${err.message}</p>`;
-  }
+  // Reset local state
+  adminGroupPicks = {};
+  adminThirdPlace = [];
+
+  renderAdminForm(contentEl);
 }
 
-function renderAdminForm(container, teams) {
-  const groupTeams = {};
-  for (const group of GROUPS) {
-    groupTeams[group] = teams.filter(t => t.group === group);
-  }
-
-  // Organize 3rd-place teams by group
-  const thirdPlaceByGroup = {};
-  for (const group of GROUPS) {
-    const gTeams = groupTeams[group].sort((a, b) => a.groupSeed - b.groupSeed);
-    if (gTeams[2]) {
-      thirdPlaceByGroup[group] = gTeams[2];
-    }
-  }
-
+function renderAdminForm(container) {
   container.innerHTML = `
     <form id="admin-form">
       <div class="admin-section">
         <h3>Group Stage Results</h3>
         <p style="font-size: .85rem; color: var(--text-muted); margin-bottom: 1rem;">
-          Enter the 1st and 2nd place finishers for each group. 3rd/4th place will be inferred.
+          Click teams to rank 1st–4th in each group. Check "Advance?" for the 8
+          third-place teams that advance to Round of 32.
         </p>
-        ${renderGroupStandingsForm(groupTeams)}
-      </div>
-
-      <div class="admin-section">
-        <h3>3rd-Place Advancing Teams (select 8)</h3>
-        <p style="font-size: .85rem; color: var(--text-muted); margin-bottom: 1rem;">
-          Select the 8 third-place teams that advance to Round of 32.
-        </p>
-        ${renderThirdPlaceForm(thirdPlaceByGroup)}
+        <div class="groups-grid" id="admin-groups-grid"></div>
       </div>
 
       <div class="admin-section">
@@ -79,71 +61,39 @@ function renderAdminForm(container, teams) {
     </form>
   `;
 
-  // Attach submit handler
+  refreshAdminGroupGrid();
+
   document.getElementById('admin-form').addEventListener('submit', e => {
     e.preventDefault();
-    submitResults(container, groupTeams);
+    submitResults();
   });
 
-  // Attach recalc handler
   document.getElementById('btn-recalc').addEventListener('click', () => {
-    recalculateScores(container);
+    recalculateScores();
   });
 
-  // Attach force-lock handler
   document.getElementById('btn-lock-all').addEventListener('click', () => {
-    adminLockAll(container);
+    adminLockAll();
   });
 }
 
-function renderGroupStandingsForm(groupTeams) {
-  let html = '<div class="admin-groups-grid">';
-  for (const group of GROUPS) {
-    const teams = groupTeams[group];
-    const teamOptions = teams
-      .sort((a, b) => a.groupSeed - b.groupSeed)
-      .map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`)
-      .join('');
+function refreshAdminGroupGrid() {
+  const grid = document.getElementById('admin-groups-grid');
+  if (!grid) return;
 
-    html += `
-      <div class="admin-group-card">
-        <div class="admin-group-label">Group ${group}</div>
-        <div class="admin-form-row">
-          <label>1st Place:</label>
-          <select name="group_${group}_1" required>
-            <option value="">— Choose —</option>
-            ${teamOptions}
-          </select>
-        </div>
-        <div class="admin-form-row">
-          <label>2nd Place:</label>
-          <select name="group_${group}_2" required>
-            <option value="">— Choose —</option>
-            ${teamOptions}
-          </select>
-        </div>
-      </div>
-    `;
-  }
-  html += '</div>';
-  return html;
-}
-
-function renderThirdPlaceForm(thirdPlaceByGroup) {
-  let html = '<div class="admin-3rdplace-grid">';
-  for (const group of GROUPS) {
-    const team = thirdPlaceByGroup[group];
-    if (!team) continue;
-
-    html += `
-      <label class="admin-checkbox-label">
-        <input type="checkbox" name="3rdplace_${team.id}" value="${team.id}" />
-        <span>${getFlag(team.flagCode)} ${escapeHtml(team.name)}</span>
-      </label>
-    `;
-  }
-  html += '</div>';
-  return html;
+  renderGroupRanking(grid, {
+    groupPicks: adminGroupPicks,
+    thirdPlaceAdvancing: adminThirdPlace,
+    locked: false,
+    onGroupPickChange: (newGroupPicks) => {
+      adminGroupPicks = newGroupPicks;
+      refreshAdminGroupGrid();
+    },
+    onThirdPlaceChange: (newThirdPlace) => {
+      adminThirdPlace = newThirdPlace;
+      refreshAdminGroupGrid();
+    },
+  });
 }
 
 function renderKnockoutForm() {
@@ -202,7 +152,7 @@ function renderKnockoutForm() {
   return html;
 }
 
-async function submitResults(container, groupTeams) {
+async function submitResults() {
   const form = document.getElementById('admin-form');
   if (!form) return;
 
@@ -210,32 +160,25 @@ async function submitResults(container, groupTeams) {
   statusEl.innerHTML = '<p style="color:var(--text-muted)">Saving…</p>';
 
   try {
-    // Extract group standings
+    // Build group standings from local state (all 4 positions required)
     const groupStandings = {};
-    for (const group of GROUPS) {
-      const first = form.querySelector(`select[name="group_${group}_1"]`).value;
-      const second = form.querySelector(`select[name="group_${group}_2"]`).value;
-
-      if (!first || !second) {
-        throw new Error(`Group ${group} missing 1st or 2nd place`);
+    for (const group of GROUP_LETTERS) {
+      const selected = adminGroupPicks[group] ?? [];
+      if (selected.length < 4) {
+        throw new Error(`Group ${group} must have all 4 teams ranked (${selected.length} ranked)`);
       }
-
-      // Infer 3rd/4th from available teams
-      const available = groupTeams[group]
-        .filter(t => t.id !== first && t.id !== second)
-        .sort((a, b) => a.groupSeed - b.groupSeed);
-
-      groupStandings[group] = [first, second, available[0]?.id || 'TBD', available[1]?.id || 'TBD'];
+      groupStandings[group] = selected;
     }
 
-    // Extract 3rd-place advancing
-    const advancing3rdPlace = [];
-    for (const checkbox of form.querySelectorAll('input[type="checkbox"][name^="3rdplace_"]:checked')) {
-      advancing3rdPlace.push(checkbox.value);
+    // Convert 3rd-place group letters → team IDs (position [2] in each group ranking)
+    if (adminThirdPlace.length !== 8) {
+      throw new Error(`Must select exactly 8 third-place advancing teams (${adminThirdPlace.length} selected)`);
     }
-    if (advancing3rdPlace.length !== 8) {
-      throw new Error(`Must select exactly 8 third-place teams (${advancing3rdPlace.length} selected)`);
-    }
+    const advancing3rdPlace = adminThirdPlace.map(letter => {
+      const thirdTeamId = groupStandings[letter]?.[2];
+      if (!thirdTeamId) throw new Error(`Group ${letter} has no 3rd-place team ranked`);
+      return thirdTeamId;
+    });
 
     // Extract match results
     const matchResults = {};
@@ -263,7 +206,7 @@ async function submitResults(container, groupTeams) {
   }
 }
 
-async function recalculateScores(container) {
+async function recalculateScores() {
   const statusEl = document.getElementById('admin-status');
   statusEl.innerHTML = '<p style="color:var(--text-muted)">Recalculating scores…</p>';
 

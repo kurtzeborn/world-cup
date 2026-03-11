@@ -32,6 +32,32 @@ export async function renderAdminPage(container) {
   adminMatchResults = {};
   adminMatchScores = {};
 
+  // Load existing results from backend
+  try {
+    const existing = await api.getResults();
+    if (existing) {
+      if (existing.groupStandings) adminGroupPicks = existing.groupStandings;
+      if (existing.advancing3rdPlace) {
+        // Convert team IDs back to group letters for the checkbox UI
+        adminThirdPlace = existing.advancing3rdPlace.map(teamId => {
+          for (const [group, teams] of Object.entries(adminGroupPicks)) {
+            if (teams[2] === teamId) return group;
+          }
+          return null;
+        }).filter(Boolean);
+      }
+      if (existing.matchResults) {
+        for (const [key, val] of Object.entries(existing.matchResults)) {
+          const matchId = parseInt(key.replace('M', ''));
+          adminMatchResults[matchId] = val.winner;
+          if (val.score) adminMatchScores[matchId] = val.score;
+        }
+      }
+    }
+  } catch (_) {
+    // No existing results yet — start blank
+  }
+
   renderAdminForm(contentEl);
 }
 
@@ -254,48 +280,49 @@ async function submitResults() {
   statusEl.innerHTML = '<p style="color:var(--text-muted)">Saving…</p>';
 
   try {
-    // Build group standings from local state (all 4 positions required)
+    const payload = {};
+
+    // Build group standings — include only fully ranked groups (all 4 teams)
     const groupStandings = {};
     for (const group of GROUP_LETTERS) {
       const selected = adminGroupPicks[group] ?? [];
-      if (selected.length < 4) {
-        throw new Error(`Group ${group} must have all 4 teams ranked (${selected.length} ranked)`);
+      if (selected.length === 4) groupStandings[group] = selected;
+    }
+    if (Object.keys(groupStandings).length > 0) payload.groupStandings = groupStandings;
+
+    // Convert 3rd-place group letters → team IDs (only if 8 are selected)
+    if (adminThirdPlace.length === 8) {
+      const advancing3rdPlace = [];
+      let valid = true;
+      for (const letter of adminThirdPlace) {
+        const thirdTeamId = groupStandings[letter]?.[2];
+        if (!thirdTeamId) { valid = false; break; }
+        advancing3rdPlace.push(thirdTeamId);
       }
-      groupStandings[group] = selected;
+      if (valid) payload.advancing3rdPlace = advancing3rdPlace;
     }
 
-    // Convert 3rd-place group letters → team IDs (position [2] in each group ranking)
-    if (adminThirdPlace.length !== 8) {
-      throw new Error(`Must select exactly 8 third-place advancing teams (${adminThirdPlace.length} selected)`);
-    }
-    const advancing3rdPlace = adminThirdPlace.map(letter => {
-      const thirdTeamId = groupStandings[letter]?.[2];
-      if (!thirdTeamId) throw new Error(`Group ${letter} has no 3rd-place team ranked`);
-      return thirdTeamId;
-    });
-
-    // Build match results from local state
+    // Build match results — include only matches with a winner selected
     const mt = resolveAdminMatchTeams();
     const matchResults = {};
     for (const round of KNOCKOUT_ROUNDS) {
       for (const matchId of round.matches) {
         const winner = adminMatchResults[matchId];
-        if (!winner) {
-          throw new Error(`Match M${matchId} has no winner selected`);
-        }
+        if (!winner) continue;
         const [teamA, teamB] = mt[matchId] || [null, null];
         const loser = winner === teamA ? teamB : teamA;
         const score = adminMatchScores[matchId]?.trim() || undefined;
         matchResults[`M${matchId}`] = { winner, loser, ...(score && { score }) };
       }
     }
+    if (Object.keys(matchResults).length > 0) payload.matchResults = matchResults;
+
+    if (Object.keys(payload).length === 0) {
+      throw new Error('Nothing to save — rank at least one group or pick a match winner');
+    }
 
     // Submit to API
-    await api.submitAdminResults({
-      groupStandings,
-      advancing3rdPlace,
-      matchResults,
-    });
+    await api.submitAdminResults(payload);
 
     statusEl.innerHTML = '<p style="color:#4caf50">✓ Results saved successfully!</p>';
   } catch (err) {

@@ -8,8 +8,9 @@ async function request(method, path, body) {
   if (body !== undefined) opts.body = JSON.stringify(body);
   const res = await fetch(path, opts);
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw Object.assign(new Error(err.error || res.statusText), { status: res.status });
+    const err = await res.json().catch(() => ({}));
+    const msg = err.error || res.statusText || `HTTP ${res.status}`;
+    throw Object.assign(new Error(msg), { status: res.status });
   }
   return res.status === 204 ? null : res.json();
 }

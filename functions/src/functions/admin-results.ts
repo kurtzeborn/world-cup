@@ -19,8 +19,8 @@ app.http('adminSetResults', {
         matchResults?: Record<string, { winner: string; loser: string; score?: string }>;
       };
 
-      if (!body.groupStandings || !body.advancing3rdPlace || !body.matchResults) {
-        return { status: 400, jsonBody: { error: 'groupStandings, advancing3rdPlace, and matchResults are required' } };
+      if (!body.groupStandings && !body.advancing3rdPlace && !body.matchResults) {
+        return { status: 400, jsonBody: { error: 'At least one of groupStandings, advancing3rdPlace, or matchResults is required' } };
       }
 
       const now = new Date().toISOString();
@@ -28,10 +28,16 @@ app.http('adminSetResults', {
         ? JSON.parse(Buffer.from(request.headers.get('x-ms-client-principal')!, 'base64').toString())
         : { userId: 'unknown' }) as { userId?: string };
 
+      // Load existing results and merge
+      const existing = await getEntity<ResultEntity>('Results', 'results', 'current');
+      const prev: Results = existing
+        ? JSON.parse(existing.data)
+        : { groupStandings: {}, advancing3rdPlace: [], matchResults: {} };
+
       const resultsData: Results = {
-        groupStandings: body.groupStandings,
-        advancing3rdPlace: body.advancing3rdPlace,
-        matchResults: body.matchResults,
+        groupStandings: { ...prev.groupStandings, ...body.groupStandings },
+        advancing3rdPlace: body.advancing3rdPlace ?? prev.advancing3rdPlace,
+        matchResults: { ...prev.matchResults, ...body.matchResults },
         updatedAt: now,
       };
 

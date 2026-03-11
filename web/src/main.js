@@ -92,6 +92,10 @@ async function init() {
     try {
       const serverPicks = await api.getPicks();
       if (serverPicks) {
+        // Server knows if picks are locked (admin lock or deadline)
+        if (serverPicks.isLocked && !locked) {
+          setState({ locked: true });
+        }
         setState({ picks: serverPicks });
       } else {
         // No server picks — check for pre-auth local drafts to sync
@@ -287,6 +291,9 @@ function ensureSlidePanel(app, initialPage) {
           <button class="tab-icon-btn" id="export-pdf-btn" title="Export picks to PDF">
             <i class="fa-solid fa-file-pdf"></i>
           </button>
+          <span class="lock-icon" id="picks-lock-icon" title="Picks are locked" style="display:none">
+            <i class="fa-solid fa-lock"></i>
+          </span>
         </div>
       </div>
     </div>

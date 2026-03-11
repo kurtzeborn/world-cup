@@ -45,7 +45,11 @@ function updatePicksStatus() {
   const compEl = document.getElementById('picks-status-completeness');
   if (!nameEl || !compEl) return;
 
-  const { picks, displayName } = getState();
+  const { picks, displayName, locked } = getState();
+
+  // Show/hide lock icon
+  const lockIcon = document.getElementById('picks-lock-icon');
+  if (lockIcon) lockIcon.style.display = locked ? '' : 'none';
 
   // Name section (with pencil edit icon)
   if (displayName) {

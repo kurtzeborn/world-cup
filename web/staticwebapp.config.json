@@ -5,9 +5,7 @@
     { "route": "/api/admin/health", "allowedRoles": ["anonymous", "authenticated"] },
     { "route": "/api/admin/test", "allowedRoles": ["anonymous", "authenticated"] },
     { "route": "/api/debug/test", "allowedRoles": ["anonymous", "authenticated"] },
-    { "route": "/api/*", "allowedRoles": ["authenticated"] },
-    { "route": "/admin", "allowedRoles": ["admin"] },
-    { "route": "/admin/*", "allowedRoles": ["admin"] }
+    { "route": "/api/*", "allowedRoles": ["authenticated"] }
   ],
   "navigationFallback": {
     "rewrite": "/index.html",

@@ -43,9 +43,9 @@ export const api = {
   joinLeague:    (data)   => request('POST', '/api/leagues/join', data),
 
   // Admin
-  submitAdminResults: (data) => request('POST', '/api/admin/results', data),
-  recalculateScores: ()      => request('POST', '/api/admin/recalculate', {}),
-  adminLockAllPicks: ()      => request('POST', '/api/admin/lock-all', {}),
+  submitAdminResults: (data) => request('POST', '/api/manage/results', data),
+  recalculateScores: ()      => request('POST', '/api/manage/recalculate', {}),
+  adminLockAllPicks: ()      => request('POST', '/api/manage/lock-all', {}),
 
   // Auth helpers
   loginUrl:  '/.auth/login/aad?post_login_redirect_uri=/',

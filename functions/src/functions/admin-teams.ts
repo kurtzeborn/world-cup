@@ -3,11 +3,11 @@ import { requireAdmin, AuthError } from '../shared/auth.js';
 import { upsertEntity } from '../shared/storage.js';
 import { TeamEntity } from '../shared/types.js';
 
-// PUT /api/admin/teams/:id — update a team (e.g. confirm a TBD team's identity)
+// PUT /api/manage/teams/:id — update a team (e.g. confirm a TBD team's identity)
 app.http('adminUpdateTeam', {
   methods: ['PUT'],
   authLevel: 'anonymous',
-  route: 'admin/teams/{teamId}',
+  route: 'manage/teams/{teamId}',
   handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
     try {
       requireAdmin(request);

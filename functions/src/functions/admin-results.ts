@@ -2,22 +2,13 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { requireAdmin, AuthError } from '../shared/auth.js';
 import { getEntity, upsertEntity, listEntitiesByPartition } from '../shared/storage.js';
 import { ResultEntity, PicksEntity, ScoreEntity, Results } from '../shared/types.js';
+import { calculateScore } from '../shared/scoring.js';
 
-// GET /api/admin/health — diagnostic to verify this file loads
-app.http('adminHealth', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'admin/health',
-  handler: async (): Promise<HttpResponseInit> => {
-    return { status: 200, jsonBody: { ok: true, file: 'admin-results', ts: Date.now() } };
-  },
-});
-
-// POST /api/admin/results — enter or update match results
+// POST /api/manage/results — enter or update match results
 app.http('adminSetResults', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'admin/results',
+  route: 'manage/results',
   handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
     try {
       requireAdmin(request);
@@ -66,11 +57,11 @@ app.http('adminSetResults', {
   },
 });
 
-// POST /api/admin/recalculate — recalculate all user scores
+// POST /api/manage/recalculate — recalculate all user scores
 app.http('adminRecalculate', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'admin/recalculate',
+  route: 'manage/recalculate',
   handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
     try {
       requireAdmin(request);
@@ -99,7 +90,6 @@ app.http('adminRecalculate', {
       let recalcCount = 0;
 
       for (const { userId, picks } of allPicks) {
-        const { calculateScore } = await import('../shared/scoring.js');
         const score = calculateScore(picks, results);
         await upsertEntity<ScoreEntity>('Scores', 'global', userId, {
           ...score,
@@ -118,7 +108,7 @@ app.http('adminRecalculate', {
   },
 });
 
-// POST /api/admin/lock-all — force-lock all users' picks that are not already locked
+// POST /api/manage/lock-all — force-lock all users' picks that are not already locked
 export async function adminLockAllHandler(request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> {
   try {
     requireAdmin(request);
@@ -157,6 +147,6 @@ export async function adminLockAllHandler(request: HttpRequest, _context: Invoca
 app.http('adminLockAll', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'admin/lock-all',
+  route: 'manage/lock-all',
   handler: adminLockAllHandler,
 });

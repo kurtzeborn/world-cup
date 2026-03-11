@@ -9,7 +9,6 @@ let _state = {
   leaderboard: [],
   leagues: [],
   locked: false,
-  lockDeadline: null,
 };
 
 const _listeners = new Set();

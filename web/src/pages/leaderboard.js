@@ -3,7 +3,6 @@
 import { getState } from '../state.js';
 import { api } from '../api.js';
 import { escapeHtml } from '../utils.js';
-import { isLocked } from '../utils.js';
 
 export async function renderLeaderboardPage(container) {
   container.innerHTML = `
@@ -34,7 +33,7 @@ function renderTable(leaderboard) {
   }
 
   const { user } = getState();
-  const locked = isLocked();
+  const { locked } = getState();
 
   el.innerHTML = `
     <table class="leaderboard-table">

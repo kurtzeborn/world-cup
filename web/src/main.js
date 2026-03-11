@@ -3,7 +3,7 @@
 import { fetchAuthUser } from './auth.js';
 import { api } from './api.js';
 import { getState, setState, subscribe } from './state.js';
-import { escapeHtml, isLocked } from './utils.js';
+import { escapeHtml } from './utils.js';
 import { renderGroupsPage } from './pages/groups.js';
 import { renderBracketPage, renderBracketContent } from './pages/bracket.js';
 import { renderLeaderboardPage } from './pages/leaderboard.js';
@@ -14,7 +14,7 @@ import { renderDashboardPage } from './pages/dashboard.js';
 import { initAutoSave, loadLocalPicks, clearLocalPicks, syncToServer } from './autosave.js';
 import { initPicksStatus } from './picks-status.js';
 
-const KICKOFF = '2026-06-11T19:00:00Z'; // June 11 2026 1pm MDT (UTC-6) — lock deadline + countdown target
+const KICKOFF = '2026-06-11T19:00:00Z'; // June 11 2026 1pm MDT (UTC-6) — countdown target
 
 // ─── Slide Panel (Groups ↔ Bracket transition) ─────────────
 const PEEK_WIDTH = 180;        // px of bracket visible while on groups page
@@ -65,11 +65,9 @@ async function init() {
     api.getResults().catch(() => ({})),
   ]);
 
-  // Determine if locked (client-side check; server enforces too)
   const kickoff = new Date(KICKOFF);
-  const locked = new Date() >= kickoff;
 
-  setState({ user: authUser, teams, results, locked, lockDeadline: kickoff });
+  setState({ user: authUser, teams, results, locked: false });
 
   // Render auth header & countdown
   renderAuthHeader(authUser);
@@ -92,11 +90,7 @@ async function init() {
     try {
       const serverPicks = await api.getPicks();
       if (serverPicks) {
-        // Server knows if picks are locked (admin lock or deadline)
-        if (serverPicks.isLocked && !locked) {
-          setState({ locked: true });
-        }
-        setState({ picks: serverPicks });
+        setState({ picks: serverPicks, locked: !!serverPicks.isLocked });
       } else {
         // No server picks — check for pre-auth local drafts to sync
         const localPicks = loadLocalPicks();
@@ -213,7 +207,7 @@ async function navigateTo(page) {
   // Handle view-picks/:userId route
   const viewPicksMatch = page.match(/^view-picks\/(.+)$/);
   if (viewPicksMatch) {
-    if (!isLocked()) {
+    if (!getState().locked) {
       // Before lock, redirect to leaderboard
       history.replaceState(null, '', '#leaderboard');
       navigateTo('leaderboard');
@@ -252,7 +246,7 @@ async function navigateTo(page) {
       await renderAdminPage(app);
       break;
     case 'dashboard':
-      if (!isLocked()) {
+      if (!getState().locked) {
         // Before lock, redirect to picks
         history.replaceState(null, '', '#picks');
         navigateTo('picks');

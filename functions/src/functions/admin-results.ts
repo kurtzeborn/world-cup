@@ -52,7 +52,7 @@ app.http('adminSetResults', {
       if (err instanceof AuthError) {
         return { status: err.statusCode, jsonBody: { error: err.message } };
       }
-      throw err;
+      return { status: 500, jsonBody: { error: err instanceof Error ? err.message : 'Unknown error' } };
     }
   },
 });
@@ -103,7 +103,7 @@ app.http('adminRecalculate', {
       if (err instanceof AuthError) {
         return { status: err.statusCode, jsonBody: { error: err.message } };
       }
-      throw err;
+      return { status: 500, jsonBody: { error: err instanceof Error ? err.message : 'Unknown error' } };
     }
   },
 });
@@ -140,7 +140,7 @@ export async function adminLockAllHandler(request: HttpRequest, _context: Invoca
     if (err instanceof AuthError) {
       return { status: err.statusCode, jsonBody: { error: err.message } };
     }
-    throw err;
+    return { status: 500, jsonBody: { error: err instanceof Error ? err.message : 'Unknown error' } };
   }
 }
 

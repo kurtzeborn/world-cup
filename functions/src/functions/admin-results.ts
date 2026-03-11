@@ -101,3 +101,46 @@ app.http('adminRecalculate', {
     }
   },
 });
+
+// POST /api/admin/lock-all — force-lock all users' picks that are not already locked
+export async function adminLockAllHandler(request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> {
+  try {
+    requireAdmin(request);
+
+    const table = await import('../shared/storage.js').then((m) => m.picksTable());
+    const now = new Date().toISOString();
+    let locked = 0;
+    let skipped = 0;
+
+    for await (const entity of table.listEntities<PicksEntity>()) {
+      if (entity.rowKey !== 'picks') continue;
+      if (entity.lockedAt) {
+        skipped++;
+        continue;
+      }
+
+      await upsertEntity<PicksEntity>('Picks', entity.partitionKey!, 'picks', {
+        groupPicks: entity.groupPicks,
+        thirdPlaceAdvancing: entity.thirdPlaceAdvancing,
+        bracketPicks: entity.bracketPicks,
+        lockedAt: now,
+        updatedAt: now,
+      });
+      locked++;
+    }
+
+    return { status: 200, jsonBody: { locked, skipped, lockedAt: now } };
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return { status: err.statusCode, jsonBody: { error: err.message } };
+    }
+    throw err;
+  }
+}
+
+app.http('adminLockAll', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'admin/lock-all',
+  handler: adminLockAllHandler,
+});

@@ -758,10 +758,16 @@ body {
   font-size: .9rem;
   font-weight: 600;
 }
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
 .btn-primary { background: var(--green); color: #fff; }
 .btn-primary:hover { background: var(--green-dark); }
 .btn-secondary { background: var(--border); color: var(--text); }
 .btn-secondary:hover { background: var(--border); opacity: .8; }
+.btn-danger { background: #b42318; color: #fff; }
+.btn-danger:hover { background: #912018; }
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,.5);

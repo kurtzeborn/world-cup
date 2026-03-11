@@ -35,19 +35,6 @@ function renderAdminForm(container, teams) {
     groupTeams[group] = teams.filter(t => t.group === group);
   }
 
-  const thirdPlaceTeams = teams.filter(t => {
-    const groupTeams = Object.keys(teams.reduce((acc, t) => {
-      if (!acc[t.group]) acc[t.group] = [];
-      acc[t.group].push(t);
-      return acc;
-    }, {}));
-    for (const g of groupTeams) {
-      const gTeams = teams.filter(t => t.group === g).sort((a, b) => a.groupSeed - b.groupSeed);
-      if (gTeams[2] === t) return true;
-    }
-    return false;
-  });
-
   // Organize 3rd-place teams by group
   const thirdPlaceByGroup = {};
   for (const group of GROUPS) {
@@ -86,6 +73,7 @@ function renderAdminForm(container, teams) {
       <div class="admin-actions">
         <button type="submit" class="btn btn-primary">Save Results</button>
         <button type="button" class="btn btn-secondary" id="btn-recalc">Recalculate Scores</button>
+        <button type="button" class="btn btn-danger" id="btn-lock-all">Force Lock All Picks</button>
         <div id="admin-status" style="margin-top: 1rem; font-size: .9rem;"></div>
       </div>
     </form>
@@ -100,6 +88,11 @@ function renderAdminForm(container, teams) {
   // Attach recalc handler
   document.getElementById('btn-recalc').addEventListener('click', () => {
     recalculateScores(container);
+  });
+
+  // Attach force-lock handler
+  document.getElementById('btn-lock-all').addEventListener('click', () => {
+    adminLockAll(container);
   });
 }
 
@@ -279,5 +272,23 @@ async function recalculateScores(container) {
     statusEl.innerHTML = `<p style="color:#4caf50">✓ Recalculated ${result.recalculated} scores</p>`;
   } catch (err) {
     statusEl.innerHTML = `<p style="color:#f44336">Error: ${err.message}</p>`;
+  }
+}
+
+async function adminLockAll() {
+  if (!confirm('Lock ALL users\u2019 picks now? This cannot be undone.')) return;
+
+  const statusEl = document.getElementById('admin-status');
+  const lockButton = document.getElementById('btn-lock-all');
+  statusEl.innerHTML = '<p style="color:var(--text-muted)">Locking all picks…</p>';
+  lockButton.disabled = true;
+
+  try {
+    const result = await api.adminLockAllPicks();
+    statusEl.innerHTML = `<p style="color:#4caf50">✓ Locked ${result.locked} picks (${result.skipped} already locked)</p>`;
+  } catch (err) {
+    statusEl.innerHTML = `<p style="color:#f44336">Error: ${err.message}</p>`;
+  } finally {
+    lockButton.disabled = false;
   }
 }

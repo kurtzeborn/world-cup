@@ -19,20 +19,14 @@ For each account, sign in at [wc.k61.dev](https://wc.k61.dev), set a display nam
 
 ### 1.2 Force-Locking Picks
 
-The UI does not have a lock button (deadline is June 11). To lock picks for testing, call the lock API directly after completing all picks in the browser.
+Use the **Force Lock All Picks** button in the admin UI (`wc.k61.dev/#admin`) to lock all users' picks at once. This is both the test shortcut and available as a manual override at tournament time.
 
-**Step 1:** In the browser, open DevTools → Application → Cookies → copy the `StaticWebAppsAuthCookie` value.
-
-**Step 2:** Run this PowerShell (replace `<cookie>` with the value from Step 1):
+Alternatively, to lock a single account's picks without admin access, copy the `StaticWebAppsAuthCookie` from DevTools and run:
 
 ```powershell
 $headers = @{ Cookie = "StaticWebAppsAuthCookie=<cookie>" }
 Invoke-RestMethod -Uri "https://wc.k61.dev/api/picks/lock" -Method Post -Headers $headers
 ```
-
-Expected response: `{ "lockedAt": "2026-03-09T...", "deadline": "2026-06-11T19:00:00Z" }`
-
-If you get a 400 error, it means your picks are incomplete (all 12 groups, 8 3rd-place selections, and all 32 bracket winners are required).
 
 **To re-test with different picks:** Picks cannot be unlocked once locked. Use a different test account for each distinct test scenario.
 

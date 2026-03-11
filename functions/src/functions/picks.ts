@@ -103,25 +103,6 @@ export async function lockPicksHandler(request: HttpRequest, _context: Invocatio
       return { status: 200, jsonBody: { lockedAt: existing.lockedAt } };
     }
 
-    // Validate completeness
-    const groupPicks = JSON.parse(existing.groupPicks || '{}');
-    const thirdPlace = JSON.parse(existing.thirdPlaceAdvancing || '[]');
-    const bracket = JSON.parse(existing.bracketPicks || '{}');
-
-    const groupCount = Object.keys(groupPicks).length;
-    const thirdPlaceCount = thirdPlace.length;
-    const bracketCount = Object.keys(bracket).length;
-
-    if (groupCount < 12) {
-      return { status: 400, jsonBody: { error: `Must rank all 12 groups (${groupCount}/12 done)` } };
-    }
-    if (thirdPlaceCount !== 8) {
-      return { status: 400, jsonBody: { error: `Must select exactly 8 third-place teams (${thirdPlaceCount}/8 done)` } };
-    }
-    if (bracketCount < 32) {
-      return { status: 400, jsonBody: { error: `Must complete the knockout bracket (${bracketCount}/32 picks done)` } };
-    }
-
     const now = new Date().toISOString();
     await upsertEntity<PicksEntity>('Picks', user.userId, 'picks', {
       groupPicks: existing.groupPicks,

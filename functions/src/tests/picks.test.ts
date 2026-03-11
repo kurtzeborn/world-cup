@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { HttpRequest } from '@azure/functions';
 import type { InvocationContext } from '@azure/functions';
+import type { PicksEntity } from '../shared/types.js';
 
 // Mock storage module before importing handlers
 vi.mock('../shared/storage.js', () => ({
@@ -46,6 +47,8 @@ function makeRequest(method: string, url: string, options: {
 
 const mockCtx = {} as InvocationContext;
 
+type StoredPicksEntity = PicksEntity & { partitionKey: string; rowKey: string } & Record<string, unknown>;
+
 function makeCompletePicks() {
   const groupPicks: Record<string, string[]> = {};
   for (const g of 'ABCDEFGHIJKL'.split('')) {
@@ -68,6 +71,15 @@ function makeCompletePicks() {
     lockedAt: null,
     updatedAt: '2026-03-01T00:00:00Z',
   };
+}
+
+function makeStoredPicksEntity(overrides: Partial<StoredPicksEntity> = {}): StoredPicksEntity {
+  return {
+    partitionKey: 'user1',
+    rowKey: 'picks',
+    ...makeCompletePicks(),
+    ...overrides,
+  } as StoredPicksEntity;
 }
 
 // ─── Lock Handler Tests ──────────────────────────────────────────────────────
@@ -102,7 +114,7 @@ describe('lockPicksHandler', () => {
   });
 
   it('returns 200 idempotently when picks already locked', async () => {
-    const alreadyLocked = { ...makeCompletePicks(), lockedAt: '2026-03-05T00:00:00Z' };
+    const alreadyLocked = makeStoredPicksEntity({ lockedAt: '2026-03-05T00:00:00Z' });
     mockGetEntity.mockResolvedValueOnce(alreadyLocked);
 
     const req = makeRequest('POST', 'http://localhost/api/picks/lock', {
@@ -114,58 +126,8 @@ describe('lockPicksHandler', () => {
     expect(mockUpsertEntity).not.toHaveBeenCalled();
   });
 
-  it('returns 400 when groups are incomplete (< 12)', async () => {
-    const incomplete = {
-      groupPicks: JSON.stringify({ A: ['T1', 'T2', 'T3', 'T4'] }), // only 1 group
-      thirdPlaceAdvancing: JSON.stringify(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']),
-      bracketPicks: JSON.stringify(makeCompletePicks().bracketPicks ? JSON.parse(makeCompletePicks().bracketPicks) : {}),
-      lockedAt: null,
-      updatedAt: '2026-03-01T00:00:00Z',
-    };
-    mockGetEntity.mockResolvedValueOnce(incomplete);
-
-    const req = makeRequest('POST', 'http://localhost/api/picks/lock', {
-      headers: { 'x-ms-client-principal': makeAuthHeader('user1') },
-    });
-    const res = await lockPicksHandler(req, mockCtx);
-    expect(res.status).toBe(400);
-    expect((res.jsonBody as { error: string }).error).toMatch(/groups.*1\/12/);
-  });
-
-  it('returns 400 when third-place selection is not exactly 8', async () => {
-    const complete = makeCompletePicks();
-    const incomplete = {
-      ...complete,
-      thirdPlaceAdvancing: JSON.stringify(['A', 'B', 'C']), // only 3 instead of 8
-    };
-    mockGetEntity.mockResolvedValueOnce(incomplete);
-
-    const req = makeRequest('POST', 'http://localhost/api/picks/lock', {
-      headers: { 'x-ms-client-principal': makeAuthHeader('user1') },
-    });
-    const res = await lockPicksHandler(req, mockCtx);
-    expect(res.status).toBe(400);
-    expect((res.jsonBody as { error: string }).error).toMatch(/third-place.*3\/8/);
-  });
-
-  it('returns 400 when bracket is incomplete (< 32)', async () => {
-    const complete = makeCompletePicks();
-    const incomplete = {
-      ...complete,
-      bracketPicks: JSON.stringify({ R32_73: 'W73' }), // only 1 bracket pick
-    };
-    mockGetEntity.mockResolvedValueOnce(incomplete);
-
-    const req = makeRequest('POST', 'http://localhost/api/picks/lock', {
-      headers: { 'x-ms-client-principal': makeAuthHeader('user1') },
-    });
-    const res = await lockPicksHandler(req, mockCtx);
-    expect(res.status).toBe(400);
-    expect((res.jsonBody as { error: string }).error).toMatch(/bracket.*1\/32/);
-  });
-
-  it('returns 200 and calls upsert when picks are complete', async () => {
-    const complete = makeCompletePicks();
+  it('returns 200 and calls upsert when picks exist (partial picks allowed)', async () => {
+    const complete = makeStoredPicksEntity();
     mockGetEntity.mockResolvedValueOnce(complete);
     mockUpsertEntity.mockResolvedValueOnce(undefined as never);
 
@@ -211,10 +173,9 @@ describe('getPicksForUserHandler — visibility gate', () => {
   it('T12b — returns 200 with picks when lock deadline HAS passed and picks are locked', async () => {
     vi.stubEnv('LOCK_DEADLINE', '2020-01-01T00:00:00Z'); // past
 
-    const lockedPicks = {
-      ...makeCompletePicks(),
+    const lockedPicks = makeStoredPicksEntity({
       lockedAt: '2026-06-10T12:00:00Z',
-    };
+    });
     mockGetEntity.mockResolvedValueOnce(lockedPicks);
 
     const req = makeRequest('GET', 'http://localhost/api/picks/targetUser', {

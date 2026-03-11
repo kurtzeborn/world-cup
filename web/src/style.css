@@ -971,6 +971,23 @@ body {
   background: var(--bg);
 }
 
+.admin-score-row {
+  padding: .3rem .5rem;
+  background: var(--bg);
+}
+
+.admin-score-input {
+  width: 100%;
+  padding: .25rem .4rem;
+  font-size: .8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  text-align: center;
+  box-sizing: border-box;
+}
+
 .admin-actions {
   display: flex;
   gap: 1rem;

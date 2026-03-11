@@ -201,7 +201,7 @@ function renderDashboardFinalColumn(bracketPicks, matchResults) {
           <div class="bk-center-hdr">3rd Place Match</div>
           <div class="bk-match">
             <div class="bk-team">—</div>
-            ${matchInfoBar(103)}
+            ${matchInfoBar(103, tpmResult?.score)}
             <div class="bk-team">—</div>
           </div>
         </div>
@@ -219,13 +219,14 @@ function renderDashboardSlot(match, round, bracketPicks, matchResults) {
   const pickedWinner = bracketPicks[key] ?? '';
   const result = matchResults[`M${match.id}`];
   const actualWinner = result?.winner;
+  const score = result?.score;
 
   const pickStatus = getMatchStatus(pickedWinner, actualWinner);
 
   return `<div class="bk-slot">
     <div class="bk-match">
       ${renderDashboardTeamRow(match.teamA, pickedWinner, actualWinner, pickStatus)}
-      ${matchInfoBar(match.id)}
+      ${matchInfoBar(match.id, score)}
       ${renderDashboardTeamRow(match.teamB, pickedWinner, actualWinner, pickStatus)}
     </div>
   </div>`;
@@ -251,10 +252,11 @@ function getMatchStatus(pickedWinner, actualWinner) {
   return '';
 }
 
-function matchInfoBar(matchId) {
+function matchInfoBar(matchId, score) {
   const sched = MATCH_SCHEDULE[matchId];
   if (!sched) return '';
-  return `<div class="bk-match-info">M${matchId} · ${sched.date} · ${sched.city}</div>`;
+  const scoreHtml = score ? ` · <strong>${escapeHtml(score)}</strong>` : '';
+  return `<div class="bk-match-info">M${matchId} · ${sched.date} · ${sched.city}${scoreHtml}</div>`;
 }
 
 function slotDesc(slot) {

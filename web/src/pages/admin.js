@@ -11,6 +11,7 @@ import { renderGroupRanking } from '../components/group-ranking.js';
 let adminGroupPicks = {};
 let adminThirdPlace = [];
 let adminMatchResults = {};  // { matchId: winnerId }
+let adminMatchScores = {};   // { matchId: scoreString }
 
 export async function renderAdminPage(container) {
   container.innerHTML = `
@@ -29,6 +30,7 @@ export async function renderAdminPage(container) {
   adminGroupPicks = {};
   adminThirdPlace = [];
   adminMatchResults = {};
+  adminMatchScores = {};
 
   renderAdminForm(contentEl);
 }
@@ -128,10 +130,15 @@ function refreshAdminKnockoutGrid() {
       const sched = MATCH_SCHEDULE[matchId];
       const infoStr = sched ? `M${matchId} · ${sched.date} · ${sched.city}` : `M${matchId}`;
 
+      const scoreVal = adminMatchScores[matchId] ?? '';
       html += `<div class="admin-match-card">
         ${adminTeamRow(teamA, winner, matchId, infoStr, true)}
         <div class="bk-match-info">${infoStr}</div>
         ${adminTeamRow(teamB, winner, matchId, null, false)}
+        <div class="admin-score-row">
+          <input type="text" class="admin-score-input" data-match-id="${matchId}"
+            placeholder="e.g. 2-1" value="${scoreVal}" />
+        </div>
       </div>`;
     }
 
@@ -147,6 +154,14 @@ function refreshAdminKnockoutGrid() {
       const teamId = el.dataset.teamId;
       adminMatchResults[matchId] = teamId;
       refreshAdminKnockoutGrid();
+    });
+  });
+
+  // Attach score input handlers
+  container.querySelectorAll('.admin-score-input').forEach(el => {
+    el.addEventListener('input', () => {
+      const matchId = parseInt(el.dataset.matchId);
+      adminMatchScores[matchId] = el.value;
     });
   });
 }
@@ -270,7 +285,8 @@ async function submitResults() {
         }
         const [teamA, teamB] = mt[matchId] || [null, null];
         const loser = winner === teamA ? teamB : teamA;
-        matchResults[`M${matchId}`] = { winner, loser };
+        const score = adminMatchScores[matchId]?.trim() || undefined;
+        matchResults[`M${matchId}`] = { winner, loser, ...(score && { score }) };
       }
     }
 

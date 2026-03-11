@@ -45,7 +45,6 @@ export function renderBracketPage(container) {
 
   container.innerHTML = `
     <div class="page active" id="page-bracket">
-      ${locked ? '<div class="lock-banner">🔒 Picks are locked</div>' : ''}
       <div id="bracket-content"></div>
     </div>
   `;

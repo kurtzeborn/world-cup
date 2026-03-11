@@ -338,21 +338,6 @@ body {
 }
 
 /* ----------------------------------------
-   Lock banner
------------------------------------------*/
-.lock-banner {
-  background: #f44336;
-  color: #fff;
-  padding: .6rem 1rem;
-  border-radius: var(--radius);
-  margin-bottom: 1rem;
-  font-size: .9rem;
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-}
-
-/* ----------------------------------------
    Group Stage
 -----------------------------------------*/
 .groups-grid {

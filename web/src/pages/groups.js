@@ -5,11 +5,8 @@ import { renderGroupRanking } from '../components/group-ranking.js';
 import { checkAuthPrompt } from '../auth-prompt.js';
 
 export function renderGroupsPage(container) {
-  const { locked } = getState();
-
   container.innerHTML = `
     <div class="page active" id="page-groups">
-      ${locked ? '<div class="lock-banner">🔒 Picks are locked</div>' : ''}
       <div class="groups-grid" id="groups-grid"></div>
     </div>
   `;

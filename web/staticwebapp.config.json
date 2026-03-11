@@ -3,6 +3,7 @@
     { "route": "/api/teams", "allowedRoles": ["anonymous", "authenticated"] },
     { "route": "/api/roles", "allowedRoles": ["anonymous", "authenticated"] },
     { "route": "/api/admin/health", "allowedRoles": ["anonymous", "authenticated"] },
+    { "route": "/api/admin/test", "allowedRoles": ["anonymous", "authenticated"] },
     { "route": "/api/*", "allowedRoles": ["authenticated"] },
     { "route": "/admin", "allowedRoles": ["admin"] },
     { "route": "/admin/*", "allowedRoles": ["admin"] }

@@ -2,7 +2,6 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { requireAdmin, AuthError } from '../shared/auth.js';
 import { getEntity, upsertEntity, listEntitiesByPartition } from '../shared/storage.js';
 import { ResultEntity, PicksEntity, ScoreEntity, Results } from '../shared/types.js';
-import { calculateScore } from '../shared/scoring.js';
 
 // GET /api/admin/health — diagnostic to verify this file loads
 app.http('adminHealth', {
@@ -100,6 +99,7 @@ app.http('adminRecalculate', {
       let recalcCount = 0;
 
       for (const { userId, picks } of allPicks) {
+        const { calculateScore } = await import('../shared/scoring.js');
         const score = calculateScore(picks, results);
         await upsertEntity<ScoreEntity>('Scores', 'global', userId, {
           ...score,

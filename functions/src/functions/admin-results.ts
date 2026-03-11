@@ -4,6 +4,16 @@ import { getEntity, upsertEntity, listEntitiesByPartition } from '../shared/stor
 import { ResultEntity, PicksEntity, ScoreEntity, Results } from '../shared/types.js';
 import { calculateScore } from '../shared/scoring.js';
 
+// GET /api/admin/health — diagnostic to verify this file loads
+app.http('adminHealth', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'admin/health',
+  handler: async (): Promise<HttpResponseInit> => {
+    return { status: 200, jsonBody: { ok: true, file: 'admin-results', ts: Date.now() } };
+  },
+});
+
 // POST /api/admin/results — enter or update match results
 app.http('adminSetResults', {
   methods: ['POST'],

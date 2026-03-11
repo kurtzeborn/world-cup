@@ -46,21 +46,21 @@ function singleGroupResults(groupA: string[], advancing3rdPlace: string[]): Resu
 
 describe('calculateScore — Group Stage', () => {
 
-  // T1: Perfect group order
-  it('T1 — exact order awards 9 points (3 scored positions × 3 pts each)', () => {
+  // T1: Perfect group order — but 3rd place doesn't advance, so no score for pos3
+  it('T1 — exact order awards 6 points (1st exact=3 + 2nd exact=3, 3rd not advancing=0)', () => {
     // picks: MEX 1st, RSA 2nd, KOR 3rd (advance box unchecked), UEFA-D 4th
     // actual: MEX 1st, RSA 2nd, KOR 3rd, UEFA-D 4th
-    // KOR not advancing (advance box unchecked, and game hasn't selected KOR either)
+    // KOR not advancing (advance box unchecked, and not in advancing3rdPlace)
     const picks = singleGroupPicks(['MEX', 'RSA', 'KOR', 'UEFA-D'], false);
     const results = singleGroupResults(['MEX', 'RSA', 'KOR', 'UEFA-D'], []);
 
     const score = calculateScore(picks, results);
 
-    // pos0 MEX exact=3, pos1 RSA exact=3, pos2 KOR exact=3, pos3 skip
-    expect(score.groupPoints).toBe(9);
+    // pos0 MEX exact=3, pos1 RSA exact=3, pos2 KOR exact but not advancing=0, pos3 skip
+    expect(score.groupPoints).toBe(6);
     expect(score.thirdPlacePoints).toBe(0);
     expect(score.knockoutPoints).toBe(0);
-    expect(score.totalPoints).toBe(9);
+    expect(score.totalPoints).toBe(6);
   });
 
   // T2: Top-2 swapped
@@ -340,8 +340,11 @@ describe('calculateScore — Knockout Stage', () => {
 
 describe('calculateScore — Perfect Score', () => {
 
-  it('T10 — perfect picks: 300 total points (108 group + 16 third-place + 176 knockout)', () => {
-    // 12 groups × 3 teams scored × 3 pts exact = 108 group pts
+  it('T10 — perfect picks: 288 total points (96 group + 16 third-place + 176 knockout)', () => {
+    // 12 groups: 1st exact=3 + 2nd exact=3 = 6 per group = 72
+    // 8 advancing 3rd-place groups: 3rd exact+advancing = 3 each = 24
+    // 4 non-advancing 3rd-place groups: 3rd exact but not advancing = 0
+    // Total group = 72 + 24 = 96
     // 8 correct 3rd-place advancing groups × 2 pts = 16 third-place pts
     // Knockout: 16×R32_FULL(2) + 8×R16_FULL(4) + 4×QF_FULL(8) + 2×SF_FULL(16) + 1×TPM_FULL(16) + 1×FINAL_FULL(32) = 32+32+32+32+16+32 = 176
 
@@ -427,10 +430,10 @@ describe('calculateScore — Perfect Score', () => {
 
     const score = calculateScore(picks, results);
 
-    expect(score.groupPoints).toBe(108);     // 12 groups × 3 positions × 3 pts
+    expect(score.groupPoints).toBe(96);      // 12×(3+3) + 8×3 = 96
     expect(score.thirdPlacePoints).toBe(16); // 8 × 2 pts
     expect(score.knockoutPoints).toBe(176);  // 32+32+32+32+16+32
-    expect(score.totalPoints).toBe(300);
+    expect(score.totalPoints).toBe(288);
   });
 
 });
@@ -462,8 +465,9 @@ describe('calculateScore — Edge Cases', () => {
   });
 
   it('returns correct breakdown keys', () => {
-    const picks = singleGroupPicks(['MEX', 'RSA', 'KOR', 'UEFA-D'], false);
-    const results = singleGroupResults(['MEX', 'RSA', 'KOR', 'UEFA-D'], []);
+    // Use advancing3rdPlace so 3rd place exact scores
+    const picks = singleGroupPicks(['MEX', 'RSA', 'KOR', 'UEFA-D'], true);
+    const results = singleGroupResults(['MEX', 'RSA', 'KOR', 'UEFA-D'], ['KOR']);
     const score = calculateScore(picks, results);
 
     const breakdown = JSON.parse(score.breakdown);

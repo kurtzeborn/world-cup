@@ -13,7 +13,7 @@ Players predict the outcome of all 104 matches in the 2026 FIFA World Cup. Point
 2. **3rd-Place Advancement** — predict which 8 of 12 third-place teams advance
 3. **Knockout Stage** — predict the winner of every knockout match (R32 through Final)
 
-**Maximum possible score: 300 points**
+**Maximum possible score: 288 points**
 
 All picks must be submitted before **June 11, 2026** (first match kickoff). No changes are allowed after the lock deadline.
 
@@ -25,16 +25,25 @@ Each of the 12 groups contains 4 teams. You rank all 4 teams from 1st to 4th.
 
 | Prediction Result | Points |
 |-------------------|--------|
-| Team in the **exact correct position** (1st, 2nd, or 3rd) | **3** |
+| Team in the **exact correct position** (1st, 2nd, or 3rd\*) | **3** |
 | Team correctly predicted to **advance** (top 2, or qualifying 3rd-place) but in the wrong position | **1** |
 | 4th place — no points regardless of correctness | **0** |
 | Team not in the correct position and not in the correct advance category | **0** |
 
+\* *3rd-place exact credit only applies if that team also **advances** as one of the 8 qualifying 3rd-place teams.*
+
+### Core Principle
+
+**The only way to earn group stage points is correctly picking a team that advances to the knockout round.** A correct position prediction is meaningless if the team is eliminated.
+
+- 1st and 2nd place teams automatically advance, so exact position picks for those slots always score (3 pts) as long as the team finishes there.
+- 3rd place teams only advance if they are one of FIFA's 8 qualifying 3rd-place teams. Correctly predicting 3rd place for a team that **doesn't** qualify earns **0 points**.
+- 4th place is never scored (even if correct).
+
 ### Group Stage Details
 
-- Each group has 3 scoreable positions × 3 max points = **9 points max per group**
-- 12 groups × 9 points = **108 points max for group stage**
-- 4th place is never scored (even if correct) — the focus is on identifying advancing teams
+- Each group has 3 scoreable positions × 3 max points = **9 points max per group** (if 3rd-place team advances)
+- 12 groups × (1st + 2nd) exact = 72 pts, plus 8 advancing 3rd-place × 3 pts = 24 pts = **96 points max for group stage**
 
 ### Partial Credit for Advancing Teams
 
@@ -51,8 +60,8 @@ If a team finishes 3rd but does NOT qualify as one of the 8 advancing 3rd-place 
 
 | Your Pick | Actual | Points | Reason |
 |-----------|--------|--------|--------|
-| 1st: Mexico | 1st: Mexico | 3 | Exact position |
-| 2nd: South Africa | 2nd: South Korea | 0 | Wrong position; South Africa didn’t finish top 2 in the group |
+| 1st: Mexico | 1st: Mexico | 3 | Exact position — Mexico advances (top 2) |
+| 2nd: South Africa | 2nd: South Korea | 0 | Wrong position; South Africa didn’t finish top 2 |
 | 3rd: South Korea | 3rd: South Africa | 0 | Wrong position; South Korea didn’t finish 3rd |
 | 4th: UEFA Path D | 4th: UEFA Path D | 0 | 4th place — never scored |
 
@@ -62,7 +71,18 @@ If a team finishes 3rd but does NOT qualify as one of the 8 advancing 3rd-place 
 |-----------|--------|--------|--------|
 | 1st: Mexico | 2nd: Mexico | 1 | Mexico advanced (top 2) — you had them advancing, but wrong position |
 | 2nd: South Korea | 1st: South Korea | 1 | South Korea advanced (top 2) — you had them advancing, but wrong position |
-| 3rd: South Africa | 3rd: South Africa | 3 | Exact 3rd-place position |
+| 3rd: South Africa | 3rd: South Africa | 3 | Exact 3rd-place AND South Africa qualifies as advancing 3rd-place team |
+| 4th: UEFA Path D | 4th: UEFA Path D | 0 | 4th place — never scored |
+
+**Example — exact 3rd place but team doesn’t advance:**
+
+**3rd-place outcome:** Group A’s 3rd-place team (South Africa) does **NOT** qualify as one of the 8.
+
+| Your Pick | Actual | Points | Reason |
+|-----------|--------|--------|--------|
+| 1st: Mexico | 1st: Mexico | 3 | Exact position — Mexico advances (top 2) |
+| 2nd: South Korea | 2nd: South Korea | 3 | Exact position — South Korea advances (top 2) |
+| 3rd: South Africa | 3rd: South Africa | 0 | Exact 3rd place BUT South Africa was eliminated — no points |
 | 4th: UEFA Path D | 4th: UEFA Path D | 0 | 4th place — never scored |
 
 **Example — 3rd-place partial credit:**
@@ -159,7 +179,7 @@ This is intentionally the most generous interpretation. Because 3rd-place placem
 
 | Category | Max Points |
 |----------|-----------|
-| Group stage (12 groups × 9) | 108 |
+| Group stage (12×6 + 8×3) | 96 |
 | 3rd-place advancement (8 × 2) | 16 |
 | Round of 32 (16 × 2) | 32 |
 | Round of 16 (8 × 4) | 32 |
@@ -167,7 +187,7 @@ This is intentionally the most generous interpretation. Because 3rd-place placem
 | Semifinals (2 × 16) | 32 |
 | Third-place match (1 × 16) | 16 |
 | Final (1 × 32) | 32 |
-| **Total** | **300** |
+| **Total** | **288** |
 
 ---
 

@@ -38,6 +38,7 @@ export function renderGroupRanking(gridEl, opts) {
   const { groupPicks, thirdPlaceAdvancing, locked, results, onGroupPickChange, onThirdPlaceChange } = opts;
   const byGroup = getByGroup();
   const groupStandings = results?.groupStandings ?? {};
+  const advancing3rd = new Set(results?.advancing3rdPlace ?? []);
 
   gridEl.innerHTML = GROUP_LETTERS.map(letter => {
     const teams = byGroup[letter];
@@ -59,7 +60,7 @@ export function renderGroupRanking(gridEl, opts) {
               const pos = selected.indexOf(team.id);
               const posClasses = ['selected-1st','selected-2nd','selected-3rd','selected-4th'];
               const cls = pos >= 0 && pos < 4 ? posClasses[pos] : '';
-              const resultCls = pos >= 0 && actual.length > 0 ? getGroupTeamStatus(team.id, pos, actual) : '';
+              const resultCls = pos >= 0 && actual.length > 0 ? getGroupTeamStatus(team.id, pos, actual, advancing3rd) : '';
               const badge = pos >= 0
                 ? `<span class="rank-badge rank-${pos + 1}">${pos + 1}</span>`
                 : '';
@@ -159,11 +160,19 @@ export function renderGroupRanking(gridEl, opts) {
   });
 }
 
-function getGroupTeamStatus(teamId, pickedPos, actualOrder) {
+function getGroupTeamStatus(teamId, pickedPos, actualOrder, advancing3rd) {
   const actualPos = actualOrder.indexOf(teamId);
   if (actualPos === -1) return 'result-incorrect';
-  if (actualPos === pickedPos) return 'result-correct';
+  // Exact position match
+  if (actualPos === pickedPos) {
+    // 1st/2nd always advance; 3rd only counts if team actually advanced
+    if (pickedPos === 2 && !advancing3rd.has(teamId)) return 'result-incorrect';
+    return 'result-correct';
+  }
+  // Both in top 2 but swapped
   if (pickedPos < 2 && actualPos < 2) return 'result-partial';
-  if (pickedPos === 2 && actualPos === 2) return 'result-correct';
+  // Picked top 2, actually 3rd but advanced (or vice versa) — team advances either way
+  if (pickedPos < 2 && actualPos === 2 && advancing3rd.has(teamId)) return 'result-partial';
+  if (pickedPos === 2 && actualPos < 2) return 'result-partial';
   return 'result-incorrect';
 }

@@ -341,8 +341,8 @@ body {
    Lock banner
 -----------------------------------------*/
 .lock-banner {
-  background: var(--gold);
-  color: #333;
+  background: #f44336;
+  color: #fff;
   padding: .6rem 1rem;
   border-radius: var(--radius);
   margin-bottom: 1rem;
@@ -351,7 +351,6 @@ body {
   align-items: center;
   gap: .5rem;
 }
-.lock-banner.locked { background: #f44336; color: #fff; }
 
 /* ----------------------------------------
    Group Stage

@@ -9,7 +9,7 @@ export function renderGroupsPage(container) {
 
   container.innerHTML = `
     <div class="page active" id="page-groups">
-      ${locked ? '<div class="lock-banner locked">🔒 Picks are locked</div>' : ''}
+      ${locked ? '<div class="lock-banner">🔒 Picks are locked</div>' : ''}
       <div class="groups-grid" id="groups-grid"></div>
     </div>
   `;

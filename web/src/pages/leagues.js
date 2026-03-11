@@ -1,6 +1,6 @@
 // pages/leagues.js — Leagues page
 
-import { getState, setState } from '../state.js';
+import { getState } from '../state.js';
 import { api } from '../api.js';
 import { escapeHtml } from '../utils.js';
 
@@ -47,7 +47,6 @@ async function loadLeagues() {
   if (!el) return;
   try {
     const leagues = await api.getLeagues();
-    setState({ leagues });
     if (!leagues.length) {
       el.innerHTML = '<p style="color:var(--text-muted)">You are not in any leagues yet.</p>';
       return;

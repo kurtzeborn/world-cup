@@ -32,8 +32,7 @@ function renderTable(leaderboard) {
     return;
   }
 
-  const { user } = getState();
-  const { locked } = getState();
+  const { user, locked } = getState();
 
   el.innerHTML = `
     <table class="leaderboard-table">
@@ -48,16 +47,20 @@ function renderTable(leaderboard) {
         </tr>
       </thead>
       <tbody>
-        ${leaderboard.map((row, i) => `
-          <tr ${user?.userId === row.userId ? 'class="current-user-row"' : ''} ${locked ? 'class="lb-clickable" data-user-id="' + row.userId + '"' : ''}>
+        ${leaderboard.map((row, i) => {
+          const classes = [];
+          if (user?.userId === row.userId) classes.push('current-user-row');
+          if (locked) classes.push('lb-clickable');
+          return `
+          <tr ${classes.length ? `class="${classes.join(' ')}"` : ''} ${locked ? `data-user-id="${row.userId}"` : ''}>
             <td class="rank-num">${i + 1}</td>
             <td>${escapeHtml(row.displayName || row.userId)}</td>
             <td class="points-total">${row.totalPoints}</td>
             <td>${row.groupPoints}</td>
             <td>${row.thirdPlacePoints}</td>
             <td>${row.knockoutPoints}</td>
-          </tr>
-        `).join('')}
+          </tr>`;
+        }).join('')}
       </tbody>
     </table>
   `;

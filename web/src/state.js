@@ -6,8 +6,6 @@ let _state = {
   teams: [],           // all 48 teams
   picks: null,         // current user's picks (or null)
   results: null,       // match results
-  leaderboard: [],
-  leagues: [],
   locked: false,
 };
 

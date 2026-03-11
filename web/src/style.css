@@ -409,6 +409,19 @@ body {
 .team-row.selected-2nd { background: var(--row-2nd); }
 .team-row.selected-3rd { background: var(--row-3rd); }
 .team-row.selected-4th { background: var(--row-4th); }
+
+/* Result comparison indicators (picks vs actual results) */
+.team-row.result-correct { background: rgba(76, 175, 80, 0.25) !important; }
+.team-row.result-partial { background: rgba(255, 152, 0, 0.25) !important; }
+.team-row.result-incorrect { background: rgba(244, 67, 54, 0.20) !important; }
+.result-icon {
+  font-size: .7rem;
+  margin-left: .2rem;
+  vertical-align: middle;
+}
+.team-row.result-correct .result-icon { color: #4CAF50; }
+.team-row.result-partial .result-icon { color: #FF9800; }
+.team-row.result-incorrect .result-icon { color: #F44336; }
 .flag { width: 20px; height: 15px; vertical-align: middle; margin-right: .3rem; border-radius: 2px; object-fit: cover; }
 .flag-tbd { display: inline-block; width: 20px; text-align: center; font-size: .75rem; color: var(--text-muted); }
 .fifa-rank {
@@ -680,6 +693,8 @@ body {
   background: var(--row-1st);
   font-weight: 600;
 }
+.bk-team.correct { background: rgba(76, 175, 80, 0.25) !important; font-weight: 600; }
+.bk-team.incorrect { background: rgba(244, 67, 54, 0.20) !important; }
 
 .bk-team img { width: 20px; height: 15px; vertical-align: middle; }
 

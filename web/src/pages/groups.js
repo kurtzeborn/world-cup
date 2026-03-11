@@ -18,11 +18,12 @@ export function renderGroupsPage(container) {
   if (!grid) return;
 
   function refresh() {
-    const { picks: p, locked: l } = getState();
+    const { picks: p, locked: l, results: r } = getState();
     renderGroupRanking(grid, {
       groupPicks: p?.groupPicks ?? {},
       thirdPlaceAdvancing: p?.thirdPlaceAdvancing ?? [],
       locked: l,
+      results: r,
       onGroupPickChange: (newGroupPicks) => {
         const { picks } = getState();
         setState({ picks: { ...(picks ?? {}), groupPicks: newGroupPicks } });

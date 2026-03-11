@@ -58,17 +58,18 @@ function applyTheme(theme) {
 
 async function init() {
   initTheme();
-  // Load auth + teams in parallel
-  const [authUser, teams] = await Promise.all([
+  // Load auth + teams + results in parallel
+  const [authUser, teams, results] = await Promise.all([
     fetchAuthUser(),
     api.getTeams().catch(() => []),
+    api.getResults().catch(() => ({})),
   ]);
 
   // Determine if locked (client-side check; server enforces too)
   const kickoff = new Date(KICKOFF);
   const locked = new Date() >= kickoff;
 
-  setState({ user: authUser, teams, locked, lockDeadline: kickoff });
+  setState({ user: authUser, teams, results, locked, lockDeadline: kickoff });
 
   // Render auth header & countdown
   renderAuthHeader(authUser);

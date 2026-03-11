@@ -35,12 +35,14 @@ function getDisplayOrder(teams, selected) {
  * @param {(thirdPlaceAdvancing: string[]) => void} opts.onThirdPlaceChange
  */
 export function renderGroupRanking(gridEl, opts) {
-  const { groupPicks, thirdPlaceAdvancing, locked, onGroupPickChange, onThirdPlaceChange } = opts;
+  const { groupPicks, thirdPlaceAdvancing, locked, results, onGroupPickChange, onThirdPlaceChange } = opts;
   const byGroup = getByGroup();
+  const groupStandings = results?.groupStandings ?? {};
 
   gridEl.innerHTML = GROUP_LETTERS.map(letter => {
     const teams = byGroup[letter];
     const selected = groupPicks[letter] ?? [];
+    const actual = groupStandings[letter] ?? [];
     const thirdAdvances = thirdPlaceAdvancing.includes(letter);
     const thirdPlaceCount = thirdPlaceAdvancing.length;
     const allRanked = selected.length >= 4;
@@ -57,8 +59,13 @@ export function renderGroupRanking(gridEl, opts) {
               const pos = selected.indexOf(team.id);
               const posClasses = ['selected-1st','selected-2nd','selected-3rd','selected-4th'];
               const cls = pos >= 0 && pos < 4 ? posClasses[pos] : '';
+              const resultCls = pos >= 0 && actual.length > 0 ? getGroupTeamStatus(team.id, pos, actual) : '';
               const badge = pos >= 0
                 ? `<span class="rank-badge rank-${pos + 1}">${pos + 1}</span>`
+                : '';
+              const resultIcon = resultCls === 'result-correct' ? '<span class="result-icon">&#10003;</span>'
+                : resultCls === 'result-partial' ? '<span class="result-icon">&#9679;</span>'
+                : resultCls === 'result-incorrect' ? '<span class="result-icon">&#10007;</span>'
                 : '';
               const fifaRank = team.confirmed
                 ? `<a href="${FIFA_RANKINGS_URL}" target="_blank" rel="noopener" class="fifa-rank" title="FIFA Ranking #${team.fifaRanking}">${team.fifaRanking}</a>`
@@ -78,9 +85,9 @@ export function renderGroupRanking(gridEl, opts) {
               const dragHtml = showDrag
                 ? '<i class="fa-solid fa-grip-vertical drag-handle"></i> '
                 : '';
-              return `<tr class="team-row ${cls}" data-group="${letter}" data-team="${team.id}" ${locked ? '' : 'title="Click to rank 1st\u20134th"'}>
+              return `<tr class="team-row ${cls} ${resultCls}" data-group="${letter}" data-team="${team.id}" ${locked ? '' : 'title="Click to rank 1st\u20134th"'}>
                 <td>${dragHtml}${getFlag(team.flagCode)} ${team.name} ${fifaRank}</td>
-                <td class="rank-cell">${advanceHtml}${badge}</td>
+                <td class="rank-cell">${advanceHtml}${badge}${resultIcon}</td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -154,4 +161,13 @@ export function renderGroupRanking(gridEl, opts) {
       },
     });
   });
+}
+
+function getGroupTeamStatus(teamId, pickedPos, actualOrder) {
+  const actualPos = actualOrder.indexOf(teamId);
+  if (actualPos === -1) return 'result-incorrect';
+  if (actualPos === pickedPos) return 'result-correct';
+  if (pickedPos < 2 && actualPos < 2) return 'result-partial';
+  if (pickedPos === 2 && actualPos === 2) return 'result-correct';
+  return 'result-incorrect';
 }

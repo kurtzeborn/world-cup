@@ -63,10 +63,6 @@ export function renderGroupRanking(gridEl, opts) {
               const badge = pos >= 0
                 ? `<span class="rank-badge rank-${pos + 1}">${pos + 1}</span>`
                 : '';
-              const resultIcon = resultCls === 'result-correct' ? '<span class="result-icon">&#10003;</span>'
-                : resultCls === 'result-partial' ? '<span class="result-icon">&#9679;</span>'
-                : resultCls === 'result-incorrect' ? '<span class="result-icon">&#10007;</span>'
-                : '';
               const fifaRank = team.confirmed
                 ? `<a href="${FIFA_RANKINGS_URL}" target="_blank" rel="noopener" class="fifa-rank" title="FIFA Ranking #${team.fifaRanking}">${team.fifaRanking}</a>`
                 : '';
@@ -87,7 +83,7 @@ export function renderGroupRanking(gridEl, opts) {
                 : '';
               return `<tr class="team-row ${cls} ${resultCls}" data-group="${letter}" data-team="${team.id}" ${locked ? '' : 'title="Click to rank 1st\u20134th"'}>
                 <td>${dragHtml}${getFlag(team.flagCode)} ${team.name} ${fifaRank}</td>
-                <td class="rank-cell">${advanceHtml}${badge}${resultIcon}</td>
+                <td class="rank-cell">${advanceHtml}${badge}</td>
               </tr>`;
             }).join('')}
           </tbody>

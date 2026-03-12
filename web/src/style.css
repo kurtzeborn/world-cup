@@ -615,6 +615,7 @@ body {
 }
 
 .bk-final-wrap .bk-slots {
+  flex: none;
   width: 100%;
 }
 

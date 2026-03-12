@@ -151,8 +151,8 @@ async function viewLeague(leagueId) {
     const rows = await api.getLeagueLeaderboard(leagueId);
     const tableHtml = rows.length ? `
       <table class="leaderboard-table">
-        <thead><tr><th>#</th><th>Player</th><th>Points</th></tr></thead>
-        <tbody>${rows.map((r, i) => `<tr><td>${i+1}</td><td>${escapeHtml(r.displayName || r.userId)}</td><td class="points-total">${r.totalPoints}</td></tr>`).join('')}</tbody>
+        <thead><tr><th>#</th><th>Player</th><th>Points</th><th>Max</th></tr></thead>
+        <tbody>${rows.map((r, i) => `<tr><td>${i+1}</td><td>${escapeHtml(r.displayName || r.userId)}</td><td class="points-total">${r.totalPoints}</td><td class="points-max">${r.maxPossiblePoints ?? '—'}</td></tr>`).join('')}</tbody>
       </table>
     ` : '<p style="color:var(--text-muted)">No scores yet.</p>';
 

@@ -45,7 +45,7 @@ function updatePicksStatus() {
   const compEl = document.getElementById('picks-status-completeness');
   if (!nameEl || !compEl) return;
 
-  const { picks, displayName, locked } = getState();
+  const { picks, displayName, locked, score } = getState();
 
   // Show/hide lock icon
   const lockIcon = document.getElementById('picks-lock-icon');
@@ -65,12 +65,18 @@ function updatePicksStatus() {
     nameEl.innerHTML = '';
   }
 
-  // Completeness section
-  const { done, total } = computeCompleteness(picks);
-  const isComplete = done === total;
-  compEl.textContent = `${done}/${total}`;
-  compEl.title = `${done} of ${total} picks made`;
-  compEl.classList.toggle('complete', isComplete);
+  // When locked, show score; otherwise show completeness
+  if (locked && score) {
+    compEl.textContent = `${score.totalPoints} / ${score.maxPossiblePoints} pts`;
+    compEl.title = `${score.totalPoints} points earned, ${score.maxPossiblePoints} max possible`;
+    compEl.classList.remove('complete');
+  } else {
+    const { done, total } = computeCompleteness(picks);
+    const isComplete = done === total;
+    compEl.textContent = `${done}/${total}`;
+    compEl.title = `${done} of ${total} picks made`;
+    compEl.classList.toggle('complete', isComplete);
+  }
 }
 
 async function handleEditName() {

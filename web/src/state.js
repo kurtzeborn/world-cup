@@ -7,6 +7,7 @@ let _state = {
   picks: null,         // current user's picks (or null)
   results: null,       // match results
   locked: false,
+  score: null,         // { totalPoints, maxPossiblePoints } when locked
 };
 
 const _listeners = new Set();

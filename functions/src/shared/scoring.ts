@@ -19,7 +19,7 @@ export const POINTS = {
   FINAL_PARTIAL: 16,
 };
 
-export function calculateScore(picks: PicksEntity, results: Results): Omit<ScoreEntity, 'calculatedAt'> {
+export function calculateScore(picks: PicksEntity, results: Results): Omit<ScoreEntity, 'calculatedAt' | 'maxPossiblePoints'> {
   let groupPoints = 0;
   let thirdPlacePoints = 0;
   let knockoutPoints = 0;
@@ -199,4 +199,57 @@ export function getRoundPoints(roundName: string): { full: number; partial: numb
     case 'F': return { full: POINTS.FINAL_FULL, partial: POINTS.FINAL_PARTIAL };
     default: return { full: 0, partial: 0 };
   }
+}
+
+/**
+ * Calculate the maximum possible points a user can still achieve.
+ * For resolved scoring opportunities, actual earned points are used.
+ * For unresolved ones, assume the best-case outcome (full credit).
+ */
+export function calculateMaxPossible(
+  picks: PicksEntity,
+  results: Results,
+  actualScore: Omit<ScoreEntity, 'calculatedAt' | 'maxPossiblePoints'>,
+): number {
+  let remaining = 0;
+  const advancing3rdResolved = results.advancing3rdPlace.length > 0;
+
+  // === GROUP STAGE: unresolved group positions ===
+  try {
+    const groupPicks = JSON.parse(picks.groupPicks || '{}') as Record<string, string[]>;
+
+    for (const [groupId, predictedOrder] of Object.entries(groupPicks)) {
+      if (results.groupStandings[groupId]) continue; // group resolved — already in actualScore
+      // Positions 0-2 (1st, 2nd, 3rd): assume exact-position match (3 pts each)
+      for (let pos = 0; pos < Math.min(predictedOrder.length, 3); pos++) {
+        if (predictedOrder[pos]) remaining += POINTS.GROUP_EXACT_POSITION;
+      }
+    }
+  } catch { /* ignore parse errors */ }
+
+  // === 3RD-PLACE ADVANCEMENT: unresolved ===
+  try {
+    const predicted3rdGroups = JSON.parse(picks.thirdPlaceAdvancing || '[]') as string[];
+
+    for (const groupLetter of predicted3rdGroups) {
+      const groupResolved = !!results.groupStandings[groupLetter];
+      if (groupResolved && advancing3rdResolved) continue; // fully determined — already in actualScore
+      remaining += POINTS.THIRD_PLACE_CORRECT;
+    }
+  } catch { /* ignore parse errors */ }
+
+  // === KNOCKOUT STAGE: unresolved matches ===
+  try {
+    const bracketPicks = JSON.parse(picks.bracketPicks || '{}') as Record<string, string>;
+
+    for (const [slot, predictedWinner] of Object.entries(bracketPicks)) {
+      if (!predictedWinner) continue;
+      const [roundName, slotNum] = slot.split('_');
+      const matchKey = `M${slotNum}`;
+      if (results.matchResults[matchKey]) continue; // match resolved — already in actualScore
+      remaining += getRoundPoints(roundName).full;
+    }
+  } catch { /* ignore parse errors */ }
+
+  return actualScore.totalPoints + remaining;
 }

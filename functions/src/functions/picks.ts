@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { requireAuth, AuthError } from '../shared/auth.js';
 import { getEntity, upsertEntity } from '../shared/storage.js';
-import { PicksEntity, isLocked, getLockDeadline } from '../shared/types.js';
+import { PicksEntity, ScoreEntity, isLocked, getLockDeadline } from '../shared/types.js';
 
 // GET /api/picks — get current user's picks
 app.http('getPicks', {
@@ -12,6 +12,19 @@ app.http('getPicks', {
     try {
       const user = requireAuth(request);
       const entity = await getEntity<PicksEntity>('Picks', user.userId, 'picks');
+      const locked = !!entity?.lockedAt || isLocked();
+
+      // Include score data when picks are locked
+      let score: { totalPoints: number; maxPossiblePoints: number } | null = null;
+      if (locked) {
+        const scoreEntity = await getEntity<ScoreEntity>('Scores', 'global', user.userId);
+        if (scoreEntity) {
+          score = {
+            totalPoints: scoreEntity.totalPoints,
+            maxPossiblePoints: scoreEntity.maxPossiblePoints ?? 0,
+          };
+        }
+      }
 
       return {
         status: 200,
@@ -22,7 +35,8 @@ app.http('getPicks', {
               bracketPicks: JSON.parse(entity.bracketPicks || '{}'),
               lockedAt: entity.lockedAt ?? null,
               updatedAt: entity.updatedAt,
-              isLocked: !!entity.lockedAt || isLocked(),
+              isLocked: locked,
+              score,
             }
           : {
               groupPicks: {},
@@ -31,6 +45,7 @@ app.http('getPicks', {
               lockedAt: null,
               updatedAt: null,
               isLocked: isLocked(),
+              score: null,
             },
       };
     } catch (err) {
@@ -143,6 +158,12 @@ export async function getPicksForUserHandler(request: HttpRequest, _context: Inv
       return { status: 404, jsonBody: { error: 'No locked picks found for this user' } };
     }
 
+    // Include score data
+    const scoreEntity = await getEntity<ScoreEntity>('Scores', 'global', targetUserId);
+    const score = scoreEntity
+      ? { totalPoints: scoreEntity.totalPoints, maxPossiblePoints: scoreEntity.maxPossiblePoints ?? 0 }
+      : null;
+
     return {
       status: 200,
       jsonBody: {
@@ -150,6 +171,7 @@ export async function getPicksForUserHandler(request: HttpRequest, _context: Inv
         thirdPlaceAdvancing: JSON.parse(entity.thirdPlaceAdvancing || '[]'),
         bracketPicks: JSON.parse(entity.bracketPicks || '{}'),
         lockedAt: entity.lockedAt,
+        score,
       },
     };
   } catch (err) {

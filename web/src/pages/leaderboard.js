@@ -41,6 +41,7 @@ function renderTable(leaderboard) {
           <th>#</th>
           <th>Player</th>
           <th>Total</th>
+          <th>Max</th>
           <th>Group</th>
           <th>3rd Place</th>
           <th>Knockout</th>
@@ -56,6 +57,7 @@ function renderTable(leaderboard) {
             <td class="rank-num">${i + 1}</td>
             <td>${escapeHtml(row.displayName || row.userId)}</td>
             <td class="points-total">${row.totalPoints}</td>
+            <td class="points-max">${row.maxPossiblePoints ?? '—'}</td>
             <td>${row.groupPoints}</td>
             <td>${row.thirdPlacePoints}</td>
             <td>${row.knockoutPoints}</td>

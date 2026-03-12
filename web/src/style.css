@@ -744,6 +744,14 @@ body {
 [data-theme="dark"] .current-user-row td { background: rgba(255, 253, 231, .1); }
 .rank-num { font-weight: 700; color: var(--text-muted); }
 .points-total { font-weight: 700; color: var(--green-dark); }
+.points-max { color: var(--text-muted); font-size: .85em; }
+
+/* View-picks score badge */
+.view-picks-score {
+  font-size: .85em;
+  color: var(--text-muted);
+  font-weight: 400;
+}
 
 /* ----------------------------------------
    Leagues

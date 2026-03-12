@@ -36,7 +36,7 @@ export async function renderViewPicksPage(container, userId) {
   container.innerHTML = `
     <div class="page active" id="page-view-picks">
       <div class="card">
-        <div class="card-title">Picks for <span id="view-user-name">User</span></div>
+        <div class="card-title">Picks for <span id="view-user-name">User</span> <span id="view-user-score" class="view-picks-score"></span></div>
         <div id="viewpicks-content"><p style="color:var(--text-muted)">Loading…</p></div>
       </div>
     </div>
@@ -49,6 +49,11 @@ export async function renderViewPicksPage(container, userId) {
     const nameEl = document.getElementById('view-user-name');
     if (nameEl) {
       nameEl.textContent = escapeHtml(user?.displayName || userId);
+    }
+
+    const scoreEl = document.getElementById('view-user-score');
+    if (scoreEl && picks.score) {
+      scoreEl.textContent = `— ${picks.score.totalPoints} / ${picks.score.maxPossiblePoints} pts`;
     }
 
     renderViewPicksContent(picks);

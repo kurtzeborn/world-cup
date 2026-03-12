@@ -90,7 +90,11 @@ async function init() {
     try {
       const serverPicks = await api.getPicks();
       if (serverPicks) {
-        setState({ picks: serverPicks, locked: !!serverPicks.isLocked });
+        setState({
+          picks: serverPicks,
+          locked: !!serverPicks.isLocked,
+          score: serverPicks.score ?? null,
+        });
       } else {
         // No server picks — check for pre-auth local drafts to sync
         const localPicks = loadLocalPicks();

@@ -20,6 +20,7 @@ app.http('getLeaderboard', {
         groupPoints: s.groupPoints,
         thirdPlacePoints: s.thirdPlacePoints,
         knockoutPoints: s.knockoutPoints,
+        maxPossiblePoints: s.maxPossiblePoints ?? 0,
         calculatedAt: s.calculatedAt,
       }))
       .sort((a, b) => b.totalPoints - a.totalPoints);
@@ -64,6 +65,7 @@ app.http('getLeagueLeaderboard', {
             groupPoints: s?.groupPoints ?? 0,
             thirdPlacePoints: s?.thirdPlacePoints ?? 0,
             knockoutPoints: s?.knockoutPoints ?? 0,
+            maxPossiblePoints: s?.maxPossiblePoints ?? 0,
             calculatedAt: s?.calculatedAt ?? null,
           };
         })

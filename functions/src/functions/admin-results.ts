@@ -2,7 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { requireAdmin, AuthError } from '../shared/auth.js';
 import { getEntity, upsertEntity, listEntitiesByPartition } from '../shared/storage.js';
 import { ResultEntity, PicksEntity, ScoreEntity, Results } from '../shared/types.js';
-import { calculateScore } from '../shared/scoring.js';
+import { calculateScore, calculateMaxPossible } from '../shared/scoring.js';
 
 // POST /api/manage/results — enter or update match results
 app.http('adminSetResults', {
@@ -91,8 +91,10 @@ app.http('adminRecalculate', {
 
       for (const { userId, picks } of allPicks) {
         const score = calculateScore(picks, results);
+        const maxPossiblePoints = calculateMaxPossible(picks, results, score);
         await upsertEntity<ScoreEntity>('Scores', 'global', userId, {
           ...score,
+          maxPossiblePoints,
           calculatedAt: now,
         });
         recalcCount++;

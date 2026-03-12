@@ -52,6 +52,7 @@ export interface ScoreEntity {
   groupPoints: number;
   thirdPlacePoints: number;
   knockoutPoints: number;
+  maxPossiblePoints: number;
   breakdown: string; // JSON
   calculatedAt: string;
 }

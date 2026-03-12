@@ -1,8 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { requireAuth, AuthError } from '../shared/auth.js';
 import { getEntity, upsertEntity } from '../shared/storage.js';
-import { PicksEntity, ScoreEntity, ResultEntity, Results, isLocked, getLockDeadline } from '../shared/types.js';
-import { calculateScore, calculateMaxPossible } from '../shared/scoring.js';
+import { PicksEntity, ScoreEntity, isLocked, getLockDeadline } from '../shared/types.js';
 
 // GET /api/picks — get current user's picks
 app.http('getPicks', {
@@ -17,23 +16,12 @@ app.http('getPicks', {
 
       // Include score data when picks are locked
       let score: { totalPoints: number; maxPossiblePoints: number } | null = null;
-      if (locked && entity) {
+      if (locked) {
         const scoreEntity = await getEntity<ScoreEntity>('Scores', 'global', user.userId);
         if (scoreEntity) {
           score = {
             totalPoints: scoreEntity.totalPoints,
             maxPossiblePoints: scoreEntity.maxPossiblePoints ?? 0,
-          };
-        } else {
-          // No stored score yet — compute on the fly
-          const resultsEntity = await getEntity<ResultEntity>('Results', 'results', 'current');
-          const results: Results = resultsEntity
-            ? JSON.parse(resultsEntity.data)
-            : { groupStandings: {}, advancing3rdPlace: [], matchResults: {} };
-          const computed = calculateScore(entity, results);
-          score = {
-            totalPoints: computed.totalPoints,
-            maxPossiblePoints: calculateMaxPossible(entity, results, computed),
           };
         }
       }
@@ -171,21 +159,10 @@ export async function getPicksForUserHandler(request: HttpRequest, _context: Inv
     }
 
     // Include score data
-    let score: { totalPoints: number; maxPossiblePoints: number };
     const scoreEntity = await getEntity<ScoreEntity>('Scores', 'global', targetUserId);
-    if (scoreEntity) {
-      score = { totalPoints: scoreEntity.totalPoints, maxPossiblePoints: scoreEntity.maxPossiblePoints ?? 0 };
-    } else {
-      const resultsEntity = await getEntity<ResultEntity>('Results', 'results', 'current');
-      const results: Results = resultsEntity
-        ? JSON.parse(resultsEntity.data)
-        : { groupStandings: {}, advancing3rdPlace: [], matchResults: {} };
-      const computed = calculateScore(entity, results);
-      score = {
-        totalPoints: computed.totalPoints,
-        maxPossiblePoints: calculateMaxPossible(entity, results, computed),
-      };
-    }
+    const score = scoreEntity
+      ? { totalPoints: scoreEntity.totalPoints, maxPossiblePoints: scoreEntity.maxPossiblePoints ?? 0 }
+      : null;
 
     return {
       status: 200,

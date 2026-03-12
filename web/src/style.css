@@ -693,6 +693,7 @@ body {
 .bk-team.correct { color: #4CAF50; font-weight: 700; }
 .bk-team.incorrect { color: #F44336; font-weight: 700; text-decoration: line-through; }
 .bk-team.eliminated { color: #F44336; font-weight: 700; text-decoration: line-through; }
+.bk-team.partial { color: #FF9800; font-weight: 700; }
 .bk-champ-team.eliminated,
 .bk-third-team.eliminated { color: #F44336; text-decoration: line-through; }
 

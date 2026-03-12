@@ -49,6 +49,34 @@ export function getEliminatedTeams(results) {
   return eliminated;
 }
 
+/**
+ * Resolve actual teams per bracket slot from results data.
+ * Uses group standings for R32 and match results for later rounds.
+ * Returns { matchId: [teamA, teamB] } mapping.
+ */
+function resolveActualTeams(results) {
+  if (!results?.groupStandings) return {};
+
+  // Convert advancing3rdPlace team IDs → group letters
+  const advSet = new Set(results.advancing3rdPlace ?? []);
+  const advGroups = [];
+  for (const [group, teams] of Object.entries(results.groupStandings)) {
+    if (teams.length >= 3 && advSet.has(teams[2])) advGroups.push(group);
+  }
+  advGroups.sort();
+
+  // Build pseudo-bracketPicks from match results
+  const bracketPicks = {};
+  const mr = results.matchResults ?? {};
+  for (const [key, res] of Object.entries(mr)) {
+    const matchId = parseInt(key.replace('M', ''));
+    const match = MATCH_BY_ID[matchId];
+    if (match) bracketPicks[`${match.round}_${matchId}`] = res.winner;
+  }
+
+  return resolveMatchTeams(results.groupStandings, advGroups, bracketPicks);
+}
+
 /** Lookup match definition by id */
 const MATCH_BY_ID = Object.fromEntries(BRACKET_STRUCTURE.map(m => [m.id, m]));
 
@@ -106,6 +134,7 @@ export function renderBracketContent() {
   const mt = resolveMatchTeams(gp, tpa, bp);
   const mr = results?.matchResults ?? {};
   const elim = getEliminatedTeams(results);
+  const amt = resolveActualTeams(results);
 
   const el = document.getElementById('bracket-content');
   if (!el) return;
@@ -113,7 +142,7 @@ export function renderBracketContent() {
   el.innerHTML = `
     <div class="bk-scroll">
       <div class="bk-bracket">
-        ${renderBracketCols(bp, mt, locked, mr, elim)}
+        ${renderBracketCols(bp, mt, locked, mr, elim, amt)}
       </div>
     </div>
   `;
@@ -122,7 +151,7 @@ export function renderBracketContent() {
 // ─── Rendering helpers ──────────────────────────────────────
 
 /** Build all columns: R32(16) → R16(8) → QF(4) → SF(2) → F(1) */
-function renderBracketCols(bp, mt, locked, mr, elim) {
+function renderBracketCols(bp, mt, locked, mr, elim, amt) {
   let html = '';
 
   for (let r = 0; r < ROUNDS.length; r++) {
@@ -143,11 +172,11 @@ function renderBracketCols(bp, mt, locked, mr, elim) {
 
     if (isLast) {
       // Final column: Champion above, Final match, TPM + 3rd below
-      html += renderFinalColumn(bp, mt, locked, mr, elim);
+      html += renderFinalColumn(bp, mt, locked, mr, elim, amt);
     } else {
       html += '<div class="bk-slots">';
       for (const id of ids) {
-        html += renderSlot(MATCH_BY_ID[id], round, bp, mt, locked, mr, elim);
+        html += renderSlot(MATCH_BY_ID[id], round, bp, mt, locked, mr, elim, amt);
       }
       html += '</div>';
     }
@@ -159,7 +188,7 @@ function renderBracketCols(bp, mt, locked, mr, elim) {
 }
 
 /** Final column: champion card → Final match → TPM + 3rd place */
-function renderFinalColumn(bp, mt, locked, mr, elim) {
+function renderFinalColumn(bp, mt, locked, mr, elim, amt) {
   const finalPick = bp['F_104'] ?? null;
   const champTeam = finalPick ? TEAMS_BY_ID[finalPick] : null;
   const champCls = finalPick && elim.has(finalPick) ? 'eliminated' : '';
@@ -189,16 +218,16 @@ function renderFinalColumn(bp, mt, locked, mr, elim) {
       </div>
 
       <div class="bk-slots">
-        ${renderSlot(MATCH_BY_ID[104], 'F', bp, mt, locked, mr, elim)}
+        ${renderSlot(MATCH_BY_ID[104], 'F', bp, mt, locked, mr, elim, amt)}
       </div>
 
       <div class="bk-final-below">
         <div class="bk-tpm-wrap">
           <div class="bk-center-hdr">3rd Place Match</div>
           <div class="bk-match" id="bracket-slot-TPM_103">
-            ${teamRow(tpmA, tpmMatch.teamA, tpmPicked, tpmCanPick, tpmKey, tpmResult, elim)}
+            ${teamRow(tpmA, tpmMatch.teamA, tpmPicked, tpmCanPick, tpmKey, tpmResult, elim, amt[103])}
             ${matchInfoBar(103)}
-            ${teamRow(tpmB, tpmMatch.teamB, tpmPicked, tpmCanPick, tpmKey, tpmResult, elim)}
+            ${teamRow(tpmB, tpmMatch.teamB, tpmPicked, tpmCanPick, tpmKey, tpmResult, elim, amt[103])}
           </div>
         </div>
         <div class="bk-award">
@@ -210,18 +239,19 @@ function renderFinalColumn(bp, mt, locked, mr, elim) {
   `;
 }
 
-function renderSlot(match, round, bracketPicks, matchTeams, locked, mr, elim) {
+function renderSlot(match, round, bracketPicks, matchTeams, locked, mr, elim, amt) {
   const [a, b] = matchTeams[match.id] || [null, null];
   const key = `${round}_${match.id}`;
   const picked = bracketPicks[key] ?? '';
   const canPick = !locked && (a || b);
   const result = mr['M' + match.id];
+  const actualSlot = amt[match.id];
 
   return `<div class="bk-slot" id="bracket-slot-${key}">
     <div class="bk-match">
-      ${teamRow(a, match.teamA, picked, canPick, key, result, elim)}
+      ${teamRow(a, match.teamA, picked, canPick, key, result, elim, actualSlot)}
       ${matchInfoBar(match.id)}
-      ${teamRow(b, match.teamB, picked, canPick, key, result, elim)}
+      ${teamRow(b, match.teamB, picked, canPick, key, result, elim, actualSlot)}
     </div>
   </div>`;
 }
@@ -232,17 +262,28 @@ function matchInfoBar(matchId) {
   return `<div class="bk-match-info">M${matchId} · ${sched.date} · ${sched.city}</div>`;
 }
 
-function teamRow(resolved, slotStr, picked, canPick, pickKey, result, elim) {
+function teamRow(resolved, slotStr, picked, canPick, pickKey, result, elim, actualSlot) {
   const isPicked = resolved && picked === resolved;
   const actualWinner = result?.winner;
+  const actualTeams = actualSlot || [];
   const cls = ['bk-team'];
   if (isPicked) cls.push('picked');
   if (canPick) cls.push('pickable');
-  if (actualWinner && resolved === actualWinner) cls.push('correct');
-  else if (actualWinner && isPicked && resolved !== actualWinner) cls.push('incorrect');
-  else if (isPicked && !actualWinner && elim.has(resolved)) {
-    // No match result yet but team is already eliminated from the tournament
-    cls.push('eliminated');
+
+  if (actualWinner) {
+    // Match result exists — definitive correct/incorrect
+    if (resolved === actualWinner) cls.push('correct');
+    else if (isPicked) cls.push('incorrect');
+  } else if (isPicked) {
+    // No match result yet — use group/knockout data to infer status
+    if (elim.has(resolved)) {
+      cls.push('eliminated');
+    } else if (actualTeams.includes(resolved)) {
+      cls.push('correct');
+    } else if (actualTeams.length > 0 && actualTeams.some(t => t != null)) {
+      // We know who belongs in this slot and the picked team isn't one of them
+      cls.push('partial');
+    }
   }
   const attrs = canPick && resolved
     ? `data-pick-team="${resolved}" data-pick-key="${pickKey}"`

@@ -163,16 +163,17 @@ export function renderGroupRanking(gridEl, opts) {
 function getGroupTeamStatus(teamId, pickedPos, actualOrder, advancing3rd) {
   const actualPos = actualOrder.indexOf(teamId);
   if (actualPos === -1) return 'result-incorrect';
+  const has3rdData = advancing3rd.size > 0;
   // Exact position match
   if (actualPos === pickedPos) {
     // 1st/2nd always advance; 3rd only counts if team actually advanced
-    if (pickedPos === 2 && !advancing3rd.has(teamId)) return 'result-incorrect';
+    if (pickedPos === 2 && has3rdData && !advancing3rd.has(teamId)) return 'result-incorrect';
     return 'result-correct';
   }
   // Both in top 2 but swapped
   if (pickedPos < 2 && actualPos < 2) return 'result-partial';
   // Picked top 2, actually 3rd but advanced (or vice versa) — team advances either way
-  if (pickedPos < 2 && actualPos === 2 && advancing3rd.has(teamId)) return 'result-partial';
+  if (pickedPos < 2 && actualPos === 2 && (!has3rdData || advancing3rd.has(teamId))) return 'result-partial';
   if (pickedPos === 2 && actualPos < 2) return 'result-partial';
   return 'result-incorrect';
 }

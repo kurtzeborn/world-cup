@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { requireAdmin, AuthError } from '../shared/auth.js';
-import { getEntity, upsertEntity, listEntitiesByPartition } from '../shared/storage.js';
-import { ResultEntity, PicksEntity, ScoreEntity, Results } from '../shared/types.js';
+import { getEntity, upsertEntity, deleteEntity, listEntitiesByPartition } from '../shared/storage.js';
+import { ResultEntity, PicksEntity, ScoreEntity, UserEntity, Results } from '../shared/types.js';
 import { calculateScore, calculateMaxPossible } from '../shared/scoring.js';
 
 // POST /api/manage/results — enter or update match results
@@ -194,4 +194,88 @@ app.http('adminUnlockAll', {
   authLevel: 'anonymous',
   route: 'manage/unlock-all',
   handler: adminUnlockAllHandler,
+});
+
+// DELETE /api/manage/results — clear all results
+app.http('adminClearResults', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'manage/results',
+  handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
+    try {
+      requireAdmin(request);
+
+      await deleteEntity('Results', 'results', 'current');
+
+      return { status: 200, jsonBody: { cleared: true } };
+    } catch (err) {
+      if (err instanceof AuthError) {
+        return { status: err.statusCode, jsonBody: { error: err.message } };
+      }
+      return { status: 500, jsonBody: { error: err instanceof Error ? err.message : 'Unknown error' } };
+    }
+  },
+});
+
+// GET /api/manage/users — list all users with picks
+app.http('adminListUsers', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'manage/users',
+  handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
+    try {
+      requireAdmin(request);
+
+      const table = await import('../shared/storage.js').then((m) => m.picksTable());
+      const users: Array<{ userId: string; displayName: string; isLocked: boolean; updatedAt: string }> = [];
+
+      for await (const entity of table.listEntities<PicksEntity>()) {
+        if (entity.rowKey !== 'picks') continue;
+        // Try to get display name from Users table
+        const userEntity = await getEntity<UserEntity>('Users', 'user', entity.partitionKey!);
+        users.push({
+          userId: entity.partitionKey!,
+          displayName: userEntity?.displayName || entity.partitionKey!,
+          isLocked: !!entity.lockedAt,
+          updatedAt: entity.updatedAt,
+        });
+      }
+
+      users.sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+      return { status: 200, jsonBody: users };
+    } catch (err) {
+      if (err instanceof AuthError) {
+        return { status: err.statusCode, jsonBody: { error: err.message } };
+      }
+      return { status: 500, jsonBody: { error: err instanceof Error ? err.message : 'Unknown error' } };
+    }
+  },
+});
+
+// DELETE /api/manage/picks/:userId — delete a user's picks and score
+app.http('adminDeletePicks', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'manage/picks/{userId}',
+  handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
+    try {
+      requireAdmin(request);
+
+      const userId = request.params.userId;
+      if (!userId) {
+        return { status: 400, jsonBody: { error: 'userId is required' } };
+      }
+
+      const deletedPicks = await deleteEntity('Picks', userId, 'picks');
+      const deletedScore = await deleteEntity('Scores', 'global', userId);
+
+      return { status: 200, jsonBody: { deletedPicks, deletedScore } };
+    } catch (err) {
+      if (err instanceof AuthError) {
+        return { status: err.statusCode, jsonBody: { error: err.message } };
+      }
+      return { status: 500, jsonBody: { error: err instanceof Error ? err.message : 'Unknown error' } };
+    }
+  },
 });

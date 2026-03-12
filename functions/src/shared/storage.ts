@@ -65,3 +65,18 @@ export async function listEntitiesByPartition<T extends object>(
   }
   return results;
 }
+
+export async function deleteEntity(
+  tableName: string,
+  partitionKey: string,
+  rowKey: string
+): Promise<boolean> {
+  try {
+    const client = await ensureTable(tableName);
+    await client.deleteEntity(partitionKey, rowKey);
+    return true;
+  } catch (err: unknown) {
+    if ((err as { statusCode?: number }).statusCode === 404) return false;
+    throw err;
+  }
+}

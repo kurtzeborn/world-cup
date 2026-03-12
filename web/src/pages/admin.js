@@ -20,6 +20,10 @@ export async function renderAdminPage(container) {
         <div class="card-title">Admin: Enter Results</div>
         <div id="admin-content">Loading…</div>
       </div>
+      <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-title">Manage Users</div>
+        <div id="admin-users-content">Loading…</div>
+      </div>
     </div>
   `;
 
@@ -87,6 +91,7 @@ function renderAdminForm(container) {
         <button type="button" class="btn btn-secondary" id="btn-recalc">Recalculate Scores</button>
         <button type="button" class="btn btn-danger" id="btn-lock-all">Force Lock All Picks</button>
         <button type="button" class="btn btn-secondary" id="btn-unlock-all">Unlock All Picks</button>
+        <button type="button" class="btn btn-danger" id="btn-clear-results">Clear All Results</button>
         <div id="admin-status" style="margin-top: 1rem; font-size: .9rem;"></div>
       </div>
     </form>
@@ -111,6 +116,12 @@ function renderAdminForm(container) {
   document.getElementById('btn-unlock-all').addEventListener('click', () => {
     adminUnlockAll();
   });
+
+  document.getElementById('btn-clear-results').addEventListener('click', () => {
+    clearAllResults();
+  });
+
+  loadAdminUsers();
 }
 
 function refreshAdminGroupGrid() {
@@ -381,4 +392,91 @@ async function adminUnlockAll() {
   } finally {
     unlockButton.disabled = false;
   }
+}
+
+async function clearAllResults() {
+  if (!confirm('Clear ALL results? This will delete stored results (picks are not affected).')) return;
+
+  const statusEl = document.getElementById('admin-status');
+  statusEl.innerHTML = '<p style="color:var(--text-muted)">Clearing results…</p>';
+
+  try {
+    await api.clearResults();
+
+    // Reset local state
+    adminGroupPicks = {};
+    adminThirdPlace = [];
+    adminMatchResults = {};
+    adminMatchScores = {};
+
+    // Re-render form
+    const contentEl = document.getElementById('admin-content');
+    if (contentEl) renderAdminForm(contentEl);
+
+    const newStatus = document.getElementById('admin-status');
+    if (newStatus) newStatus.innerHTML = '<p style="color:#4caf50">✓ Results cleared</p>';
+  } catch (err) {
+    statusEl.innerHTML = `<p style="color:#f44336">Error: ${err.message}</p>`;
+  }
+}
+
+async function loadAdminUsers() {
+  const container = document.getElementById('admin-users-content');
+  if (!container) return;
+
+  try {
+    const users = await api.getAdminUsers();
+
+    if (!users || users.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-muted)">No users with picks found.</p>';
+      return;
+    }
+
+    let html = `<table class="admin-users-table" style="width:100%; border-collapse:collapse; font-size:.9rem;">
+      <thead><tr>
+        <th style="text-align:left; padding:.5rem; border-bottom:1px solid var(--border)">User</th>
+        <th style="text-align:left; padding:.5rem; border-bottom:1px solid var(--border)">Locked</th>
+        <th style="text-align:right; padding:.5rem; border-bottom:1px solid var(--border)">Actions</th>
+      </tr></thead><tbody>`;
+
+    for (const u of users) {
+      html += `<tr>
+        <td style="padding:.5rem; border-bottom:1px solid var(--border)">${escapeHtml(u.displayName)}</td>
+        <td style="padding:.5rem; border-bottom:1px solid var(--border)">${u.isLocked ? 'Yes' : 'No'}</td>
+        <td style="padding:.5rem; border-bottom:1px solid var(--border); text-align:right">
+          <button class="btn btn-danger btn-sm admin-delete-user" data-user-id="${escapeHtml(u.userId)}" data-display-name="${escapeHtml(u.displayName)}" style="font-size:.8rem; padding:.25rem .5rem;">Delete Picks</button>
+        </td>
+      </tr>`;
+    }
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    container.querySelectorAll('.admin-delete-user').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const userId = btn.dataset.userId;
+        const name = btn.dataset.displayName;
+        if (!confirm(`Delete all picks for "${name}"? This cannot be undone.`)) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Deleting…';
+        try {
+          await api.deleteUserPicks(userId);
+          btn.closest('tr').remove();
+        } catch (err) {
+          alert(`Error deleting picks: ${err.message}`);
+          btn.disabled = false;
+          btn.textContent = 'Delete Picks';
+        }
+      });
+    });
+  } catch (err) {
+    container.innerHTML = `<p style="color:#f44336">Error loading users: ${err.message}</p>`;
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }

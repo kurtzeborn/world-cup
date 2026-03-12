@@ -225,9 +225,9 @@ function renderFinalColumn(bp, mt, locked, mr, elim, amt) {
         <div class="bk-tpm-wrap">
           <div class="bk-center-hdr">3rd Place Match</div>
           <div class="bk-match" id="bracket-slot-TPM_103">
-            ${teamRow(tpmA, tpmMatch.teamA, tpmPicked, tpmCanPick, tpmKey, tpmResult, elim, amt[103])}
+            ${teamRow(tpmA, tpmMatch.teamA, tpmPicked, tpmCanPick, tpmKey, tpmResult, elim, amt[103]?.[0], true)}
             ${matchInfoBar(103)}
-            ${teamRow(tpmB, tpmMatch.teamB, tpmPicked, tpmCanPick, tpmKey, tpmResult, elim, amt[103])}
+            ${teamRow(tpmB, tpmMatch.teamB, tpmPicked, tpmCanPick, tpmKey, tpmResult, elim, amt[103]?.[1], false)}
           </div>
         </div>
         <div class="bk-award">
@@ -245,13 +245,13 @@ function renderSlot(match, round, bracketPicks, matchTeams, locked, mr, elim, am
   const picked = bracketPicks[key] ?? '';
   const canPick = !locked && (a || b);
   const result = mr['M' + match.id];
-  const actualSlot = amt[match.id];
+  const [actA, actB] = amt[match.id] || [null, null];
 
   return `<div class="bk-slot" id="bracket-slot-${key}">
     <div class="bk-match">
-      ${teamRow(a, match.teamA, picked, canPick, key, result, elim, actualSlot)}
+      ${teamRow(a, match.teamA, picked, canPick, key, result, elim, actA, true)}
       ${matchInfoBar(match.id)}
-      ${teamRow(b, match.teamB, picked, canPick, key, result, elim, actualSlot)}
+      ${teamRow(b, match.teamB, picked, canPick, key, result, elim, actB, false)}
     </div>
   </div>`;
 }
@@ -280,8 +280,8 @@ function teamRow(resolved, slotStr, picked, canPick, pickKey, result, elim, actu
       cls.push('eliminated');
     } else if (actualTeams.includes(resolved)) {
       cls.push('correct');
-    } else if (actualTeams.length === 2 && actualTeams[0] != null && actualTeams[1] != null) {
-      // Both sides of match are known and the picked team isn't one of them
+    } else if (actualTeams.length > 0 && actualTeams.some(t => t != null)) {
+      // We know who belongs in this slot and the picked team isn't one of them
       cls.push('partial');
     }
   }

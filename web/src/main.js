@@ -10,6 +10,7 @@ import { renderLeaderboardPage } from './pages/leaderboard.js';
 import { renderLeaguesPage } from './pages/leagues.js';
 import { renderViewPicksPage } from './pages/view-picks.js';
 import { renderAdminPage } from './pages/admin.js';
+import { renderManageUsersPage } from './pages/manage-users.js';
 import { renderDashboardPage } from './pages/dashboard.js';
 import { initAutoSave, loadLocalPicks, clearLocalPicks, syncToServer } from './autosave.js';
 import { initPicksStatus } from './picks-status.js';
@@ -241,14 +242,17 @@ async function navigateTo(page) {
 
   switch (page) {
     case 'admin':
+    case 'manage-users': {
       // Check admin access
       const { user } = getState();
       if (!user?.isAdmin) {
         app.innerHTML = '<div class="card"><p style="color:#f44336">Access denied: Admin role required</p></div>';
         return;
       }
-      await renderAdminPage(app);
+      if (page === 'manage-users') await renderManageUsersPage(app);
+      else await renderAdminPage(app);
       break;
+    }
     case 'dashboard':
       if (!getState().locked) {
         // Before lock, redirect to picks

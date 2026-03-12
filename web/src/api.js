@@ -46,6 +46,7 @@ export const api = {
   submitAdminResults: (data) => request('POST', '/api/manage/results', data),
   recalculateScores: ()      => request('POST', '/api/manage/recalculate', {}),
   adminLockAllPicks: ()      => request('POST', '/api/manage/lock-all', {}),
+  adminUnlockAllPicks: ()    => request('POST', '/api/manage/unlock-all', {}),
 
   // Auth helpers
   loginUrl:  '/.auth/login/aad?post_login_redirect_uri=/',

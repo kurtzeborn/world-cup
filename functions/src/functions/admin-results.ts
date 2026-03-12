@@ -152,3 +152,46 @@ app.http('adminLockAll', {
   route: 'manage/lock-all',
   handler: adminLockAllHandler,
 });
+
+// POST /api/manage/unlock-all — clear lockedAt on all users' picks
+export async function adminUnlockAllHandler(request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> {
+  try {
+    requireAdmin(request);
+
+    const table = await import('../shared/storage.js').then((m) => m.picksTable());
+    const now = new Date().toISOString();
+    let unlocked = 0;
+    let skipped = 0;
+
+    for await (const entity of table.listEntities<PicksEntity>()) {
+      if (entity.rowKey !== 'picks') continue;
+      if (!entity.lockedAt) {
+        skipped++;
+        continue;
+      }
+
+      await upsertEntity<PicksEntity>('Picks', entity.partitionKey!, 'picks', {
+        groupPicks: entity.groupPicks,
+        thirdPlaceAdvancing: entity.thirdPlaceAdvancing,
+        bracketPicks: entity.bracketPicks,
+        lockedAt: null,
+        updatedAt: now,
+      });
+      unlocked++;
+    }
+
+    return { status: 200, jsonBody: { unlocked, skipped } };
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return { status: err.statusCode, jsonBody: { error: err.message } };
+    }
+    return { status: 500, jsonBody: { error: err instanceof Error ? err.message : 'Unknown error' } };
+  }
+}
+
+app.http('adminUnlockAll', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'manage/unlock-all',
+  handler: adminUnlockAllHandler,
+});

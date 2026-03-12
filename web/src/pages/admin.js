@@ -86,6 +86,7 @@ function renderAdminForm(container) {
         <button type="submit" class="btn btn-primary">Save Results</button>
         <button type="button" class="btn btn-secondary" id="btn-recalc">Recalculate Scores</button>
         <button type="button" class="btn btn-danger" id="btn-lock-all">Force Lock All Picks</button>
+        <button type="button" class="btn btn-secondary" id="btn-unlock-all">Unlock All Picks</button>
         <div id="admin-status" style="margin-top: 1rem; font-size: .9rem;"></div>
       </div>
     </form>
@@ -105,6 +106,10 @@ function renderAdminForm(container) {
 
   document.getElementById('btn-lock-all').addEventListener('click', () => {
     adminLockAll();
+  });
+
+  document.getElementById('btn-unlock-all').addEventListener('click', () => {
+    adminUnlockAll();
   });
 }
 
@@ -357,5 +362,23 @@ async function adminLockAll() {
     statusEl.innerHTML = `<p style="color:#f44336">Error: ${err.message}</p>`;
   } finally {
     lockButton.disabled = false;
+  }
+}
+
+async function adminUnlockAll() {
+  if (!confirm('Unlock ALL users\u2019 picks? They will be able to edit their picks again.')) return;
+
+  const statusEl = document.getElementById('admin-status');
+  const unlockButton = document.getElementById('btn-unlock-all');
+  statusEl.innerHTML = '<p style="color:var(--text-muted)">Unlocking all picks…</p>';
+  unlockButton.disabled = true;
+
+  try {
+    const result = await api.adminUnlockAllPicks();
+    statusEl.innerHTML = `<p style="color:#4caf50">✓ Unlocked ${result.unlocked} picks (${result.skipped} already unlocked)</p>`;
+  } catch (err) {
+    statusEl.innerHTML = `<p style="color:#f44336">Error: ${err.message}</p>`;
+  } finally {
+    unlockButton.disabled = false;
   }
 }

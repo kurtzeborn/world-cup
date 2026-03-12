@@ -273,15 +273,17 @@ function teamRow(resolved, slotStr, picked, canPick, pickKey, result, elim, actu
     // Match result exists — definitive correct/incorrect
     if (resolved === actualWinner) cls.push('correct');
     else if (isPicked) cls.push('incorrect');
-  } else if (isPicked) {
-    // No match result yet — use group/knockout data to infer status
+  } else if (resolved && actualTeam) {
+    // No match result yet — compare slot prediction against actual
     if (elim.has(resolved)) {
       cls.push('eliminated');
-    } else if (actualTeam && resolved === actualTeam) {
+    } else if (resolved === actualTeam) {
       cls.push('correct');
-    } else if (actualTeam) {
+    } else if (isPicked) {
       cls.push('partial');
     }
+  } else if (isPicked && elim.has(resolved)) {
+    cls.push('eliminated');
   }
   const attrs = canPick && resolved
     ? `data-pick-team="${resolved}" data-pick-key="${pickKey}"`
@@ -299,7 +301,7 @@ function teamRow(resolved, slotStr, picked, canPick, pickKey, result, elim, actu
   const isWrong = cls.includes('incorrect') || cls.includes('eliminated') || cls.includes('partial');
   if (isWrong && actualTeam && actualTeam !== resolved) {
     const at = TEAMS_BY_ID[actualTeam];
-    const corrHtml = `<div class="bk-team bk-actual">${getFlag(at?.flagCode)} ${at?.name ?? actualTeam}</div>`;
+    const corrHtml = `<div class="bk-team bk-actual">${at?.name ?? actualTeam}</div>`;
     return isTop ? corrHtml + mainHtml : mainHtml + corrHtml;
   }
   return mainHtml;

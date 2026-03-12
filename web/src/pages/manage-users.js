@@ -50,7 +50,7 @@ function renderFilteredTable(query) {
 
   const q = query.toLowerCase().trim();
   const filtered = q
-    ? allUsers.filter(u => u.displayName.toLowerCase().includes(q))
+    ? allUsers.filter(u => u.displayName.toLowerCase().includes(q) || (u.email && u.email.toLowerCase().includes(q)))
     : allUsers;
 
   document.getElementById('user-count').textContent =
@@ -70,7 +70,7 @@ function renderFilteredTable(query) {
 
   for (const u of filtered) {
     html += `<tr data-user-id="${escapeHtml(u.userId)}">
-      <td style="padding:.5rem; border-bottom:1px solid var(--border)">${escapeHtml(u.displayName)}</td>
+        <td style="padding:.5rem; border-bottom:1px solid var(--border)">${escapeHtml(u.displayName)}${u.email ? ` <span style="color:var(--text-muted)">(${escapeHtml(u.email)})</span>` : ''}</td>
       <td style="padding:.5rem; border-bottom:1px solid var(--border)">${u.isLocked ? 'Yes' : 'No'}</td>
       <td style="padding:.5rem; border-bottom:1px solid var(--border); text-align:right">
         <button class="btn btn-danger btn-sm admin-delete-user" data-user-id="${escapeHtml(u.userId)}" data-display-name="${escapeHtml(u.displayName)}" style="font-size:.8rem; padding:.25rem .5rem;">Delete Picks</button>

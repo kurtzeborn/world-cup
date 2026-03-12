@@ -89,6 +89,7 @@ app.http('updateMe', {
 
       await upsertEntity<UserEntity>('Users', 'user', user.userId, {
         displayName,
+        email: user.userDetails,
         authProvider: user.identityProvider,
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,

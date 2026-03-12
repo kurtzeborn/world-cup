@@ -9,6 +9,7 @@ export interface TeamEntity {
 
 export interface UserEntity {
   displayName: string;
+  email: string;
   authProvider: string;
   createdAt: string;
   updatedAt: string;

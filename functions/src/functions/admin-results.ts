@@ -227,7 +227,7 @@ app.http('adminListUsers', {
       requireAdmin(request);
 
       const table = await import('../shared/storage.js').then((m) => m.picksTable());
-      const users: Array<{ userId: string; displayName: string; isLocked: boolean; updatedAt: string }> = [];
+      const users: Array<{ userId: string; displayName: string; email: string; isLocked: boolean; updatedAt: string }> = [];
 
       for await (const entity of table.listEntities<PicksEntity>()) {
         if (entity.rowKey !== 'picks') continue;
@@ -236,6 +236,7 @@ app.http('adminListUsers', {
         users.push({
           userId: entity.partitionKey!,
           displayName: userEntity?.displayName || entity.partitionKey!,
+          email: userEntity?.email || '',
           isLocked: !!entity.lockedAt,
           updatedAt: entity.updatedAt,
         });

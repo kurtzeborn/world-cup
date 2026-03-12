@@ -286,6 +286,9 @@ function ensureSlidePanel(app, initialPage) {
         <div class="picks-status-name" id="picks-status-name"></div>
         <div class="picks-status-right">
           <div class="picks-status-completeness" id="picks-status-completeness"></div>
+          <button class="tab-icon-btn find-pick-btn" id="find-pick-btn" title="Find a remaining pick" style="display:none">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </button>
           <button class="tab-icon-btn" id="export-pdf-btn" title="Export picks to PDF">
             <i class="fa-solid fa-file-pdf"></i>
           </button>
@@ -308,8 +311,17 @@ function ensureSlidePanel(app, initialPage) {
   renderGroupsPage(app.querySelector('.slide-panel-groups'));
   renderBracketPage(app.querySelector('.slide-panel-bracket'));
 
-  // Initialize picks status bar (name + completeness)
-  initPicksStatus();
+  // Initialize picks status bar (name + completeness + find-pick navigation)
+  initPicksStatus((page, elementId) => {
+    slideToPage(page);
+    requestAnimationFrame(() => {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('pick-highlight');
+      setTimeout(() => el.classList.remove('pick-highlight'), 2000);
+    });
+  });
 
   sizeSlidePanels();
   sliderActive = true;

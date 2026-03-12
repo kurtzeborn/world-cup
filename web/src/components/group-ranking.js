@@ -52,7 +52,7 @@ export function renderGroupRanking(gridEl, opts) {
     const ordered = getDisplayOrder(teams, selected);
 
     return `
-      <div class="card group-card" data-group="${letter}">
+      <div class="card group-card" id="group-card-${letter}" data-group="${letter}">
         <div class="card-title">Group ${letter}</div>
         <table class="group-table">
           <tbody>

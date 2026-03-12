@@ -157,7 +157,7 @@ function renderFinalColumn(bp, mt, locked, mr) {
       <div class="bk-final-below">
         <div class="bk-tpm-wrap">
           <div class="bk-center-hdr">3rd Place Match</div>
-          <div class="bk-match">
+          <div class="bk-match" id="bracket-slot-TPM_103">
             ${teamRow(tpmA, tpmMatch.teamA, tpmPicked, tpmCanPick, tpmKey, tpmResult)}
             ${matchInfoBar(103)}
             ${teamRow(tpmB, tpmMatch.teamB, tpmPicked, tpmCanPick, tpmKey, tpmResult)}
@@ -179,7 +179,7 @@ function renderSlot(match, round, bracketPicks, matchTeams, locked, mr) {
   const canPick = !locked && (a || b);
   const result = mr['M' + match.id];
 
-  return `<div class="bk-slot">
+  return `<div class="bk-slot" id="bracket-slot-${key}">
     <div class="bk-match">
       ${teamRow(a, match.teamA, picked, canPick, key, result)}
       ${matchInfoBar(match.id)}

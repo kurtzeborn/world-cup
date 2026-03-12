@@ -262,10 +262,9 @@ function matchInfoBar(matchId) {
   return `<div class="bk-match-info">M${matchId} · ${sched.date} · ${sched.city}</div>`;
 }
 
-function teamRow(resolved, slotStr, picked, canPick, pickKey, result, elim, actualSlot) {
+function teamRow(resolved, slotStr, picked, canPick, pickKey, result, elim, actualTeam, isTop) {
   const isPicked = resolved && picked === resolved;
   const actualWinner = result?.winner;
-  const actualTeams = actualSlot || [];
   const cls = ['bk-team'];
   if (isPicked) cls.push('picked');
   if (canPick) cls.push('pickable');
@@ -278,10 +277,9 @@ function teamRow(resolved, slotStr, picked, canPick, pickKey, result, elim, actu
     // No match result yet — use group/knockout data to infer status
     if (elim.has(resolved)) {
       cls.push('eliminated');
-    } else if (actualTeams.includes(resolved)) {
+    } else if (actualTeam && resolved === actualTeam) {
       cls.push('correct');
-    } else if (actualTeams.length > 0 && actualTeams.some(t => t != null)) {
-      // We know who belongs in this slot and the picked team isn't one of them
+    } else if (actualTeam) {
       cls.push('partial');
     }
   }
@@ -289,11 +287,22 @@ function teamRow(resolved, slotStr, picked, canPick, pickKey, result, elim, actu
     ? `data-pick-team="${resolved}" data-pick-key="${pickKey}"`
     : '';
 
+  let mainHtml;
   if (resolved) {
     const t = TEAMS_BY_ID[resolved];
-    return `<div class="${cls.join(' ')}" ${attrs}>${getFlag(t?.flagCode)} ${t?.name ?? resolved}</div>`;
+    mainHtml = `<div class="${cls.join(' ')}" ${attrs}>${getFlag(t?.flagCode)} ${t?.name ?? resolved}</div>`;
+  } else {
+    mainHtml = `<div class="${cls.join(' ')}">${slotDesc(slotStr)}</div>`;
   }
-  return `<div class="${cls.join(' ')}">${slotDesc(slotStr)}</div>`;
+
+  // Show the actual correct team alongside wrong picks
+  const isWrong = cls.includes('incorrect') || cls.includes('eliminated') || cls.includes('partial');
+  if (isWrong && actualTeam && actualTeam !== resolved) {
+    const at = TEAMS_BY_ID[actualTeam];
+    const corrHtml = `<div class="bk-team bk-actual">${getFlag(at?.flagCode)} ${at?.name ?? actualTeam}</div>`;
+    return isTop ? corrHtml + mainHtml : mainHtml + corrHtml;
+  }
+  return mainHtml;
 }
 
 function slotDesc(slot) {

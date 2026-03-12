@@ -280,8 +280,8 @@ function teamRow(resolved, slotStr, picked, canPick, pickKey, result, elim, actu
       cls.push('eliminated');
     } else if (actualTeams.includes(resolved)) {
       cls.push('correct');
-    } else if (actualTeams.length > 0 && actualTeams.some(t => t != null)) {
-      // We know who belongs in this slot and the picked team isn't one of them
+    } else if (actualTeams.length === 2 && actualTeams[0] != null && actualTeams[1] != null) {
+      // Both sides of match are known and the picked team isn't one of them
       cls.push('partial');
     }
   }

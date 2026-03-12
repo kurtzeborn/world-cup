@@ -14,6 +14,41 @@ const ROUND_NAMES = {
   F:   'Final',
 };
 
+/**
+ * Build a set of teams eliminated from the tournament based on results.
+ * A team is eliminated if:
+ *   - They finished 4th in their group
+ *   - They finished 3rd but didn't advance (when advancing data is available)
+ *   - They lost a knockout match (from matchResults)
+ */
+export function getEliminatedTeams(results) {
+  const eliminated = new Set();
+  if (!results) return eliminated;
+
+  const { groupStandings, advancing3rdPlace, matchResults } = results;
+  const advSet = new Set(advancing3rdPlace ?? []);
+  const has3rdData = advSet.size > 0;
+
+  // Group stage eliminations
+  if (groupStandings) {
+    for (const teams of Object.values(groupStandings)) {
+      if (teams.length >= 4) eliminated.add(teams[3]); // 4th place
+      if (has3rdData && teams.length >= 3 && !advSet.has(teams[2])) {
+        eliminated.add(teams[2]); // 3rd place that didn't advance
+      }
+    }
+  }
+
+  // Knockout match losers
+  if (matchResults) {
+    for (const result of Object.values(matchResults)) {
+      if (result.loser) eliminated.add(result.loser);
+    }
+  }
+
+  return eliminated;
+}
+
 /** Lookup match definition by id */
 const MATCH_BY_ID = Object.fromEntries(BRACKET_STRUCTURE.map(m => [m.id, m]));
 
@@ -70,6 +105,7 @@ export function renderBracketContent() {
   const tpa = picks?.thirdPlaceAdvancing ?? [];
   const mt = resolveMatchTeams(gp, tpa, bp);
   const mr = results?.matchResults ?? {};
+  const elim = getEliminatedTeams(results);
 
   const el = document.getElementById('bracket-content');
   if (!el) return;
@@ -77,7 +113,7 @@ export function renderBracketContent() {
   el.innerHTML = `
     <div class="bk-scroll">
       <div class="bk-bracket">
-        ${renderBracketCols(bp, mt, locked, mr)}
+        ${renderBracketCols(bp, mt, locked, mr, elim)}
       </div>
     </div>
   `;
@@ -86,7 +122,7 @@ export function renderBracketContent() {
 // ─── Rendering helpers ──────────────────────────────────────
 
 /** Build all columns: R32(16) → R16(8) → QF(4) → SF(2) → F(1) */
-function renderBracketCols(bp, mt, locked, mr) {
+function renderBracketCols(bp, mt, locked, mr, elim) {
   let html = '';
 
   for (let r = 0; r < ROUNDS.length; r++) {
@@ -107,11 +143,11 @@ function renderBracketCols(bp, mt, locked, mr) {
 
     if (isLast) {
       // Final column: Champion above, Final match, TPM + 3rd below
-      html += renderFinalColumn(bp, mt, locked, mr);
+      html += renderFinalColumn(bp, mt, locked, mr, elim);
     } else {
       html += '<div class="bk-slots">';
       for (const id of ids) {
-        html += renderSlot(MATCH_BY_ID[id], round, bp, mt, locked, mr);
+        html += renderSlot(MATCH_BY_ID[id], round, bp, mt, locked, mr, elim);
       }
       html += '</div>';
     }
@@ -123,17 +159,19 @@ function renderBracketCols(bp, mt, locked, mr) {
 }
 
 /** Final column: champion card → Final match → TPM + 3rd place */
-function renderFinalColumn(bp, mt, locked, mr) {
+function renderFinalColumn(bp, mt, locked, mr, elim) {
   const finalPick = bp['F_104'] ?? null;
   const champTeam = finalPick ? TEAMS_BY_ID[finalPick] : null;
+  const champCls = finalPick && elim.has(finalPick) ? 'eliminated' : '';
   const champHtml = champTeam
-    ? `<div class="bk-champ-team">${getFlag(champTeam.flagCode)} ${champTeam.name}</div>`
+    ? `<div class="bk-champ-team ${champCls}">${getFlag(champTeam.flagCode)} ${champTeam.name}</div>`
     : `<div class="bk-champ-team bk-tbd"></div>`;
 
   const tpmPick = bp['TPM_103'] ?? null;
   const thirdTeam = tpmPick ? TEAMS_BY_ID[tpmPick] : null;
+  const thirdCls = tpmPick && elim.has(tpmPick) ? 'eliminated' : '';
   const thirdHtml = thirdTeam
-    ? `<div class="bk-third-team">${getFlag(thirdTeam.flagCode)} ${thirdTeam.name}</div>`
+    ? `<div class="bk-third-team ${thirdCls}">${getFlag(thirdTeam.flagCode)} ${thirdTeam.name}</div>`
     : `<div class="bk-third-team bk-tbd"></div>`;
 
   const tpmMatch = MATCH_BY_ID[103];
@@ -151,16 +189,16 @@ function renderFinalColumn(bp, mt, locked, mr) {
       </div>
 
       <div class="bk-slots">
-        ${renderSlot(MATCH_BY_ID[104], 'F', bp, mt, locked, mr)}
+        ${renderSlot(MATCH_BY_ID[104], 'F', bp, mt, locked, mr, elim)}
       </div>
 
       <div class="bk-final-below">
         <div class="bk-tpm-wrap">
           <div class="bk-center-hdr">3rd Place Match</div>
           <div class="bk-match" id="bracket-slot-TPM_103">
-            ${teamRow(tpmA, tpmMatch.teamA, tpmPicked, tpmCanPick, tpmKey, tpmResult)}
+            ${teamRow(tpmA, tpmMatch.teamA, tpmPicked, tpmCanPick, tpmKey, tpmResult, elim)}
             ${matchInfoBar(103)}
-            ${teamRow(tpmB, tpmMatch.teamB, tpmPicked, tpmCanPick, tpmKey, tpmResult)}
+            ${teamRow(tpmB, tpmMatch.teamB, tpmPicked, tpmCanPick, tpmKey, tpmResult, elim)}
           </div>
         </div>
         <div class="bk-award">
@@ -172,7 +210,7 @@ function renderFinalColumn(bp, mt, locked, mr) {
   `;
 }
 
-function renderSlot(match, round, bracketPicks, matchTeams, locked, mr) {
+function renderSlot(match, round, bracketPicks, matchTeams, locked, mr, elim) {
   const [a, b] = matchTeams[match.id] || [null, null];
   const key = `${round}_${match.id}`;
   const picked = bracketPicks[key] ?? '';
@@ -181,9 +219,9 @@ function renderSlot(match, round, bracketPicks, matchTeams, locked, mr) {
 
   return `<div class="bk-slot" id="bracket-slot-${key}">
     <div class="bk-match">
-      ${teamRow(a, match.teamA, picked, canPick, key, result)}
+      ${teamRow(a, match.teamA, picked, canPick, key, result, elim)}
       ${matchInfoBar(match.id)}
-      ${teamRow(b, match.teamB, picked, canPick, key, result)}
+      ${teamRow(b, match.teamB, picked, canPick, key, result, elim)}
     </div>
   </div>`;
 }
@@ -194,7 +232,7 @@ function matchInfoBar(matchId) {
   return `<div class="bk-match-info">M${matchId} · ${sched.date} · ${sched.city}</div>`;
 }
 
-function teamRow(resolved, slotStr, picked, canPick, pickKey, result) {
+function teamRow(resolved, slotStr, picked, canPick, pickKey, result, elim) {
   const isPicked = resolved && picked === resolved;
   const actualWinner = result?.winner;
   const cls = ['bk-team'];
@@ -202,6 +240,10 @@ function teamRow(resolved, slotStr, picked, canPick, pickKey, result) {
   if (canPick) cls.push('pickable');
   if (actualWinner && resolved === actualWinner) cls.push('correct');
   else if (actualWinner && isPicked && resolved !== actualWinner) cls.push('incorrect');
+  else if (isPicked && !actualWinner && elim.has(resolved)) {
+    // No match result yet but team is already eliminated from the tournament
+    cls.push('eliminated');
+  }
   const attrs = canPick && resolved
     ? `data-pick-team="${resolved}" data-pick-key="${pickKey}"`
     : '';

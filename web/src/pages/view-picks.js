@@ -5,6 +5,7 @@ import { getState } from '../state.js';
 import { TEAMS_BY_ID } from '../data/teams.js';
 import { escapeHtml, getFlag } from '../utils.js';
 import { BRACKET_STRUCTURE, MATCH_SCHEDULE } from '../data/bracket-structure.js';
+import { getEliminatedTeams } from './bracket.js';
 
 const ROUND_NAMES = {
   R32: 'Round of 32',
@@ -70,6 +71,8 @@ function renderViewPicksContent(picks) {
   const groupPicks = picks?.groupPicks ?? {};
   const thirdPlaceAdvancing = picks?.thirdPlaceAdvancing ?? [];
   const bracketPicks = picks?.bracketPicks ?? {};
+  const { results } = getState();
+  const elim = getEliminatedTeams(results);
 
   el.innerHTML = `
     <div class="viewpicks-wrapper">
@@ -77,7 +80,7 @@ function renderViewPicksContent(picks) {
         ${renderGroupStage(groupPicks, thirdPlaceAdvancing)}
       </div>
       <div class="viewpicks-bracket">
-        ${renderViewBracket(bracketPicks)}
+        ${renderViewBracket(bracketPicks, elim)}
       </div>
     </div>
   `;
@@ -118,7 +121,7 @@ function renderGroupStage(groupPicks, thirdPlaceAdvancing) {
 }
 
 /** Render the bracket in read-only mode (matches existing bracket.js visual structure) */
-function renderViewBracket(bracketPicks) {
+function renderViewBracket(bracketPicks, elim) {
   let html = `<div class="bk-scroll"><div class="bk-bracket">`;
 
   for (let r = 0; r < ROUNDS.length; r++) {
@@ -137,11 +140,11 @@ function renderViewBracket(bracketPicks) {
     html += `<div class="bk-round-hdr">${ROUND_NAMES[round]}</div>`;
 
     if (isLast) {
-      html += renderViewFinalColumn(bracketPicks);
+      html += renderViewFinalColumn(bracketPicks, elim);
     } else {
       html += '<div class="bk-slots">';
       for (const id of ids) {
-        html += renderViewSlot(MATCH_BY_ID[id], round, bracketPicks);
+        html += renderViewSlot(MATCH_BY_ID[id], round, bracketPicks, elim);
       }
       html += '</div>';
     }
@@ -153,17 +156,19 @@ function renderViewBracket(bracketPicks) {
   return html;
 }
 
-function renderViewFinalColumn(bracketPicks) {
+function renderViewFinalColumn(bracketPicks, elim) {
   const finalPick = bracketPicks['F_104'] ?? null;
   const champTeam = finalPick ? TEAMS_BY_ID[finalPick] : null;
+  const champCls = finalPick && elim.has(finalPick) ? 'eliminated' : '';
   const champHtml = champTeam
-    ? `<div class="bk-champ-team">${getFlag(champTeam.flagCode)} ${champTeam.name}</div>`
+    ? `<div class="bk-champ-team ${champCls}">${getFlag(champTeam.flagCode)} ${champTeam.name}</div>`
     : `<div class="bk-champ-team bk-tbd"></div>`;
 
   const tpmPick = bracketPicks['TPM_103'] ?? null;
   const thirdTeam = tpmPick ? TEAMS_BY_ID[tpmPick] : null;
+  const thirdCls = tpmPick && elim.has(tpmPick) ? 'eliminated' : '';
   const thirdHtml = thirdTeam
-    ? `<div class="bk-third-team">${getFlag(thirdTeam.flagCode)} ${thirdTeam.name}</div>`
+    ? `<div class="bk-third-team ${thirdCls}">${getFlag(thirdTeam.flagCode)} ${thirdTeam.name}</div>`
     : `<div class="bk-third-team bk-tbd"></div>`;
 
   return `
@@ -174,7 +179,7 @@ function renderViewFinalColumn(bracketPicks) {
       </div>
 
       <div class="bk-slots">
-        ${renderViewSlot(MATCH_BY_ID[104], 'F', bracketPicks)}
+        ${renderViewSlot(MATCH_BY_ID[104], 'F', bracketPicks, elim)}
       </div>
 
       <div class="bk-final-below">
@@ -195,25 +200,27 @@ function renderViewFinalColumn(bracketPicks) {
   `;
 }
 
-function renderViewSlot(match, round, bracketPicks) {
+function renderViewSlot(match, round, bracketPicks, elim) {
   const key = `${round}_${match.id}`;
   const picked = bracketPicks[key] ?? '';
 
   const aTeam = picked === match.teamA ? TEAMS_BY_ID[picked] : null;
   const bTeam = picked === match.teamB ? TEAMS_BY_ID[picked] : null;
+  const statusCls = picked && elim.has(picked) ? 'eliminated' : '';
 
   return `<div class="bk-slot">
     <div class="bk-match">
-      ${renderViewTeamRow(aTeam?.name, aTeam?.flagCode, slotDesc(match.teamA), picked === match.teamA)}
+      ${renderViewTeamRow(aTeam?.name, aTeam?.flagCode, slotDesc(match.teamA), picked === match.teamA, statusCls)}
       ${matchInfoBar(match.id)}
-      ${renderViewTeamRow(bTeam?.name, bTeam?.flagCode, slotDesc(match.teamB), picked === match.teamB)}
+      ${renderViewTeamRow(bTeam?.name, bTeam?.flagCode, slotDesc(match.teamB), picked === match.teamB, statusCls)}
     </div>
   </div>`;
 }
 
-function renderViewTeamRow(name, flagCode, slot, isPicked) {
+function renderViewTeamRow(name, flagCode, slot, isPicked, statusCls = '') {
   const cls = ['bk-team'];
   if (isPicked) cls.push('picked');
+  if (isPicked && statusCls) cls.push(statusCls);
 
   if (name) {
     return `<div class="${cls.join(' ')}">${getFlag(flagCode)} ${escapeHtml(name)}</div>`;

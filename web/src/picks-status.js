@@ -67,7 +67,7 @@ function updatePicksStatus() {
 
   // When locked, show score; otherwise show completeness
   if (locked && score) {
-    compEl.textContent = `${score.totalPoints} / ${score.maxPossiblePoints} pts`;
+    compEl.textContent = `Score: ${score.totalPoints}pts (${score.maxPossiblePoints} possible)`;
     compEl.title = `${score.totalPoints} points earned, ${score.maxPossiblePoints} max possible`;
     compEl.classList.remove('complete');
   } else {

@@ -53,7 +53,7 @@ export async function renderViewPicksPage(container, userId) {
 
     const scoreEl = document.getElementById('view-user-score');
     if (scoreEl && picks.score) {
-      scoreEl.textContent = `— ${picks.score.totalPoints} / ${picks.score.maxPossiblePoints} pts`;
+      scoreEl.textContent = `— Score: ${picks.score.totalPoints}pts (${picks.score.maxPossiblePoints} possible)`;
     }
 
     renderViewPicksContent(picks);

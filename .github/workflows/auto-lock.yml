@@ -1,0 +1,33 @@
+name: Auto-Lock Picks at Deadline
+
+on:
+  # Runs at 19:01 UTC on June 11, 2026 (1 minute after LOCK_DEADLINE)
+  schedule:
+    - cron: '1 19 11 6 *'
+  # Allow manual trigger as a fallback
+  workflow_dispatch:
+
+jobs:
+  auto_lock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lock all unlocked picks
+        env:
+          AUTO_LOCK_TOKEN: ${{ secrets.AUTO_LOCK_TOKEN }}
+          SWA_URL: ${{ vars.SWA_URL || 'https://wc.k61.dev' }}
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "${SWA_URL}/api/auto-lock" \
+            -H "Authorization: Bearer ${AUTO_LOCK_TOKEN}" \
+            -H "Content-Type: application/json")
+
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "HTTP $http_code"
+          echo "$body"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "::error::Auto-lock failed with HTTP $http_code"
+            exit 1
+          fi

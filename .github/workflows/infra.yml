@@ -47,4 +47,5 @@ jobs:
               GOOGLE_CLIENT_SECRET="${{ secrets.SWA_GOOGLE_CLIENT_SECRET }}" \
               AZURE_CLIENT_ID="${{ secrets.SWA_ENTRA_CLIENT_ID }}" \
               AZURE_CLIENT_SECRET="${{ secrets.SWA_ENTRA_CLIENT_SECRET }}" \
-              ADMIN_EMAILS="${{ secrets.SWA_ADMIN_EMAILS }}"
+              ADMIN_EMAILS="${{ secrets.SWA_ADMIN_EMAILS }}" \
+              AUTO_LOCK_TOKEN="${{ secrets.SWA_AUTO_LOCK_TOKEN }}"

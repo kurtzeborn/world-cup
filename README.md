@@ -1,5 +1,7 @@
 # FIFA World Cup 2026 Picks
 
+[![deploy](https://img.shields.io/github/actions/workflow/status/kurtzeborn/world-cup/deploy.yml?label=deploy)](https://github.com/kurtzeborn/world-cup/actions/workflows/deploy.yml)
+
 A web app for predicting the outcome of all 104 matches in the 2026 FIFA World Cup. Players rank group stage teams, select third-place advancers, and fill out a knockout bracket. Points are awarded for correct predictions with escalating values through each round.
 
 **Live at [wc.k61.dev](https://wc.k61.dev)**

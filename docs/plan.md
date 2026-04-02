@@ -2,7 +2,7 @@
 
 **Domain:** wc.k61.dev  
 **Repo:** kurtzeborn/world-cup  
-**Status:** Phase 1 Complete / Phase 2 In Progress  
+**Status:** Phase 1 Complete / Phase 2 In Progress / All 48 teams confirmed  
 **Live:** https://wc.k61.dev
 
 ---
@@ -36,30 +36,30 @@ A web application for making FIFA World Cup 2026 predictions. Users rank teams w
 
 | Group | Pot 1 | Pot 2 | Pot 3 | Pot 4 |
 |-------|-------|-------|-------|-------|
-| A | Mexico (H) | South Africa | South Korea | UEFA Path D winner* |
-| B | Canada (H) | UEFA Path A winner* | Qatar | Switzerland |
+| A | Mexico (H) | South Africa | South Korea | Czech Republic |
+| B | Canada (H) | Bosnia and Herzegovina | Qatar | Switzerland |
 | C | Brazil | Morocco | Haiti | Scotland |
-| D | United States (H) | Paraguay | Australia | UEFA Path C winner* |
+| D | United States (H) | Paraguay | Australia | Turkey |
 | E | Germany | Curaçao | Ivory Coast | Ecuador |
-| F | Netherlands | Japan | UEFA Path B winner* | Tunisia |
+| F | Netherlands | Japan | Sweden | Tunisia |
 | G | Belgium | Egypt | Iran | New Zealand |
 | H | Spain | Cape Verde | Saudi Arabia | Uruguay |
-| I | France | Senegal | IC Path 2 winner* | Norway |
+| I | France | Senegal | Iraq | Norway |
 | J | Argentina | Algeria | Austria | Jordan |
-| K | Portugal | IC Path 1 winner* | Uzbekistan | Colombia |
+| K | Portugal | DR Congo | Uzbekistan | Colombia |
 | L | England | Croatia | Ghana | Panama |
 
-*(H) = Host nation. Asterisked teams TBD from March 2026 playoffs.*
+*(H) = Host nation*
 
-**UEFA Playoff paths (March 2026):**
-- Path A: Serbia, Wales, Georgia, or Greece
-- Path B: Hungary, Ukraine, Iceland, or Finland  
-- Path C: Turkey, Slovakia, Kosovo, or Romania
-- Path D: Denmark, Czech Republic, Republic of Ireland, or North Macedonia
+**UEFA Playoff results (March 2026):**
+- Path A: **Bosnia and Herzegovina** (beat Italy on penalties in final)
+- Path B: **Sweden**
+- Path C: **Turkey** (beat Kosovo 1-0 in final)
+- Path D: **Czech Republic** (beat Denmark on penalties in final)
 
-**Inter-confederation playoffs (March 2026):**
-- IC Path 1: DR Congo, Jamaica, or New Caledonia
-- IC Path 2: Iraq, Bolivia, or Suriname
+**Inter-confederation playoff results (March 2026):**
+- IC Path 1: **DR Congo**
+- IC Path 2: **Iraq**
 
 > **Note:** The app must support updating team names once playoff results are known. Store teams with a stable ID and a display name that can be updated.
 

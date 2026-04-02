@@ -1,7 +1,7 @@
 // FIFA World Cup 2026 — Team Data
-// All 48 teams with stable IDs, groups, seeds, flag codes, and FIFA rankings (March 2026)
-// TBD teams use placeholder IDs prefixed with "TBD_"
+// All 48 teams with stable IDs, groups, seeds, flag codes, and FIFA rankings
 // FIFA rankings as of November 2025 (used for draw seeding; update periodically via admin)
+// Playoff teams confirmed March 2026: BIH, SWE, TUR, CZE (UEFA), COD, IRQ (IC)
 // Team shape: { id, name, group, groupSeed, flagCode, fifaRanking, confirmed }
 
 export const TEAMS = [
@@ -9,11 +9,11 @@ export const TEAMS = [
   { id: 'MEX', name: 'Mexico', group: 'A', groupSeed: 1, flagCode: 'mx', fifaRanking: 16, confirmed: true },
   { id: 'RSA', name: 'South Africa', group: 'A', groupSeed: 2, flagCode: 'za', fifaRanking: 62, confirmed: true },
   { id: 'KOR', name: 'South Korea', group: 'A', groupSeed: 3, flagCode: 'kr', fifaRanking: 23, confirmed: true },
-  { id: 'TBD_UEFAD', name: 'UEFA Path D', group: 'A', groupSeed: 4, flagCode: 'xx', fifaRanking: 999, confirmed: false },
+  { id: 'CZE', name: 'Czech Republic', group: 'A', groupSeed: 4, flagCode: 'cz', fifaRanking: 40, confirmed: true },
 
   // Group B
   { id: 'CAN', name: 'Canada', group: 'B', groupSeed: 1, flagCode: 'ca', fifaRanking: 48, confirmed: true },
-  { id: 'TBD_UEFAA', name: 'UEFA Path A', group: 'B', groupSeed: 2, flagCode: 'xx', fifaRanking: 999, confirmed: false },
+  { id: 'BIH', name: 'Bosnia and Herzegovina', group: 'B', groupSeed: 2, flagCode: 'ba', fifaRanking: 55, confirmed: true },
   { id: 'QAT', name: 'Qatar', group: 'B', groupSeed: 3, flagCode: 'qa', fifaRanking: 61, confirmed: true },
   { id: 'SUI', name: 'Switzerland', group: 'B', groupSeed: 4, flagCode: 'ch', fifaRanking: 20, confirmed: true },
 
@@ -27,7 +27,7 @@ export const TEAMS = [
   { id: 'USA', name: 'United States', group: 'D', groupSeed: 1, flagCode: 'us', fifaRanking: 13, confirmed: true },
   { id: 'PAR', name: 'Paraguay', group: 'D', groupSeed: 2, flagCode: 'py', fifaRanking: 60, confirmed: true },
   { id: 'AUS', name: 'Australia', group: 'D', groupSeed: 3, flagCode: 'au', fifaRanking: 24, confirmed: true },
-  { id: 'TBD_UEFAC', name: 'UEFA Path C', group: 'D', groupSeed: 4, flagCode: 'xx', fifaRanking: 999, confirmed: false },
+  { id: 'TUR', name: 'Turkey', group: 'D', groupSeed: 4, flagCode: 'tr', fifaRanking: 36, confirmed: true },
 
   // Group E
   { id: 'GER', name: 'Germany', group: 'E', groupSeed: 1, flagCode: 'de', fifaRanking: 12, confirmed: true },
@@ -38,7 +38,7 @@ export const TEAMS = [
   // Group F
   { id: 'NED', name: 'Netherlands', group: 'F', groupSeed: 1, flagCode: 'nl', fifaRanking: 7, confirmed: true },
   { id: 'JPN', name: 'Japan', group: 'F', groupSeed: 2, flagCode: 'jp', fifaRanking: 15, confirmed: true },
-  { id: 'TBD_UEFAB', name: 'UEFA Path B', group: 'F', groupSeed: 3, flagCode: 'xx', fifaRanking: 999, confirmed: false },
+  { id: 'SWE', name: 'Sweden', group: 'F', groupSeed: 3, flagCode: 'se', fifaRanking: 25, confirmed: true },
   { id: 'TUN', name: 'Tunisia', group: 'F', groupSeed: 4, flagCode: 'tn', fifaRanking: 47, confirmed: true },
 
   // Group G
@@ -56,7 +56,7 @@ export const TEAMS = [
   // Group I
   { id: 'FRA', name: 'France', group: 'I', groupSeed: 1, flagCode: 'fr', fifaRanking: 2, confirmed: true },
   { id: 'SEN', name: 'Senegal', group: 'I', groupSeed: 2, flagCode: 'sn', fifaRanking: 26, confirmed: true },
-  { id: 'TBD_ICP2', name: 'IC Path 2', group: 'I', groupSeed: 3, flagCode: 'xx', fifaRanking: 999, confirmed: false },
+  { id: 'IRQ', name: 'Iraq', group: 'I', groupSeed: 3, flagCode: 'iq', fifaRanking: 64, confirmed: true },
   { id: 'NOR', name: 'Norway', group: 'I', groupSeed: 4, flagCode: 'no', fifaRanking: 29, confirmed: true },
 
   // Group J
@@ -67,7 +67,7 @@ export const TEAMS = [
 
   // Group K
   { id: 'POR', name: 'Portugal', group: 'K', groupSeed: 1, flagCode: 'pt', fifaRanking: 6, confirmed: true },
-  { id: 'TBD_ICP1', name: 'IC Path 1', group: 'K', groupSeed: 2, flagCode: 'xx', fifaRanking: 999, confirmed: false },
+  { id: 'COD', name: 'DR Congo', group: 'K', groupSeed: 2, flagCode: 'cd', fifaRanking: 55, confirmed: true },
   { id: 'UZB', name: 'Uzbekistan', group: 'K', groupSeed: 3, flagCode: 'uz', fifaRanking: 69, confirmed: true },
   { id: 'COL', name: 'Colombia', group: 'K', groupSeed: 4, flagCode: 'co', fifaRanking: 19, confirmed: true },
 

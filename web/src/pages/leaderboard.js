@@ -5,6 +5,19 @@ import { api } from '../api.js';
 import { escapeHtml } from '../utils.js';
 
 export async function renderLeaderboardPage(container) {
+  const { user } = getState();
+  if (!user) {
+    container.innerHTML = `
+      <div class="page active" id="page-leaderboard">
+        <div class="card">
+          <div class="card-title">Global Leaderboard</div>
+          <p style="color:var(--text-muted)">Sign in to view the leaderboard.</p>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
   container.innerHTML = `
     <div class="page active" id="page-leaderboard">
       <div class="card">

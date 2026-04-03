@@ -471,10 +471,13 @@ body {
 /* ----------------------------------------
    Auth Prompt Modal
 -----------------------------------------*/
-.auth-prompt-modal p {
+.auth-prompt-modal p,
+.auth-prompt-modal li {
   font-size: .9rem;
   line-height: 1.5;
   color: var(--text-muted);
+}
+.auth-prompt-modal p {
   margin-bottom: 1rem;
 }
 .auth-prompt-modal .btn-primary {

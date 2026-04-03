@@ -33,7 +33,14 @@ function showAuthModal() {
   overlay.innerHTML = `
     <div class="modal-box auth-prompt-modal">
       <h3>💾 Save your picks</h3>
-      <p>Sign in to be able to save your picks, create or join leagues, give your bracket a clever name, and view your picks on any device. Only your bracket's name is visible to other players.</p>
+      <p>Sign in so you can:</p>
+      <ul style="text-align:left;margin:0.5em auto;width:fit-content">
+        <li>Save your picks</li>
+        <li>Create or join leagues</li>
+        <li>Give your bracket a clever name</li>
+        <li>View your picks on any device</li>
+      </ul>
+      <p>Only your bracket's name is visible to other players.</p>
       <div class="modal-actions">
         <button class="btn btn-secondary" id="auth-prompt-later">Later</button>
         <a class="btn btn-primary" href="${api.loginUrl}" style="text-decoration:none;text-align:center">

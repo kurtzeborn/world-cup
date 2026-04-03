@@ -77,7 +77,7 @@ export function renderGroupRanking(gridEl, opts) {
                    </label>`;
               }
               return `<tr class="team-row ${cls} ${resultCls}" data-group="${letter}" data-team="${team.id}" ${locked ? '' : 'title="Click to rank 1st\u20134th"'}>
-                <td>${getFlag(team.flagCode)} ${team.name} ${fifaRank}</td>
+                <td>${fifaRank}${getFlag(team.flagCode)} ${team.name}</td>
                 <td class="rank-cell">${advanceHtml}${badge}</td>
               </tr>`;
             }).join('')}

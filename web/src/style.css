@@ -408,12 +408,16 @@ body {
 .flag-tbd { display: inline-block; width: 20px; text-align: center; font-size: .75rem; color: var(--text-muted); }
 .fifa-rank {
   display: inline-block;
-  font-size: .65rem;
+  min-width: 1.6rem;
+  font-family: 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+  font-size: .75rem;
+  font-stretch: condensed;
   color: var(--text-muted);
   text-decoration: none;
-  vertical-align: super;
-  margin-left: .15rem;
+  text-align: right;
+  margin-right: .35rem;
   line-height: 1;
+  vertical-align: middle;
 }
 .fifa-rank:hover { color: var(--green); text-decoration: underline; }
 .rank-cell { white-space: nowrap; text-align: right; line-height: 16px; }

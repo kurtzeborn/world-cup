@@ -387,17 +387,6 @@ body {
 .team-row { cursor: pointer; transition: background .1s; }
 .team-row:hover { background: var(--row-hover); }
 
-/* Drag handle (desktop only, fully-ranked groups) */
-.drag-handle {
-  cursor: grab;
-  color: var(--text-muted);
-  margin-right: .3rem;
-  opacity: .4;
-  font-size: .7rem;
-  display: inline-flex;
-  align-items: center;
-}
-.drag-handle:hover { opacity: 1; }
 .team-row.sortable-ghost {
   opacity: .4;
   background: var(--row-hover) !important;

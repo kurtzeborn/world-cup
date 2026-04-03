@@ -46,9 +46,6 @@ export function renderGroupRanking(gridEl, opts) {
     const actual = groupStandings[letter] ?? [];
     const thirdAdvances = thirdPlaceAdvancing.includes(letter);
     const thirdPlaceCount = thirdPlaceAdvancing.length;
-    const allRanked = selected.length >= 4;
-    const showDrag = IS_DESKTOP && allRanked && !locked;
-
     const ordered = getDisplayOrder(teams, selected);
 
     return `
@@ -79,11 +76,8 @@ export function renderGroupRanking(gridEl, opts) {
                      <span class="advance-label">Advance?</span>
                    </label>`;
               }
-              const dragHtml = showDrag
-                ? '<i class="fa-solid fa-grip-vertical drag-handle"></i> '
-                : '';
               return `<tr class="team-row ${cls} ${resultCls}" data-group="${letter}" data-team="${team.id}" ${locked ? '' : 'title="Click to rank 1st\u20134th"'}>
-                <td>${dragHtml}${getFlag(team.flagCode)} ${team.name} ${fifaRank}</td>
+                <td>${getFlag(team.flagCode)} ${team.name} ${fifaRank}</td>
                 <td class="rank-cell">${advanceHtml}${badge}</td>
               </tr>`;
             }).join('')}
@@ -98,17 +92,25 @@ export function renderGroupRanking(gridEl, opts) {
   // Click-to-rank handler
   gridEl.querySelectorAll('.team-row').forEach(row => {
     row.addEventListener('click', (e) => {
-      if (e.target.closest('.advance-toggle') || e.target.closest('.fifa-rank') || e.target.closest('.drag-handle')) return;
+      if (e.target.closest('.advance-toggle') || e.target.closest('.fifa-rank')) return;
       const group = row.dataset.group;
       const teamId = row.dataset.team;
+      const teams = byGroup[group];
 
       const newGroupPicks = { ...groupPicks };
-      const selected = [...(newGroupPicks[group] ?? [])];
+      let selected = [...(newGroupPicks[group] ?? [])];
       const idx = selected.indexOf(teamId);
       if (idx !== -1) {
         selected.splice(idx, 1);
       } else if (selected.length < 4) {
         selected.push(teamId);
+      }
+      // Auto-fill remaining unranked teams in current display order
+      if (selected.length > 0 && selected.length < 4) {
+        const currentOrder = getDisplayOrder(teams, selected);
+        for (const t of currentOrder) {
+          if (!selected.includes(t.id)) selected.push(t.id);
+        }
       }
       newGroupPicks[group] = selected;
       onGroupPickChange(newGroupPicks);
@@ -134,19 +136,16 @@ export function renderGroupRanking(gridEl, opts) {
     });
   });
 
-  // Desktop drag-and-drop on fully-ranked groups
+  // Desktop drag-and-drop on all groups
   if (!IS_DESKTOP) return;
   gridEl.querySelectorAll('.group-card').forEach(card => {
     const group = card.dataset.group;
-    const selected = groupPicks[group] ?? [];
-    if (selected.length < 4) return;
 
     const tbody = card.querySelector('tbody');
     if (!tbody) return;
 
     Sortable.create(tbody, {
       animation: 150,
-      handle: '.drag-handle',
       ghostClass: 'sortable-ghost',
       chosenClass: 'sortable-chosen',
       onEnd: () => {

@@ -670,6 +670,8 @@ body {
 .bk-team {
   padding: 3px 5px;
   font-size: .78rem;
+  min-height: 24px;
+  box-sizing: border-box;
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -700,6 +702,7 @@ body {
   color: var(--text-muted);
   font-style: italic;
   font-size: .72rem;
+  line-height: 15px;
 }
 
 /* ── Award cards (champion / 3rd place) ── */

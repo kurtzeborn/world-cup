@@ -408,7 +408,7 @@ body {
 .flag-tbd { display: inline-block; width: 20px; text-align: center; font-size: .75rem; color: var(--text-muted); }
 .fifa-rank {
   display: inline-block;
-  min-width: 1.4rem;
+  min-width: 1rem;
   font-family: 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
   font-size: .75rem;
   font-stretch: condensed;

@@ -379,7 +379,7 @@ body {
   font-size: .82rem;
 }
 .group-table td {
-  padding: .15rem .4rem;
+  padding: .15rem .4rem .15rem .2rem;
   border-bottom: 1px solid var(--border);
   line-height: 16px;     /* match rank-badge – prevents height shift on select */
 }
@@ -408,14 +408,14 @@ body {
 .flag-tbd { display: inline-block; width: 20px; text-align: center; font-size: .75rem; color: var(--text-muted); }
 .fifa-rank {
   display: inline-block;
-  min-width: 1.6rem;
+  min-width: 1.4rem;
   font-family: 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
   font-size: .75rem;
   font-stretch: condensed;
   color: var(--text-muted);
   text-decoration: none;
   text-align: right;
-  margin-right: .35rem;
+  margin-right: .25rem;
   line-height: 1;
   vertical-align: middle;
 }

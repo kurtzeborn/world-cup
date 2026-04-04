@@ -23,7 +23,6 @@ export const picksTable = () => ensureTable('Picks');
 export const resultsTable = () => ensureTable('Results');
 export const leaguesTable = () => ensureTable('Leagues');
 export const leagueMembersTable = () => ensureTable('LeagueMembers');
-export const scoresTable = () => ensureTable('Scores');
 
 // Generic helpers
 export async function upsertEntity<T extends object>(
@@ -34,6 +33,16 @@ export async function upsertEntity<T extends object>(
 ): Promise<void> {
   const client = await ensureTable(tableName);
   await client.upsertEntity({ partitionKey, rowKey, ...data }, 'Replace');
+}
+
+export async function mergeEntity<T extends object>(
+  tableName: string,
+  partitionKey: string,
+  rowKey: string,
+  data: T
+): Promise<void> {
+  const client = await ensureTable(tableName);
+  await client.upsertEntity({ partitionKey, rowKey, ...data }, 'Merge');
 }
 
 export async function getEntity<T extends object>(

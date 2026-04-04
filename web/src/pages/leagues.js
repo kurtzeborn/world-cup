@@ -148,66 +148,8 @@ function showJoinModal() {
 }
 
 async function viewLeague(leagueId) {
-  // Open an inline leaderboard for the specific league
-  const { user } = getState();
-  const el = document.getElementById('leagues-list');
-  if (!el) return;
-
-  try {
-    const data = await api.getLeagueLeaderboard(leagueId);
-    const rows = data.leaderboard ?? data; // support new { createdBy, leaderboard } shape
-    const createdBy = data.createdBy ?? null;
-    const isCreator = user && createdBy === user.userId;
-
-    const tableHtml = rows.length ? `
-      <table class="leaderboard-table">
-        <thead><tr><th>#</th><th>Player</th><th>Points</th><th>Max</th>${isCreator ? '<th></th>' : ''}</tr></thead>
-        <tbody>${rows.map((r, i) => {
-          const name = escapeHtml(r.displayName || r.userId);
-          let kickCell = '';
-          if (isCreator && r.userId !== user.userId) {
-            kickCell = `<td><button class="btn-icon kick-btn" data-user-id="${r.userId}" data-name="${name}" title="Remove member"><i class="fa-solid fa-user-xmark"></i></button></td>`;
-          } else if (isCreator) {
-            kickCell = '<td></td>';
-          }
-          return `<tr><td>${i+1}</td><td>${name}</td><td class="points-total">${r.totalPoints}</td><td class="points-max">${r.maxPossiblePoints ?? '—'}</td>${kickCell}</tr>`;
-        }).join('')}</tbody>
-      </table>
-    ` : '<p style="color:var(--text-muted)">No members yet.</p>';
-
-    // Show in a modal
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.innerHTML = `
-      <div class="modal-box" style="max-width:500px">
-        <h3>${escapeHtml(rows.length ? 'League Leaderboard' : 'League')}</h3>
-        ${tableHtml}
-        <div class="modal-actions"><button class="btn btn-secondary" id="btn-close-lb">Close</button></div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    document.getElementById('btn-close-lb').addEventListener('click', () => overlay.remove());
-
-    // Attach kick handlers
-    if (isCreator) {
-      overlay.querySelectorAll('.kick-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const memberId = btn.dataset.userId;
-          const name = btn.dataset.name;
-          if (!confirm(`Remove ${name} from this league?`)) return;
-          try {
-            await api.kickMember(leagueId, memberId);
-            overlay.remove();
-            viewLeague(leagueId); // refresh
-          } catch (err) {
-            alert(`Error: ${err.message}`);
-          }
-        });
-      });
-    }
-  } catch (err) {
-    alert(`Error: ${err.message}`);
-  }
+  history.pushState(null, '', `/leaderboard/${leagueId}`);
+  dispatchEvent(new PopStateEvent('popstate'));
 }
 
 function showRenameModal(leagueId, currentName) {

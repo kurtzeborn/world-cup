@@ -13,6 +13,14 @@ export interface UserEntity {
   authProvider: string;
   createdAt: string;
   updatedAt: string;
+  // Score fields (merged from recalculate)
+  totalPoints?: number;
+  groupPoints?: number;
+  thirdPlacePoints?: number;
+  knockoutPoints?: number;
+  maxPossiblePoints?: number;
+  breakdown?: string; // JSON
+  calculatedAt?: string;
 }
 
 export interface PicksEntity {

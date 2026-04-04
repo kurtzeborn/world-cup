@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { requireAuth, AuthError } from '../shared/auth.js';
 import { getEntity, upsertEntity } from '../shared/storage.js';
-import { PicksEntity, ScoreEntity, isLocked, getLockDeadline } from '../shared/types.js';
+import { PicksEntity, UserEntity, isLocked, getLockDeadline } from '../shared/types.js';
 
 // GET /api/picks — get current user's picks
 app.http('getPicks', {
@@ -17,11 +17,11 @@ app.http('getPicks', {
       // Include score data when picks are locked
       let score: { totalPoints: number; maxPossiblePoints: number } | null = null;
       if (locked) {
-        const scoreEntity = await getEntity<ScoreEntity>('Scores', 'global', user.userId);
-        if (scoreEntity) {
+        const userEntity = await getEntity<UserEntity>('Users', 'user', user.userId);
+        if (userEntity?.totalPoints != null) {
           score = {
-            totalPoints: scoreEntity.totalPoints,
-            maxPossiblePoints: scoreEntity.maxPossiblePoints ?? 0,
+            totalPoints: userEntity.totalPoints,
+            maxPossiblePoints: userEntity.maxPossiblePoints ?? 0,
           };
         }
       }
@@ -159,9 +159,9 @@ export async function getPicksForUserHandler(request: HttpRequest, _context: Inv
     }
 
     // Include score data
-    const scoreEntity = await getEntity<ScoreEntity>('Scores', 'global', targetUserId);
-    const score = scoreEntity
-      ? { totalPoints: scoreEntity.totalPoints, maxPossiblePoints: scoreEntity.maxPossiblePoints ?? 0 }
+    const userEntity = await getEntity<UserEntity>('Users', 'user', targetUserId);
+    const score = userEntity?.totalPoints != null
+      ? { totalPoints: userEntity.totalPoints, maxPossiblePoints: userEntity.maxPossiblePoints ?? 0 }
       : null;
 
     return {

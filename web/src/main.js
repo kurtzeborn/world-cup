@@ -336,6 +336,13 @@ async function navigateTo(page) {
       await renderLeaguesPage(app);
       break;
     default:
+      // Handle leaderboard/:leagueId route
+      const leagueMatch = page.match(/^leaderboard\/(.+)$/);
+      if (leagueMatch) {
+        setActiveNav('leaderboard');
+        await renderLeaderboardPage(app, leagueMatch[1]);
+        break;
+      }
       ensureSlidePanel(app, 'groups');
       slideToPage('groups');
   }

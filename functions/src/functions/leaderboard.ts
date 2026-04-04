@@ -1,7 +1,21 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { getEntity, listEntitiesByPartition } from '../shared/storage.js';
-import { ScoreEntity, LeagueMemberEntity, LeagueEntity, UserEntity } from '../shared/types.js';
+import { LeagueMemberEntity, LeagueEntity, UserEntity } from '../shared/types.js';
 import { requireAuth, AuthError } from '../shared/auth.js';
+
+function userToLeaderboardEntry(u: UserEntity & { rowKey?: string }, extra?: { joinedAt?: string }) {
+  return {
+    userId: u.rowKey,
+    displayName: u.displayName ?? u.rowKey,
+    totalPoints: u.totalPoints ?? 0,
+    groupPoints: u.groupPoints ?? 0,
+    thirdPlacePoints: u.thirdPlacePoints ?? 0,
+    knockoutPoints: u.knockoutPoints ?? 0,
+    maxPossiblePoints: u.maxPossiblePoints ?? 0,
+    calculatedAt: u.calculatedAt ?? null,
+    ...extra,
+  };
+}
 
 // GET /api/leaderboard — global leaderboard
 app.http('getLeaderboard', {
@@ -9,25 +23,10 @@ app.http('getLeaderboard', {
   authLevel: 'anonymous',
   route: 'leaderboard',
   handler: async (_request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
-    // List all scores from the Scores table (partitioned by 'global')
-    const scores = await listEntitiesByPartition<ScoreEntity>('Scores', 'global');
+    const users = await listEntitiesByPartition<UserEntity>('Users', 'user');
 
-    // Resolve display names from Users table
-    const users = await Promise.all(
-      scores.map((s) => getEntity<UserEntity>('Users', s.rowKey!, 'profile'))
-    );
-
-    const leaderboard = scores
-      .map((s, i) => ({
-        userId: s.rowKey,
-        displayName: users[i]?.displayName ?? s.rowKey,
-        totalPoints: s.totalPoints,
-        groupPoints: s.groupPoints,
-        thirdPlacePoints: s.thirdPlacePoints,
-        knockoutPoints: s.knockoutPoints,
-        maxPossiblePoints: s.maxPossiblePoints ?? 0,
-        calculatedAt: s.calculatedAt,
-      }))
+    const leaderboard = users
+      .map((u) => userToLeaderboardEntry(u))
       .sort((a, b) => b.totalPoints - a.totalPoints);
 
     return {
@@ -48,41 +47,30 @@ app.http('getLeagueLeaderboard', {
       requireAuth(request);
       const leagueId = request.params.leagueId;
 
-      // Get all members of this league
       const members = await listEntitiesByPartition<LeagueMemberEntity>('LeagueMembers', leagueId);
       if (members.length === 0) {
         return { status: 404, jsonBody: { error: 'League not found or has no members' } };
       }
 
-      // Fetch league info, scores, and display names in parallel
-      const [league, scoreRows, userRows] = await Promise.all([
+      const [league, userRows] = await Promise.all([
         getEntity<LeagueEntity>('Leagues', 'leagues', leagueId),
-        Promise.all(members.map((m) => getEntity<ScoreEntity>('Scores', 'global', m.rowKey!))),
-        Promise.all(members.map((m) => getEntity<UserEntity>('Users', m.rowKey!, 'profile'))),
+        Promise.all(members.map((m) => getEntity<UserEntity>('Users', 'user', m.rowKey!))),
       ]);
 
       const leaderboard = members
         .map((m, i) => {
-          const s = scoreRows[i];
           const u = userRows[i];
-          return {
-            userId: m.rowKey,
-            displayName: u?.displayName ?? m.rowKey,
-            joinedAt: m.joinedAt,
-            totalPoints: s?.totalPoints ?? 0,
-            groupPoints: s?.groupPoints ?? 0,
-            thirdPlacePoints: s?.thirdPlacePoints ?? 0,
-            knockoutPoints: s?.knockoutPoints ?? 0,
-            maxPossiblePoints: s?.maxPossiblePoints ?? 0,
-            calculatedAt: s?.calculatedAt ?? null,
-          };
+          return userToLeaderboardEntry(
+            u ?? { rowKey: m.rowKey, displayName: m.rowKey! } as any,
+            { joinedAt: m.joinedAt },
+          );
         })
         .sort((a, b) => b.totalPoints - a.totalPoints);
 
       return {
         status: 200,
         headers: { 'Cache-Control': 'no-store' },
-        jsonBody: { createdBy: league?.createdBy ?? null, leaderboard },
+        jsonBody: { createdBy: league?.createdBy ?? null, leagueName: league?.name ?? 'League', leaderboard },
       };
     } catch (err) {
       if (err instanceof AuthError) {

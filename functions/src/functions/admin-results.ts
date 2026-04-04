@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { requireAdmin, AuthError } from '../shared/auth.js';
-import { getEntity, upsertEntity, deleteEntity, listEntitiesByPartition } from '../shared/storage.js';
-import { ResultEntity, PicksEntity, ScoreEntity, UserEntity, Results } from '../shared/types.js';
+import { getEntity, upsertEntity, deleteEntity, mergeEntity, listEntitiesByPartition } from '../shared/storage.js';
+import { ResultEntity, PicksEntity, UserEntity, Results } from '../shared/types.js';
 import { calculateScore, calculateMaxPossible } from '../shared/scoring.js';
 
 // POST /api/manage/results — enter or update match results
@@ -92,8 +92,12 @@ app.http('adminRecalculate', {
       for (const { userId, picks } of allPicks) {
         const score = calculateScore(picks, results);
         const maxPossiblePoints = calculateMaxPossible(picks, results, score);
-        await upsertEntity<ScoreEntity>('Scores', 'global', userId, {
-          ...score,
+        await mergeEntity('Users', 'user', userId, {
+          totalPoints: score.totalPoints,
+          groupPoints: score.groupPoints,
+          thirdPlacePoints: score.thirdPlacePoints,
+          knockoutPoints: score.knockoutPoints,
+          breakdown: score.breakdown,
           maxPossiblePoints,
           calculatedAt: now,
         });
@@ -269,9 +273,19 @@ app.http('adminDeletePicks', {
       }
 
       const deletedPicks = await deleteEntity('Picks', userId, 'picks');
-      const deletedScore = await deleteEntity('Scores', 'global', userId);
 
-      return { status: 200, jsonBody: { deletedPicks, deletedScore } };
+      // Clear score fields on user entity
+      await mergeEntity('Users', 'user', userId, {
+        totalPoints: 0,
+        groupPoints: 0,
+        thirdPlacePoints: 0,
+        knockoutPoints: 0,
+        maxPossiblePoints: 0,
+        breakdown: '',
+        calculatedAt: '',
+      });
+
+      return { status: 200, jsonBody: { deletedPicks } };
     } catch (err) {
       if (err instanceof AuthError) {
         return { status: err.statusCode, jsonBody: { error: err.message } };

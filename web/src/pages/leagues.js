@@ -11,15 +11,8 @@ export async function renderLeaguesPage(container) {
     container.innerHTML = `
       <div class="page active" id="page-leagues">
         <div class="card">
-          <p style="margin-bottom:1rem">Sign in to view or create leagues.</p>
-          <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-            <a href="${api.loginUrl}" class="btn btn-primary" style="text-decoration:none">
-              <i class="fa-brands fa-microsoft"></i> Sign in with Microsoft
-            </a>
-            <a href="${api.loginGoogleUrl}" class="btn btn-secondary" style="text-decoration:none">
-              <i class="fa-brands fa-google"></i> Sign in with Google
-            </a>
-          </div>
+          <div class="card-title">Leagues</div>
+          <p style="color:var(--text-muted)">Sign in to view or create leagues.</p>
         </div>
       </div>
     `;

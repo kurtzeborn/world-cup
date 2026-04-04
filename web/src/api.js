@@ -52,6 +52,7 @@ export const api = {
   clearResults:      ()      => request('DELETE', '/api/manage/results'),
   getAdminUsers:     ()      => request('GET', '/api/manage/users'),
   deleteUserPicks:   (uid)   => request('DELETE', `/api/manage/picks/${uid}`),
+  adminToggleUserLock: (uid, locked) => request('POST', `/api/manage/picks/${uid}/lock`, { locked }),
 
   // Auth helpers
   loginUrl:  '/.auth/login/aad?post_login_redirect_uri=/',

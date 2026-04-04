@@ -280,3 +280,46 @@ app.http('adminDeletePicks', {
     }
   },
 });
+
+// POST /api/manage/picks/:userId/lock — toggle lock on a single user's picks
+app.http('adminToggleUserLock', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'manage/picks/{userId}/lock',
+  handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
+    try {
+      requireAdmin(request);
+
+      const userId = request.params.userId;
+      if (!userId) {
+        return { status: 400, jsonBody: { error: 'userId is required' } };
+      }
+
+      const body = (await request.json()) as { locked: boolean };
+      if (typeof body.locked !== 'boolean') {
+        return { status: 400, jsonBody: { error: 'locked (boolean) is required' } };
+      }
+
+      const entity = await getEntity<PicksEntity>('Picks', userId, 'picks');
+      if (!entity) {
+        return { status: 404, jsonBody: { error: 'User picks not found' } };
+      }
+
+      const now = new Date().toISOString();
+      await upsertEntity<PicksEntity>('Picks', userId, 'picks', {
+        groupPicks: entity.groupPicks,
+        thirdPlaceAdvancing: entity.thirdPlaceAdvancing,
+        bracketPicks: entity.bracketPicks,
+        lockedAt: body.locked ? now : null,
+        updatedAt: now,
+      });
+
+      return { status: 200, jsonBody: { userId, locked: body.locked, updatedAt: now } };
+    } catch (err) {
+      if (err instanceof AuthError) {
+        return { status: err.statusCode, jsonBody: { error: err.message } };
+      }
+      return { status: 500, jsonBody: { error: err instanceof Error ? err.message : 'Unknown error' } };
+    }
+  },
+});

@@ -64,6 +64,14 @@ export async function renderAdminPage(container) {
 function renderAdminForm(container) {
   container.innerHTML = `
     <form id="admin-form">
+      <div class="admin-actions">
+        <button type="submit" class="btn btn-primary">Save Results</button>
+        <button type="button" class="btn btn-secondary" id="btn-recalc">Recalculate Scores</button>
+        <button type="button" class="btn btn-danger" id="btn-clear-results">Clear All Results</button>
+        <a href="/manage-users" class="btn btn-secondary">Manage Users</a>
+        <div id="admin-status" style="margin-top: 1rem; font-size: .9rem;"></div>
+      </div>
+
       <div class="admin-section">
         <h3>Group Stage Results</h3>
         <p style="font-size: .85rem; color: var(--text-muted); margin-bottom: 1rem;">
@@ -81,16 +89,6 @@ function renderAdminForm(container) {
         </p>
         <div id="admin-knockout-grid"></div>
       </div>
-
-      <div class="admin-actions">
-        <button type="submit" class="btn btn-primary">Save Results</button>
-        <button type="button" class="btn btn-secondary" id="btn-recalc">Recalculate Scores</button>
-        <button type="button" class="btn btn-danger" id="btn-lock-all">Force Lock All Picks</button>
-        <button type="button" class="btn btn-secondary" id="btn-unlock-all">Unlock All Picks</button>
-        <button type="button" class="btn btn-danger" id="btn-clear-results">Clear All Results</button>
-        <a href="/manage-users" class="btn btn-secondary">Manage Users</a>
-        <div id="admin-status" style="margin-top: 1rem; font-size: .9rem;"></div>
-      </div>
     </form>
   `;
 
@@ -104,14 +102,6 @@ function renderAdminForm(container) {
 
   document.getElementById('btn-recalc').addEventListener('click', () => {
     recalculateScores();
-  });
-
-  document.getElementById('btn-lock-all').addEventListener('click', () => {
-    adminLockAll();
-  });
-
-  document.getElementById('btn-unlock-all').addEventListener('click', () => {
-    adminUnlockAll();
   });
 
   document.getElementById('btn-clear-results').addEventListener('click', () => {
@@ -350,42 +340,6 @@ async function recalculateScores() {
     statusEl.innerHTML = `<p style="color:#4caf50">✓ Recalculated ${result.recalculated} scores</p>`;
   } catch (err) {
     statusEl.innerHTML = `<p style="color:#f44336">Error: ${err.message}</p>`;
-  }
-}
-
-async function adminLockAll() {
-  if (!confirm('Lock ALL users\u2019 picks now? This cannot be undone.')) return;
-
-  const statusEl = document.getElementById('admin-status');
-  const lockButton = document.getElementById('btn-lock-all');
-  statusEl.innerHTML = '<p style="color:var(--text-muted)">Locking all picks…</p>';
-  lockButton.disabled = true;
-
-  try {
-    const result = await api.adminLockAllPicks();
-    statusEl.innerHTML = `<p style="color:#4caf50">✓ Locked ${result.locked} picks (${result.skipped} already locked)</p>`;
-  } catch (err) {
-    statusEl.innerHTML = `<p style="color:#f44336">Error: ${err.message}</p>`;
-  } finally {
-    lockButton.disabled = false;
-  }
-}
-
-async function adminUnlockAll() {
-  if (!confirm('Unlock ALL users\u2019 picks? They will be able to edit their picks again.')) return;
-
-  const statusEl = document.getElementById('admin-status');
-  const unlockButton = document.getElementById('btn-unlock-all');
-  statusEl.innerHTML = '<p style="color:var(--text-muted)">Unlocking all picks…</p>';
-  unlockButton.disabled = true;
-
-  try {
-    const result = await api.adminUnlockAllPicks();
-    statusEl.innerHTML = `<p style="color:#4caf50">✓ Unlocked ${result.unlocked} picks (${result.skipped} already unlocked)</p>`;
-  } catch (err) {
-    statusEl.innerHTML = `<p style="color:#f44336">Error: ${err.message}</p>`;
-  } finally {
-    unlockButton.disabled = false;
   }
 }
 

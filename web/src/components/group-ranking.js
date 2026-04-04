@@ -57,7 +57,7 @@ export function renderGroupRanking(gridEl, opts) {
               const pos = selected.indexOf(team.id);
               const posClasses = ['selected-1st','selected-2nd','selected-3rd','selected-4th'];
               const cls = pos >= 0 && pos < 4 ? posClasses[pos] : '';
-              const resultCls = pos >= 0 && actual.length > 0 ? getGroupTeamStatus(team.id, pos, actual, advancing3rd) : '';
+              const resultCls = locked && pos >= 0 && actual.length > 0 ? getGroupTeamStatus(team.id, pos, actual, advancing3rd) : '';
               const badge = pos >= 0
                 ? `<span class="rank-badge rank-${pos + 1}">${pos + 1}</span>`
                 : '';

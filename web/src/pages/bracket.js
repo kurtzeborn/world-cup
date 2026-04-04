@@ -132,9 +132,9 @@ export function renderBracketContent({ preserveScroll = false } = {}) {
   const gp = picks?.groupPicks ?? {};
   const tpa = picks?.thirdPlaceAdvancing ?? [];
   const mt = resolveMatchTeams(gp, tpa, bp);
-  const mr = results?.matchResults ?? {};
-  const elim = getEliminatedTeams(results);
-  const amt = resolveActualTeams(results);
+  const mr = locked ? (results?.matchResults ?? {}) : {};
+  const elim = locked ? getEliminatedTeams(results) : new Set();
+  const amt = locked ? resolveActualTeams(results) : {};
 
   const el = document.getElementById('bracket-content');
   if (!el) return;

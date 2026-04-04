@@ -184,8 +184,8 @@ async function init() {
   setupNavigation();
 
   // Route to initial page
-  const hash = location.hash.replace('#', '') || 'groups';
-  navigateTo(hash);
+  const path = location.pathname.replace(/^\//, '') || 'groups';
+  navigateTo(path);
 
   // Gate: authenticated users must set a display name before interacting
   if (authUser && !hasDisplayName) {
@@ -242,14 +242,26 @@ function setupNavigation() {
       a.addEventListener('click', e => {
         e.preventDefault();
         const page = a.dataset.page;
-        history.pushState(null, '', `#${page}`);
+        history.pushState(null, '', `/${page}`);
         navigateTo(page);
       });
     });
   }
+  // Intercept internal <a> links for SPA navigation
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    const href = a.getAttribute('href');
+    if (!href || href.startsWith('http') || href.startsWith('/.auth') || href.startsWith('/api')) return;
+    if (href.startsWith('/')) {
+      e.preventDefault();
+      history.pushState(null, '', href);
+      navigateTo(href.replace(/^\//, '') || 'groups');
+    }
+  });
   window.addEventListener('popstate', () => {
-    const hash = location.hash.replace('#', '') || 'groups';
-    navigateTo(hash);
+    const path = location.pathname.replace(/^\//, '') || 'groups';
+    navigateTo(path);
   });
 }
 
@@ -269,7 +281,7 @@ async function navigateTo(page) {
   if (viewPicksMatch) {
     if (!getState().locked) {
       // Before lock, redirect to leaderboard
-      history.replaceState(null, '', '#leaderboard');
+      history.replaceState(null, '', '/leaderboard');
       navigateTo('leaderboard');
       return;
     }
@@ -311,7 +323,7 @@ async function navigateTo(page) {
     case 'dashboard':
       if (!getState().locked) {
         // Before lock, redirect to picks
-        history.replaceState(null, '', '#picks');
+        history.replaceState(null, '', '/picks');
         navigateTo('picks');
         return;
       }
@@ -473,7 +485,7 @@ function slideToPage(page) {
 
 /** Navigate to a slide page, updating the URL hash. */
 function slideTo(page) {
-  history.pushState(null, '', `#${page}`);
+  history.pushState(null, '', `/${page}`);
   navigateTo(page);
 }
 

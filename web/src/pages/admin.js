@@ -88,7 +88,7 @@ function renderAdminForm(container) {
         <button type="button" class="btn btn-danger" id="btn-lock-all">Force Lock All Picks</button>
         <button type="button" class="btn btn-secondary" id="btn-unlock-all">Unlock All Picks</button>
         <button type="button" class="btn btn-danger" id="btn-clear-results">Clear All Results</button>
-        <a href="#manage-users" class="btn btn-secondary">Manage Users</a>
+        <a href="/manage-users" class="btn btn-secondary">Manage Users</a>
         <div id="admin-status" style="margin-top: 1rem; font-size: .9rem;"></div>
       </div>
     </form>

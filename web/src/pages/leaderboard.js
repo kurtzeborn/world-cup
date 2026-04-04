@@ -86,7 +86,8 @@ function renderTable(leaderboard) {
       row.style.cursor = 'pointer';
       row.addEventListener('click', () => {
         const userId = row.dataset.userId;
-        window.location.hash = `#view-picks/${userId}`;
+        history.pushState(null, '', `/view-picks/${userId}`);
+        dispatchEvent(new PopStateEvent('popstate'));
       });
     });
   }

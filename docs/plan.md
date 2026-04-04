@@ -475,6 +475,13 @@ world-cup/
 | authProvider | string | `"aad"` or `"google"` |
 | createdAt | string (ISO datetime) | First login |
 | updatedAt | string (ISO datetime) | Last profile update |
+| totalPoints | number (optional) | Total score (written by recalculate) |
+| groupPoints | number (optional) | Points from group stage |
+| thirdPlacePoints | number (optional) | Points from 3rd-place picks |
+| knockoutPoints | number (optional) | Points from knockout picks |
+| maxPossiblePoints | number (optional) | Maximum remaining possible points |
+| breakdown | string (JSON, optional) | Detailed breakdown by round |
+| calculatedAt | string (ISO datetime, optional) | Last recalculation time |
 
 #### Picks Table
 | Field | Type | Description |
@@ -513,17 +520,7 @@ world-cup/
 | RowKey | string | User ID |
 | joinedAt | string (ISO datetime) | When user joined |
 
-#### Scores Table (Computed/Cached)
-| Field | Type | Description |
-|-------|------|-------------|
-| PartitionKey | string | `"score"` |
-| RowKey | string | User ID |
-| totalPoints | number | Total score |
-| groupPoints | number | Points from group stage |
-| thirdPlacePoints | number | Points from 3rd-place picks |
-| knockoutPoints | number | Points from knockout picks |
-| breakdown | string (JSON) | Detailed breakdown by round |
-| calculatedAt | string (ISO datetime) | Last recalculation time |
+> **Note:** Score fields were originally in a separate Scores table but were merged into Users to simplify queries and eliminate the empty-leaderboard problem (leaderboard shows all users with 0 points before any results are entered). Score fields are written via `mergeEntity` (Azure Table Storage Merge mode) to avoid overwriting profile fields.
 
 ### 5.5 API Endpoints
 
@@ -761,7 +758,7 @@ If the user changes group rankings or 3rd-place selections, **only the affected 
 | SWA free tier limits (100GB bandwidth) | Site goes down during peak | Monitor usage; upgrade to Standard ($9/mo) if needed |
 | Scoring edge cases (e.g., team in wrong bracket slot but still wins) | Unfair scoring | Define clear rules; partial credit handles most cases |
 | Lock deadline timezone confusion | Some users lock late | Show deadline in user's local timezone with prominent countdown |
-| Azure Table Storage query limitations | Slow leaderboard | Pre-compute scores in Scores table; update on result entry |
+| Azure Table Storage query limitations | Slow leaderboard | Score fields merged into Users table; single partition scan for leaderboard |
 
 ---
 

@@ -119,14 +119,14 @@ export function renderBracketPage(container) {
       const el = e.target.closest('.bk-team[data-pick-team]');
       if (!el) return;
       onBracketPick(el.dataset.pickKey, el.dataset.pickTeam);
-      renderBracketContent();
+      renderBracketContent({ preserveScroll: true });
     });
   }
 }
 
 // ─── Render the full bracket content ────────────────────────
 
-export function renderBracketContent() {
+export function renderBracketContent({ preserveScroll = false } = {}) {
   const { picks, locked, results } = getState();
   const bp = picks?.bracketPicks ?? {};
   const gp = picks?.groupPicks ?? {};
@@ -139,6 +139,11 @@ export function renderBracketContent() {
   const el = document.getElementById('bracket-content');
   if (!el) return;
 
+  // Save scroll position before re-render (#9)
+  const scrollEl = preserveScroll ? el.querySelector('.bk-scroll') : null;
+  const savedScrollLeft = scrollEl?.scrollLeft ?? 0;
+  const savedScrollTop = scrollEl?.scrollTop ?? 0;
+
   el.innerHTML = `
     <div class="bk-scroll">
       <div class="bk-bracket">
@@ -146,6 +151,15 @@ export function renderBracketContent() {
       </div>
     </div>
   `;
+
+  // Restore scroll position after re-render (#9)
+  if (preserveScroll) {
+    const newScrollEl = el.querySelector('.bk-scroll');
+    if (newScrollEl) {
+      newScrollEl.scrollLeft = savedScrollLeft;
+      newScrollEl.scrollTop = savedScrollTop;
+    }
+  }
 }
 
 // ─── Rendering helpers ──────────────────────────────────────

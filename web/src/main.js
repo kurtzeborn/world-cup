@@ -57,6 +57,42 @@ function applyTheme(theme) {
   }
 }
 
+/** Check if a picks object has any meaningful data. */
+function picksAreEmpty(picks) {
+  if (!picks) return true;
+  const hasGroups = Object.keys(picks.groupPicks ?? {}).length > 0;
+  const hasThird = (picks.thirdPlaceAdvancing ?? []).length > 0;
+  const hasBracket = Object.keys(picks.bracketPicks ?? {}).length > 0;
+  return !hasGroups && !hasThird && !hasBracket;
+}
+
+/** Show a modal when local and server picks conflict. Returns 'local' or 'server'. */
+function showPicksConflictModal() {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal-box">
+        <h3>Picks Found</h3>
+        <p>You have saved picks on your account, but you also made picks before signing in. Which would you like to keep?</p>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="btn-keep-server">Use Saved Picks</button>
+          <button class="btn btn-primary" id="btn-keep-local">Use Current Picks</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    document.getElementById('btn-keep-server').addEventListener('click', () => {
+      overlay.remove();
+      resolve('server');
+    });
+    document.getElementById('btn-keep-local').addEventListener('click', () => {
+      overlay.remove();
+      resolve('local');
+    });
+  });
+}
+
 async function init() {
   initTheme();
   // Load auth + teams + results in parallel
@@ -90,20 +126,39 @@ async function init() {
   if (authUser) {
     try {
       const serverPicks = await api.getPicks();
-      if (serverPicks) {
-        setState({
-          picks: serverPicks,
-          locked: !!serverPicks.isLocked,
-          score: serverPicks.score ?? null,
-        });
-      } else {
-        // No server picks — check for pre-auth local drafts to sync
-        const localPicks = loadLocalPicks();
-        if (localPicks) {
-          setState({ picks: localPicks });
+      const localPicks = loadLocalPicks();
+      const serverEmpty = picksAreEmpty(serverPicks);
+      const localEmpty = picksAreEmpty(localPicks);
+
+      if (serverEmpty && !localEmpty) {
+        // Server has no real picks — use local drafts from anonymous session
+        setState({ picks: localPicks, locked: serverPicks?.isLocked ?? false });
+        await syncToServer();
+        clearLocalPicks();
+      } else if (!serverEmpty && !localEmpty) {
+        // Both exist — ask the user which to keep
+        const choice = await showPicksConflictModal();
+        if (choice === 'local') {
+          setState({ picks: localPicks, locked: serverPicks?.isLocked ?? false });
           await syncToServer();
-          clearLocalPicks();
+        } else {
+          setState({
+            picks: serverPicks,
+            locked: !!serverPicks.isLocked,
+            score: serverPicks.score ?? null,
+          });
         }
+        clearLocalPicks();
+      } else {
+        // Server has picks (or both empty) — use server
+        if (serverPicks) {
+          setState({
+            picks: serverPicks,
+            locked: !!serverPicks.isLocked,
+            score: serverPicks.score ?? null,
+          });
+        }
+        if (!localEmpty) clearLocalPicks();
       }
     } catch {
       // Server error — try local picks
@@ -369,7 +424,7 @@ function ensureSlidePanel(app, initialPage) {
     const snap = serializeGroupState();
     if (snap !== lastGroupSnap) {
       lastGroupSnap = snap;
-      renderBracketContent();
+      renderBracketContent({ preserveScroll: true });
     }
   });
 

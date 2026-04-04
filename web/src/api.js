@@ -41,6 +41,8 @@ export const api = {
   getLeagues:    ()       => request('GET',  '/api/leagues'),
   createLeague:  (data)   => request('POST', '/api/leagues', data),
   joinLeague:    (data)   => request('POST', '/api/leagues/join', data),
+  renameLeague:  (lid, data) => request('PUT', `/api/leagues/${lid}`, data),
+  kickMember:    (lid, uid)  => request('DELETE', `/api/leagues/${lid}/members/${uid}`),
 
   // Admin
   submitAdminResults: (data) => request('POST', '/api/manage/results', data),

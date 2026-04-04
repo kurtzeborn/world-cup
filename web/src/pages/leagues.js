@@ -47,23 +47,30 @@ async function loadLeagues() {
   if (!el) return;
   try {
     const leagues = await api.getLeagues();
+    const { user } = getState();
     if (!leagues.length) {
       el.innerHTML = '<p style="color:var(--text-muted)">You are not in any leagues yet.</p>';
       return;
     }
-    el.innerHTML = leagues.map(l => `
+    el.innerHTML = leagues.map(l => {
+      const isCreator = user && l.createdBy === user.userId;
+      return `
       <div class="card" style="display:flex;justify-content:space-between;align-items:center">
         <div>
-          <strong>${escapeHtml(l.name)}</strong>
+          <strong class="league-name-text" data-league-id="${l.leagueId}">${escapeHtml(l.name)}</strong>${isCreator ? `<button class="btn-icon league-rename-btn" data-league-id="${l.leagueId}" data-league-name="${escapeHtml(l.name)}" title="Rename league"><i class="fa-solid fa-pen"></i></button>` : ''}
           <span style="font-size:.8rem;color:var(--text-muted);margin-left:.5rem">Code: <code>${l.joinCode}</code></span>
         </div>
         <button class="btn btn-secondary league-view-btn" data-league-id="${l.leagueId}">Leaderboard</button>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     // Attach click listeners for league leaderboards
     el.querySelectorAll('.league-view-btn').forEach(btn => {
       btn.addEventListener('click', () => viewLeague(btn.dataset.leagueId));
+    });
+    el.querySelectorAll('.league-rename-btn').forEach(btn => {
+      btn.addEventListener('click', () => showRenameModal(btn.dataset.leagueId, btn.dataset.leagueName));
     });
   } catch (err) {
     el.innerHTML = `<p style="color:#f44336">Error: ${err.message}</p>`;
@@ -142,35 +149,99 @@ function showJoinModal() {
 
 async function viewLeague(leagueId) {
   // Open an inline leaderboard for the specific league
-  const { leagues } = getState();
-  const league = leagues.find(l => l.leagueId === leagueId);
+  const { user } = getState();
   const el = document.getElementById('leagues-list');
   if (!el) return;
 
   try {
-    const rows = await api.getLeagueLeaderboard(leagueId);
+    const data = await api.getLeagueLeaderboard(leagueId);
+    const rows = data.leaderboard ?? data; // support new { createdBy, leaderboard } shape
+    const createdBy = data.createdBy ?? null;
+    const isCreator = user && createdBy === user.userId;
+
     const tableHtml = rows.length ? `
       <table class="leaderboard-table">
-        <thead><tr><th>#</th><th>Player</th><th>Points</th><th>Max</th></tr></thead>
-        <tbody>${rows.map((r, i) => `<tr><td>${i+1}</td><td>${escapeHtml(r.displayName || r.userId)}</td><td class="points-total">${r.totalPoints}</td><td class="points-max">${r.maxPossiblePoints ?? '—'}</td></tr>`).join('')}</tbody>
+        <thead><tr><th>#</th><th>Player</th><th>Points</th><th>Max</th>${isCreator ? '<th></th>' : ''}</tr></thead>
+        <tbody>${rows.map((r, i) => {
+          const name = escapeHtml(r.displayName || r.userId);
+          let kickCell = '';
+          if (isCreator && r.userId !== user.userId) {
+            kickCell = `<td><button class="btn-icon kick-btn" data-user-id="${r.userId}" data-name="${name}" title="Remove member"><i class="fa-solid fa-user-xmark"></i></button></td>`;
+          } else if (isCreator) {
+            kickCell = '<td></td>';
+          }
+          return `<tr><td>${i+1}</td><td>${name}</td><td class="points-total">${r.totalPoints}</td><td class="points-max">${r.maxPossiblePoints ?? '—'}</td>${kickCell}</tr>`;
+        }).join('')}</tbody>
       </table>
-    ` : '<p style="color:var(--text-muted)">No scores yet.</p>';
+    ` : '<p style="color:var(--text-muted)">No members yet.</p>';
 
     // Show in a modal
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
       <div class="modal-box" style="max-width:500px">
-        <h3>${escapeHtml(league?.name ?? 'League')}</h3>
+        <h3>${escapeHtml(rows.length ? 'League Leaderboard' : 'League')}</h3>
         ${tableHtml}
         <div class="modal-actions"><button class="btn btn-secondary" id="btn-close-lb">Close</button></div>
       </div>
     `;
     document.body.appendChild(overlay);
     document.getElementById('btn-close-lb').addEventListener('click', () => overlay.remove());
+
+    // Attach kick handlers
+    if (isCreator) {
+      overlay.querySelectorAll('.kick-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const memberId = btn.dataset.userId;
+          const name = btn.dataset.name;
+          if (!confirm(`Remove ${name} from this league?`)) return;
+          try {
+            await api.kickMember(leagueId, memberId);
+            overlay.remove();
+            viewLeague(leagueId); // refresh
+          } catch (err) {
+            alert(`Error: ${err.message}`);
+          }
+        });
+      });
+    }
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
+}
+
+function showRenameModal(leagueId, currentName) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <h3>Rename League</h3>
+      <div class="form-group">
+        <label for="rename-league-name">League Name</label>
+        <input type="text" id="rename-league-name" value="${escapeHtml(currentName)}" maxlength="60" />
+      </div>
+      <div class="error-msg" id="rename-error"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="btn-cancel-rename">Cancel</button>
+        <button class="btn btn-primary" id="btn-confirm-rename">Rename</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  document.getElementById('btn-cancel-rename').addEventListener('click', () => overlay.remove());
+  document.getElementById('btn-confirm-rename').addEventListener('click', async () => {
+    const name = document.getElementById('rename-league-name').value.trim();
+    const errEl = document.getElementById('rename-error');
+    if (!name) { errEl.textContent = 'League name is required.'; return; }
+    try {
+      await api.renameLeague(leagueId, { name });
+      overlay.remove();
+      await loadLeagues();
+    } catch (err) {
+      errEl.textContent = err.message;
+    }
+  });
 }
 
 

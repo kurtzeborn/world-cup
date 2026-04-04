@@ -45,7 +45,6 @@ export interface LeagueEntity {
 
 export interface LeagueMemberEntity {
   joinedAt: string;
-  displayName: string;
 }
 
 export interface ScoreEntity {

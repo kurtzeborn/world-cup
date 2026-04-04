@@ -512,7 +512,6 @@ world-cup/
 | PartitionKey | string | League ID |
 | RowKey | string | User ID |
 | joinedAt | string (ISO datetime) | When user joined |
-| displayName | string | User's display name |
 
 #### Scores Table (Computed/Cached)
 | Field | Type | Description |
@@ -541,6 +540,8 @@ world-cup/
 | POST | `/api/leagues` | authenticated | Create a league |
 | POST | `/api/leagues/join` | authenticated | Join a league by code |
 | GET | `/api/leagues` | authenticated | List user's leagues |
+| PUT | `/api/leagues/:leagueId` | authenticated | Rename a league (creator only) |
+| DELETE | `/api/leagues/:leagueId/members/:userId` | authenticated | Remove a league member (creator only) |
 | GET | `/api/results` | authenticated | Get current tournament results |
 | GET | `/api/teams` | anonymous | Get team list (public) |
 | POST | `/api/admin/results` | admin | Enter/update match results |

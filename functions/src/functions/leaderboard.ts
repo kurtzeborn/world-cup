@@ -1,6 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { getEntity, listEntitiesByPartition } from '../shared/storage.js';
-import { ScoreEntity, LeagueMemberEntity } from '../shared/types.js';
+import { ScoreEntity, LeagueMemberEntity, LeagueEntity, UserEntity } from '../shared/types.js';
 import { requireAuth, AuthError } from '../shared/auth.js';
 
 // GET /api/leaderboard — global leaderboard
@@ -12,10 +12,15 @@ app.http('getLeaderboard', {
     // List all scores from the Scores table (partitioned by 'global')
     const scores = await listEntitiesByPartition<ScoreEntity>('Scores', 'global');
 
+    // Resolve display names from Users table
+    const users = await Promise.all(
+      scores.map((s) => getEntity<UserEntity>('Users', s.rowKey!, 'profile'))
+    );
+
     const leaderboard = scores
-      .map((s) => ({
+      .map((s, i) => ({
         userId: s.rowKey,
-        displayName: s.rowKey, // will be enriched below if needed
+        displayName: users[i]?.displayName ?? s.rowKey,
         totalPoints: s.totalPoints,
         groupPoints: s.groupPoints,
         thirdPlacePoints: s.thirdPlacePoints,
@@ -49,17 +54,20 @@ app.http('getLeagueLeaderboard', {
         return { status: 404, jsonBody: { error: 'League not found or has no members' } };
       }
 
-      // Fetch scores for each member
-      const scoreRows = await Promise.all(
-        members.map((m) => getEntity<ScoreEntity>('Scores', 'global', m.rowKey!))
-      );
+      // Fetch league info, scores, and display names in parallel
+      const [league, scoreRows, userRows] = await Promise.all([
+        getEntity<LeagueEntity>('Leagues', 'leagues', leagueId),
+        Promise.all(members.map((m) => getEntity<ScoreEntity>('Scores', 'global', m.rowKey!))),
+        Promise.all(members.map((m) => getEntity<UserEntity>('Users', m.rowKey!, 'profile'))),
+      ]);
 
       const leaderboard = members
         .map((m, i) => {
           const s = scoreRows[i];
+          const u = userRows[i];
           return {
             userId: m.rowKey,
-            displayName: m.displayName,
+            displayName: u?.displayName ?? m.rowKey,
             joinedAt: m.joinedAt,
             totalPoints: s?.totalPoints ?? 0,
             groupPoints: s?.groupPoints ?? 0,
@@ -74,7 +82,7 @@ app.http('getLeagueLeaderboard', {
       return {
         status: 200,
         headers: { 'Cache-Control': 'no-store' },
-        jsonBody: leaderboard,
+        jsonBody: { createdBy: league?.createdBy ?? null, leaderboard },
       };
     } catch (err) {
       if (err instanceof AuthError) {

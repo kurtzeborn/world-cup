@@ -1,8 +1,10 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { requireAuth, AuthError } from '../shared/auth.js';
-import { getEntity, upsertEntity, listEntitiesByPartition } from '../shared/storage.js';
-import { LeagueEntity, LeagueMemberEntity, UserEntity } from '../shared/types.js';
+import { getEntity, upsertEntity, listEntitiesByPartition, deleteEntity } from '../shared/storage.js';
+import { LeagueEntity, LeagueMemberEntity } from '../shared/types.js';
 import { randomBytes } from 'crypto';
+
+const MAX_LEAGUES_PER_USER = 5;
 
 function generateJoinCode(): string {
   // 6-character alphanumeric join code
@@ -23,6 +25,13 @@ app.http('createLeague', {
         return { status: 400, jsonBody: { error: 'League name is required' } };
       }
 
+      // Enforce creation limit
+      const allLeagues = await listEntitiesByPartition<LeagueEntity>('Leagues', 'leagues');
+      const userLeagueCount = allLeagues.filter(l => l.createdBy === user.userId).length;
+      if (userLeagueCount >= MAX_LEAGUES_PER_USER) {
+        return { status: 400, jsonBody: { error: `You can create a maximum of ${MAX_LEAGUES_PER_USER} leagues` } };
+      }
+
       const leagueId = randomBytes(8).toString('hex');
       const joinCode = generateJoinCode();
       const now = new Date().toISOString();
@@ -35,10 +44,8 @@ app.http('createLeague', {
       });
 
       // Auto-join the creator
-      const userEntity = await getEntity<UserEntity>('Users', user.userId, 'profile');
       await upsertEntity<LeagueMemberEntity>('LeagueMembers', leagueId, user.userId, {
         joinedAt: now,
-        displayName: userEntity?.displayName ?? user.userId,
       });
 
       return {
@@ -86,12 +93,10 @@ app.http('joinLeague', {
         return { status: 409, jsonBody: { error: 'Already a member of this league' } };
       }
 
-      const userEntity = await getEntity<UserEntity>('Users', user.userId, 'profile');
       const now = new Date().toISOString();
 
       await upsertEntity<LeagueMemberEntity>('LeagueMembers', leagueId, user.userId, {
         joinedAt: now,
-        displayName: userEntity?.displayName ?? user.userId,
       });
 
       return {
@@ -135,6 +140,84 @@ app.http('getLeagues', {
       }
 
       return { status: 200, jsonBody: joined };
+    } catch (err) {
+      if (err instanceof AuthError) {
+        return { status: err.statusCode, jsonBody: { error: err.message } };
+      }
+      throw err;
+    }
+  },
+});
+
+// PUT /api/leagues/:leagueId — rename a league (creator only)
+app.http('renameLeague', {
+  methods: ['PUT'],
+  authLevel: 'anonymous',
+  route: 'leagues/{leagueId}',
+  handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
+    try {
+      const user = requireAuth(request);
+      const leagueId = request.params.leagueId;
+      const body = await request.json() as { name?: string };
+
+      const name = body.name?.trim();
+      if (!name) {
+        return { status: 400, jsonBody: { error: 'League name is required' } };
+      }
+
+      const league = await getEntity<LeagueEntity>('Leagues', 'leagues', leagueId);
+      if (!league) {
+        return { status: 404, jsonBody: { error: 'League not found' } };
+      }
+      if (league.createdBy !== user.userId) {
+        return { status: 403, jsonBody: { error: 'Only the league creator can rename it' } };
+      }
+
+      await upsertEntity<LeagueEntity>('Leagues', 'leagues', leagueId, {
+        name,
+        joinCode: league.joinCode,
+        createdBy: league.createdBy,
+        createdAt: league.createdAt,
+      });
+
+      return { status: 200, jsonBody: { name } };
+    } catch (err) {
+      if (err instanceof AuthError) {
+        return { status: err.statusCode, jsonBody: { error: err.message } };
+      }
+      throw err;
+    }
+  },
+});
+
+// DELETE /api/leagues/:leagueId/members/:userId — kick a member (creator only)
+app.http('kickLeagueMember', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'leagues/{leagueId}/members/{memberId}',
+  handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
+    try {
+      const user = requireAuth(request);
+      const leagueId = request.params.leagueId;
+      const memberId = request.params.memberId;
+
+      const league = await getEntity<LeagueEntity>('Leagues', 'leagues', leagueId);
+      if (!league) {
+        return { status: 404, jsonBody: { error: 'League not found' } };
+      }
+      if (league.createdBy !== user.userId) {
+        return { status: 403, jsonBody: { error: 'Only the league creator can remove members' } };
+      }
+      if (memberId === user.userId) {
+        return { status: 400, jsonBody: { error: 'Cannot remove yourself from the league' } };
+      }
+
+      const deleted = await deleteEntity('LeagueMembers', leagueId, memberId);
+      if (!deleted) {
+        return { status: 404, jsonBody: { error: 'Member not found' } };
+      }
+
+      return { status: 200, jsonBody: { removed: memberId } };
     } catch (err) {
       if (err instanceof AuthError) {
         return { status: err.statusCode, jsonBody: { error: err.message } };

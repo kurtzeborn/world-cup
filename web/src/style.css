@@ -790,6 +790,8 @@ body {
 .btn-primary:hover { background: var(--green-dark); }
 .btn-secondary { background: var(--border); color: var(--text); }
 .btn-secondary:hover { background: var(--border); opacity: .8; }
+.btn-icon { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: .2rem .4rem; font-size: .85rem; }
+.btn-icon:hover { color: var(--text); }
 .btn-danger { background: #b42318; color: #fff; }
 .btn-danger:hover { background: #912018; }
 .modal-overlay {

@@ -1080,12 +1080,18 @@ body {
   background: rgba(76, 175, 80, 0.15);
 }
 
-.dashboard-team-row.partial {
-  background: rgba(255, 193, 7, 0.15);
+.dashboard-team-row.incorrect {
+  background: rgba(244, 67, 54, 0.12);
 }
 
-.dashboard-team-row.incorrect {
-  background: rgba(244, 67, 54, 0.15);
+.dashboard-picked-wrong {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  flex-shrink: 0;
+}
+
+.dashboard-actual-correct {
+  font-weight: 600;
 }
 
 .dashboard-pos {

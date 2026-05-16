@@ -89,20 +89,21 @@ function renderDashboardGroups(groupPicks, groupStandings) {
       const pickedTeam = picked[pos];
       const actualTeam = actual[pos];
       const status = getGroupTeamStatus(pickedTeam, pos, actual);
-      const statusClass = status === 'correct' ? 'correct' : status === 'partial' ? 'partial' : status === 'incorrect' ? 'incorrect' : '';
 
       const pickedTeamObj = TEAMS_BY_ID[pickedTeam];
       const actualTeamObj = TEAMS_BY_ID[actualTeam];
 
+      const pickedHtml = `${getFlag(pickedTeamObj?.flagCode)} ${escapeHtml(pickedTeamObj?.name || pickedTeam)}`;
+      const actualHtml = actualTeamObj ? `${getFlag(actualTeamObj?.flagCode)} ${escapeHtml(actualTeamObj?.name || actualTeam)}` : '';
+
+      const teamContent = status === 'incorrect'
+        ? `<span class="dashboard-picked-wrong"><s>${pickedHtml}</s></span><span class="dashboard-actual-correct">${actualHtml}</span>`
+        : `<span class="dashboard-picked">${pickedHtml}</span>`;
+
       html += `
-        <div class="dashboard-team-row ${statusClass}">
+        <div class="dashboard-team-row ${status}">
           <span class="dashboard-pos">${pos + 1}</span>
-          <span class="dashboard-picked">
-            ${getFlag(pickedTeamObj?.flagCode)} ${escapeHtml(pickedTeamObj?.name || pickedTeam)}
-          </span>
-          <span class="dashboard-actual">
-            ${getFlag(actualTeamObj?.flagCode)} ${escapeHtml(actualTeamObj?.name || actualTeam)}
-          </span>
+          ${teamContent}
         </div>
       `;
     }
@@ -115,16 +116,10 @@ function renderDashboardGroups(groupPicks, groupStandings) {
 }
 
 function getGroupTeamStatus(pickedTeam, pickedPos, actualOrder) {
-  if (!pickedTeam || !actualOrder) return '';
-  
-  // Find where picked team ended up
+  if (!pickedTeam || !actualOrder || pickedPos === 3) return ''; // 4th place: uncolored
   const actualPos = actualOrder.indexOf(pickedTeam);
-  if (actualPos === -1) return 'incorrect'; // Team didn't advance
-  if (actualPos === pickedPos) return 'correct'; // Exact match
-  if (pickedPos < 2 && actualPos < 2) return 'partial'; // Both in top 2 but different spots
-  if (pickedPos === 2 && actualPos === 2) return 'correct'; // Both 3rd place
-  if (pickedPos === 2 && actualOrder.includes(pickedTeam)) return 'partial'; // 3rd place but advanced elsewhere
-  return 'incorrect';
+  if (actualPos === -1) return ''; // Result not yet known for this team
+  return actualPos === pickedPos ? 'correct' : 'incorrect';
 }
 
 function renderDashboardBracket(bracketPicks, matchResults) {

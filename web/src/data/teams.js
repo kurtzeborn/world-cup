@@ -13,7 +13,7 @@ export const TEAMS = [
 
   // Group B
   { id: 'CAN', name: 'Canada', group: 'B', groupSeed: 1, flagCode: 'ca', fifaRanking: 30, confirmed: true },
-  { id: 'BIH', name: 'Bosnia and Herzegovina', group: 'B', groupSeed: 2, flagCode: 'ba', fifaRanking: 65, confirmed: true },
+  { id: 'BIH', name: 'B&H', group: 'B', groupSeed: 2, flagCode: 'ba', fifaRanking: 65, confirmed: true },
   { id: 'QAT', name: 'Qatar', group: 'B', groupSeed: 3, flagCode: 'qa', fifaRanking: 55, confirmed: true },
   { id: 'SUI', name: 'Switzerland', group: 'B', groupSeed: 4, flagCode: 'ch', fifaRanking: 19, confirmed: true },
 

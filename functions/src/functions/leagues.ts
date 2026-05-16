@@ -124,17 +124,19 @@ app.http('getLeagues', {
       // Find all leagues this user is a member of by scanning LeagueMembers
       // We use a cross-partition query by filtering on RowKey
       const allLeagues = await listEntitiesByPartition<LeagueEntity>('Leagues', 'leagues');
-      const joined: { leagueId: string; name: string; joinCode: string; createdBy: string; joinedAt?: string }[] = [];
+      const joined: { leagueId: string; name: string; joinCode: string; createdBy: string; joinedAt?: string; memberCount: number }[] = [];
 
       for (const league of allLeagues) {
         const membership = await getEntity<LeagueMemberEntity>('LeagueMembers', league.rowKey!, user.userId);
         if (membership) {
+          const members = await listEntitiesByPartition<LeagueMemberEntity>('LeagueMembers', league.rowKey!);
           joined.push({
             leagueId: league.rowKey!,
             name: league.name,
             joinCode: league.joinCode,
             createdBy: league.createdBy,
             joinedAt: membership.joinedAt,
+            memberCount: members.length,
           });
         }
       }

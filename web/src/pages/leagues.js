@@ -53,7 +53,7 @@ async function loadLeagues() {
           <strong class="league-name-text" data-league-id="${l.leagueId}">${escapeHtml(l.name)}</strong>${isCreator ? `<button class="btn-icon league-rename-btn" data-league-id="${l.leagueId}" data-league-name="${escapeHtml(l.name)}" title="Rename league"><i class="fa-solid fa-pen"></i></button>` : ''}
           <span style="font-size:.8rem;color:var(--text-muted);margin-left:.5rem">Code: <code>${l.joinCode}</code></span>
         </div>
-        <button class="btn btn-secondary league-view-btn" data-league-id="${l.leagueId}">Leaderboard</button>
+        <span style="font-size:.85rem;color:var(--text-muted);margin-right:.5rem"><i class="fa-solid fa-users"></i> ${l.memberCount ?? '—'}</span><button class="btn btn-secondary league-view-btn" data-league-id="${l.leagueId}">Leaderboard</button>
       </div>
     `;
     }).join('');

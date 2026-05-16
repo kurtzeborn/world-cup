@@ -160,6 +160,7 @@ export function renderGroupRanking(gridEl, opts) {
 }
 
 function getGroupTeamStatus(teamId, pickedPos, actualOrder, advancing3rd) {
+  if (pickedPos === 3) return ''; // 4th place: no coloring
   const actualPos = actualOrder.indexOf(teamId);
   if (actualPos === -1) return 'result-incorrect';
   const has3rdData = advancing3rd.size > 0;
@@ -169,10 +170,6 @@ function getGroupTeamStatus(teamId, pickedPos, actualOrder, advancing3rd) {
     if (pickedPos === 2 && has3rdData && !advancing3rd.has(teamId)) return 'result-incorrect';
     return 'result-correct';
   }
-  // Both in top 2 but swapped
-  if (pickedPos < 2 && actualPos < 2) return 'result-partial';
-  // Picked top 2, actually 3rd but advanced (or vice versa) — team advances either way
-  if (pickedPos < 2 && actualPos === 2 && (!has3rdData || advancing3rd.has(teamId))) return 'result-partial';
-  if (pickedPos === 2 && actualPos < 2) return 'result-partial';
+  // Any non-exact match is just incorrect (no orange partial in group stage)
   return 'result-incorrect';
 }

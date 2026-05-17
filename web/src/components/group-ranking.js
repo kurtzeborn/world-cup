@@ -57,7 +57,7 @@ export function renderGroupRanking(gridEl, opts) {
               const pos = selected.indexOf(team.id);
               const posClasses = ['selected-1st','selected-2nd','selected-3rd','selected-4th'];
               const cls = pos >= 0 && pos < 4 ? posClasses[pos] : '';
-              const resultCls = locked && pos >= 0 && actual.length > 0 ? getGroupTeamStatus(team.id, pos, actual, advancing3rd) : '';
+              const resultCls = locked && pos >= 0 && actual.length > 0 ? getGroupTeamStatus(team.id, pos, actual) : '';
               const badge = pos >= 0
                 ? `<span class="rank-badge rank-${pos + 1}">${pos + 1}</span>`
                 : '';
@@ -68,13 +68,27 @@ export function renderGroupRanking(gridEl, opts) {
               if (pos === 0 || pos === 1) {
                 advanceHtml = '<span class="advance-auto">Advances</span>';
               } else if (pos === 2) {
-                advanceHtml = `<label class="advance-toggle" title="Advances to Round of 32">
-                     <input type="checkbox" class="advance-cb" data-group="${letter}"
-                       ${thirdAdvances ? 'checked' : ''}
-                       ${locked ? 'disabled' : ''}
-                       ${!thirdAdvances && thirdPlaceCount >= MAX_THIRD_ADVANCING ? 'disabled' : ''}>
-                     <span class="advance-label">Advance?</span>
-                   </label>`;
+                const has3rdData = advancing3rd.size > 0;
+                if (locked && has3rdData) {
+                  // Show advancement outcome instead of interactive checkbox
+                  const actuallyAdvanced = advancing3rd.has(team.id);
+                  if (thirdAdvances && actuallyAdvanced) {
+                    advanceHtml = '<span class="advance-result advance-result-correct">Advanced ✓</span>';
+                  } else if (thirdAdvances && !actuallyAdvanced) {
+                    advanceHtml = '<span class="advance-result advance-result-incorrect">Didn\'t advance ✗</span>';
+                  } else if (!thirdAdvances && actuallyAdvanced) {
+                    advanceHtml = '<span class="advance-result advance-result-missed">Advanced</span>';
+                  }
+                  // else: didn\'t pick, didn\'t advance — no indicator needed
+                } else {
+                  advanceHtml = `<label class="advance-toggle" title="Advances to Round of 32">
+                       <input type="checkbox" class="advance-cb" data-group="${letter}"
+                         ${thirdAdvances ? 'checked' : ''}
+                         ${locked ? 'disabled' : ''}
+                         ${!thirdAdvances && thirdPlaceCount >= MAX_THIRD_ADVANCING ? 'disabled' : ''}>
+                       <span class="advance-label">Advance?</span>
+                     </label>`;
+                }
               }
               let nameHtml;
               if (resultCls === 'result-incorrect' && actual[pos]) {
@@ -169,17 +183,11 @@ export function renderGroupRanking(gridEl, opts) {
   });
 }
 
-function getGroupTeamStatus(teamId, pickedPos, actualOrder, advancing3rd) {
+function getGroupTeamStatus(teamId, pickedPos, actualOrder) {
   if (pickedPos === 3) return ''; // 4th place: no coloring
   const actualPos = actualOrder.indexOf(teamId);
   if (actualPos === -1) return 'result-incorrect';
-  const has3rdData = advancing3rd.size > 0;
-  // Exact position match
-  if (actualPos === pickedPos) {
-    // 1st/2nd always advance; 3rd only counts if team actually advanced
-    if (pickedPos === 2 && has3rdData && !advancing3rd.has(teamId)) return 'result-incorrect';
-    return 'result-correct';
-  }
-  // Any non-exact match is just incorrect (no orange partial in group stage)
+  // Exact position match = correct, regardless of 3rd-place advancement (that's scored separately)
+  if (actualPos === pickedPos) return 'result-correct';
   return 'result-incorrect';
 }

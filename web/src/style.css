@@ -456,6 +456,17 @@ body {
   vertical-align: middle;
   letter-spacing: .02em;
 }
+.advance-result {
+  display: inline-block;
+  font-size: .65rem;
+  font-weight: 600;
+  margin-right: .4rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.advance-result-correct  { color: #4CAF50; }
+.advance-result-incorrect { color: #F44336; }
+.advance-result-missed   { color: var(--text-muted); font-style: italic; }
 .rank-badge {
   display: inline-block;
   width: 16px;

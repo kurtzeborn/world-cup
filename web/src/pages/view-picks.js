@@ -20,7 +20,7 @@ export async function renderViewPicksPage(container, userId) {
         <button data-tab="bracket">Bracket</button>
       </div>
       <div id="viewpicks-loading" style="padding:1rem;color:var(--text-muted)">Loading…</div>
-      <div class="groups-grid" id="view-picks-groups" style="display:none"></div>
+      <div class="groups-grid" id="view-picks-groups" style="display:none;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));max-width:660px"></div>
       <div id="bracket-content" style="display:none"></div>
     </div>
   `;

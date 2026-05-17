@@ -79,8 +79,8 @@ export function renderGroupRanking(gridEl, opts) {
               let nameHtml;
               if (resultCls === 'result-incorrect' && actual[pos]) {
                 const correctTeam = TEAMS_BY_ID[actual[pos]];
-                const correctHtml = correctTeam ? `${getFlag(correctTeam.flagCode)} ${correctTeam.name}` : actual[pos];
-                nameHtml = `<s style="color:var(--text-muted)">${fifaRank}${getFlag(team.flagCode)} ${team.name}</s> <span class="result-correct-name">${correctHtml}</span>`;
+                const correctHtml = correctTeam ? correctTeam.name : actual[pos];
+                nameHtml = `<s style="color:#F44336;font-weight:700">${fifaRank}${getFlag(team.flagCode)} ${team.name}</s> <span class="result-correct-name">${correctHtml}</span>`;
               } else {
                 nameHtml = `${fifaRank}${getFlag(team.flagCode)} ${team.name}`;
               }

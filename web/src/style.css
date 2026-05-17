@@ -403,7 +403,8 @@ body {
 /* Result comparison indicators (picks vs actual results) — font styling */
 .team-row.result-correct td:first-child { color: #4CAF50; font-weight: 700; }
 .team-row.result-partial td:first-child { color: #FF9800; font-weight: 700; }
-.team-row.result-incorrect td:first-child { color: #F44336; font-weight: 700; text-decoration: line-through; }
+.team-row.result-incorrect td:first-child { color: #F44336; }
+.result-correct-name { color: var(--text-color); font-weight: 600; text-decoration: none; }
 .flag { width: 20px; height: 15px; vertical-align: middle; margin-right: .3rem; border-radius: 2px; object-fit: cover; }
 .flag-tbd { display: inline-block; width: 20px; text-align: center; font-size: .75rem; color: var(--text-muted); }
 .fifa-rank {

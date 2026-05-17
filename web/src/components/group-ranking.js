@@ -1,6 +1,6 @@
 // components/group-ranking.js — Shared group ranking UI (user picks & admin results)
 
-import { TEAMS_BY_GROUP, GROUP_LETTERS } from '../data/teams.js';
+import { TEAMS_BY_GROUP, TEAMS_BY_ID, GROUP_LETTERS } from '../data/teams.js';
 import { getFlag, FIFA_RANKINGS_URL } from '../utils.js';
 import Sortable from 'sortablejs';
 
@@ -76,8 +76,16 @@ export function renderGroupRanking(gridEl, opts) {
                      <span class="advance-label">Advance?</span>
                    </label>`;
               }
+              let nameHtml;
+              if (resultCls === 'result-incorrect' && actual[pos]) {
+                const correctTeam = TEAMS_BY_ID[actual[pos]];
+                const correctHtml = correctTeam ? `${getFlag(correctTeam.flagCode)} ${correctTeam.name}` : actual[pos];
+                nameHtml = `<s style="color:var(--text-muted)">${fifaRank}${getFlag(team.flagCode)} ${team.name}</s> <span class="result-correct-name">${correctHtml}</span>`;
+              } else {
+                nameHtml = `${fifaRank}${getFlag(team.flagCode)} ${team.name}`;
+              }
               return `<tr class="team-row ${cls} ${resultCls}" data-group="${letter}" data-team="${team.id}" ${locked ? '' : 'title="Click to rank 1st\u20134th"'}>
-                <td>${fifaRank}${getFlag(team.flagCode)} ${team.name}</td>
+                <td>${nameHtml}</td>
                 <td class="rank-cell">${advanceHtml}${badge}</td>
               </tr>`;
             }).join('')}

@@ -126,8 +126,11 @@ export function renderBracketPage(container) {
 
 // ─── Render the full bracket content ────────────────────────
 
-export function renderBracketContent({ preserveScroll = false } = {}) {
-  const { picks, locked, results } = getState();
+export function renderBracketContent({ preserveScroll = false, picksData = null, lockedData = null, resultsData = null } = {}) {
+  const state = getState();
+  const picks = picksData ?? state.picks;
+  const locked = lockedData ?? state.locked;
+  const results = resultsData ?? state.results;
   const bp = picks?.bracketPicks ?? {};
   const gp = picks?.groupPicks ?? {};
   const tpa = picks?.thirdPlaceAdvancing ?? [];

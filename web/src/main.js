@@ -280,12 +280,6 @@ async function navigateTo(page) {
   // Handle view-picks/:userId route
   const viewPicksMatch = page.match(/^view-picks\/(.+)$/);
   if (viewPicksMatch) {
-    if (!getState().locked) {
-      // Before lock, redirect to leaderboard
-      history.replaceState(null, '', '/leaderboard');
-      navigateTo('leaderboard');
-      return;
-    }
     destroySlidePanel();
     const app = document.getElementById('app');
     app.innerHTML = '<div class="loading-screen"><p>Loading…</p></div>';

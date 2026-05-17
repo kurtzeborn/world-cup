@@ -403,6 +403,7 @@ body {
 /* Result comparison indicators — color/weight on the content elements, not the row/cell */
 .result-correct-team { color: #4CAF50; font-weight: 700; }
 .result-incorrect-pick { color: #F44336; font-weight: 700; text-decoration: line-through; }
+.result-partial-team { color: #FF9800; font-weight: 700; }
 .result-correct-name { color: var(--text-color); font-weight: normal; }
 .flag { width: 20px; height: 15px; vertical-align: middle; margin-right: .3rem; border-radius: 2px; object-fit: cover; }
 .flag-tbd { display: inline-block; width: 20px; text-align: center; font-size: .75rem; color: var(--text-muted); }
@@ -937,107 +938,9 @@ body {
 }
 
 /* ----------------------------------------
-   Dashboard Page
------------------------------------------*/
-.dashboard-wrapper {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.dashboard-groups {
-  flex: 1;
-  min-width: 300px;
-}
-
-.dashboard-bracket {
-  flex: 1;
-  min-width: 400px;
-  overflow-x: auto;
-}
-
-.dashboard-groups-list {
-  display: flex;
-  flex-direction: column;
-  gap: .75rem;
-}
-
-.dashboard-group-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: .75rem;
-  background: var(--surface);
-}
-
-.dashboard-group-title {
-  font-weight: bold;
-  font-size: .9rem;
-  margin-bottom: .5rem;
-  color: var(--text);
-}
-
-.dashboard-group-teams {
-  display: flex;
-  flex-direction: column;
-  gap: .35rem;
-  font-size: .85rem;
-}
-
-.dashboard-team-row {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  padding: .35rem;
-  border-radius: 3px;
-}
-
-.dashboard-team-row.correct {
-  background: rgba(76, 175, 80, 0.15);
-}
-
-.dashboard-team-row.incorrect {
-  background: rgba(244, 67, 54, 0.12);
-}
-
-.dashboard-picked-wrong {
-  color: var(--text-muted);
-  text-decoration: line-through;
-  flex-shrink: 0;
-}
-
-.dashboard-actual-correct {
-  font-weight: 600;
-}
-
-.dashboard-pos {
-  display: inline-block;
-  width: 20px;
-  text-align: center;
-  font-weight: bold;
-  color: var(--text-muted);
-}
-
-.dashboard-picked, .dashboard-actual {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dashboard-actual {
-  font-weight: 600;
-}
-
-/* ----------------------------------------
    Responsive
 -----------------------------------------*/
 @media (max-width: 900px) {
-  .dashboard-wrapper {
-    flex-direction: column;
-  }
-  .dashboard-bracket {
-    min-width: 100%;
-  }
   .admin-matches-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }

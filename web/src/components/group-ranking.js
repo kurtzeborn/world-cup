@@ -57,7 +57,7 @@ export function renderGroupRanking(gridEl, opts) {
               const pos = selected.indexOf(team.id);
               const posClasses = ['selected-1st','selected-2nd','selected-3rd','selected-4th'];
               const cls = pos >= 0 && pos < 4 ? posClasses[pos] : '';
-              const resultCls = locked && pos >= 0 && actual.length > 0 ? getGroupTeamStatus(team.id, pos, actual) : '';
+              const resultCls = locked && pos >= 0 && actual.length > 0 ? getGroupTeamStatus(team.id, pos, actual, advancing3rd) : '';
               const badge = pos >= 0
                 ? `<span class="rank-badge rank-${pos + 1}">${pos + 1}</span>`
                 : '';
@@ -97,6 +97,8 @@ export function renderGroupRanking(gridEl, opts) {
                 nameHtml = `<s class="result-incorrect-pick">${fifaRank}${getFlag(team.flagCode)} ${team.name}</s> <span class="result-correct-name">${correctHtml}</span>`;
               } else if (resultCls === 'result-correct') {
                 nameHtml = `<span class="result-correct-team">${fifaRank}${getFlag(team.flagCode)} ${team.name}</span>`;
+              } else if (resultCls === 'result-partial') {
+                nameHtml = `<span class="result-partial-team">${fifaRank}${getFlag(team.flagCode)} ${team.name}</span>`;
               } else {
                 nameHtml = `${fifaRank}${getFlag(team.flagCode)} ${team.name}`;
               }
@@ -183,11 +185,14 @@ export function renderGroupRanking(gridEl, opts) {
   });
 }
 
-function getGroupTeamStatus(teamId, pickedPos, actualOrder) {
+function getGroupTeamStatus(teamId, pickedPos, actualOrder, advancing3rd) {
   if (pickedPos === 3) return ''; // 4th place: no coloring
   const actualPos = actualOrder.indexOf(teamId);
   if (actualPos === -1) return 'result-incorrect';
-  // Exact position match = correct, regardless of 3rd-place advancement (that's scored separately)
   if (actualPos === pickedPos) return 'result-correct';
-  return 'result-incorrect';
+  // Wrong position — partial credit if the team actually advanced (§4.1)
+  const actuallyAdvanced =
+    actualPos === 0 || actualPos === 1 ||
+    (actualPos === 2 && advancing3rd.has(teamId));
+  return actuallyAdvanced ? 'result-partial' : 'result-incorrect';
 }

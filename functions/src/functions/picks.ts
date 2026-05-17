@@ -148,10 +148,14 @@ export async function getPicksForUserHandler(request: HttpRequest, _context: Inv
   try {
     requireAuth(request);
 
+    if (!isLocked()) {
+      return { status: 403, jsonBody: { error: 'Picks are not yet visible before the lock deadline' } };
+    }
+
     const targetUserId = request.params.userId;
     const entity = await getEntity<PicksEntity>('Picks', targetUserId, 'picks');
-    if (!entity || !entity.lockedAt) {
-      return { status: 403, jsonBody: { error: 'Picks are not yet visible before the lock deadline' } };
+    if (!entity || !entity.groupPicks) {
+      return { status: 404, jsonBody: { error: 'No picks found for this user' } };
     }
 
     // Include score data

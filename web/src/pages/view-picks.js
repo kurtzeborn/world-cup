@@ -66,6 +66,7 @@ export async function renderViewPicksPage(container, userId) {
 
     // Bracket tab (pre-rendered while hidden) — locked=true enables result coloring
     renderBracketContent({ picksData: picks, lockedData: true, resultsData: results });
+    document.getElementById('bracket-content').style.display = 'none';
   } catch (err) {
     const loading = document.getElementById('viewpicks-loading');
     if (loading) loading.innerHTML = `<p style="color:#f44336">Failed to load picks: ${escapeHtml(err.message)}</p>`;

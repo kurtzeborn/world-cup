@@ -8,6 +8,7 @@ import { renderGroupsPage } from './pages/groups.js';
 import { renderBracketPage, renderBracketContent } from './pages/bracket.js';
 import { renderLeaderboardPage } from './pages/leaderboard.js';
 import { renderLeaguesPage } from './pages/leagues.js';
+import { renderRulesPage } from './pages/rules.js';
 import { renderViewPicksPage } from './pages/view-picks.js';
 import { renderAdminPage } from './pages/admin.js';
 import { renderManageUsersPage } from './pages/manage-users.js';
@@ -334,6 +335,9 @@ async function navigateTo(page) {
       break;
     case 'leagues':
       await renderLeaguesPage(app);
+      break;
+    case 'rules':
+      renderRulesPage(app);
       break;
     default:
       // Handle leaderboard/:leagueId route

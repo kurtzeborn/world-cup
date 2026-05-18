@@ -22,18 +22,26 @@ app.http('getLeaderboard', {
   methods: ['GET'],
   authLevel: 'anonymous',
   route: 'leaderboard',
-  handler: async (_request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
-    const users = await listEntitiesByPartition<UserEntity>('Users', 'user');
+  handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
+    try {
+      requireAuth(request);
+      const users = await listEntitiesByPartition<UserEntity>('Users', 'user');
 
-    const leaderboard = users
-      .map((u) => userToLeaderboardEntry(u))
-      .sort((a, b) => b.totalPoints - a.totalPoints);
+      const leaderboard = users
+        .map((u) => userToLeaderboardEntry(u))
+        .sort((a, b) => b.totalPoints - a.totalPoints);
 
-    return {
-      status: 200,
-      headers: { 'Cache-Control': 'public, max-age=60' },
-      jsonBody: leaderboard,
-    };
+      return {
+        status: 200,
+        headers: { 'Cache-Control': 'no-store' },
+        jsonBody: leaderboard,
+      };
+    } catch (err) {
+      if (err instanceof AuthError) {
+        return { status: err.statusCode, jsonBody: { error: err.message } };
+      }
+      throw err;
+    }
   },
 });
 

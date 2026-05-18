@@ -21,8 +21,12 @@ app.http('createLeague', {
       const user = requireAuth(request);
       const body = await request.json() as { name?: string };
 
-      if (!body.name?.trim()) {
+      const leagueName = body.name?.trim();
+      if (!leagueName) {
         return { status: 400, jsonBody: { error: 'League name is required' } };
+      }
+      if (leagueName.length < 2 || leagueName.length > 50) {
+        return { status: 400, jsonBody: { error: 'League name must be 2–50 characters' } };
       }
 
       // Enforce creation limit
@@ -37,7 +41,7 @@ app.http('createLeague', {
       const now = new Date().toISOString();
 
       await upsertEntity<LeagueEntity>('Leagues', 'leagues', leagueId, {
-        name: body.name.trim(),
+        name: leagueName,
         joinCode,
         createdBy: user.userId,
         createdAt: now,
@@ -50,7 +54,7 @@ app.http('createLeague', {
 
       return {
         status: 201,
-        jsonBody: { leagueId, joinCode, name: body.name.trim(), createdAt: now },
+        jsonBody: { leagueId, joinCode, name: leagueName, createdAt: now },
       };
     } catch (err) {
       if (err instanceof AuthError) {
@@ -165,6 +169,9 @@ app.http('renameLeague', {
       const name = body.name?.trim();
       if (!name) {
         return { status: 400, jsonBody: { error: 'League name is required' } };
+      }
+      if (name.length < 2 || name.length > 50) {
+        return { status: 400, jsonBody: { error: 'League name must be 2–50 characters' } };
       }
 
       const league = await getEntity<LeagueEntity>('Leagues', 'leagues', leagueId);

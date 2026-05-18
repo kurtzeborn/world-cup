@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+import { timingSafeEqual } from 'crypto';
 import { upsertEntity } from '../shared/storage.js';
 import { PicksEntity, isLocked, getLockDeadline } from '../shared/types.js';
 
@@ -10,12 +11,20 @@ app.http('autoLock', {
   authLevel: 'anonymous',
   route: 'auto-lock',
   handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
-    // Validate bearer token
+    // Validate bearer token (constant-time comparison to prevent timing attacks)
     const authHeader = request.headers.get('authorization') ?? '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
     const expected = process.env.AUTO_LOCK_TOKEN;
 
-    if (!expected || !token || token !== expected) {
+    const tokenValid = !!expected && !!token && (() => {
+      try {
+        const expectedBuf = Buffer.from(expected, 'utf8');
+        const tokenBuf = Buffer.from(token, 'utf8');
+        return expectedBuf.length === tokenBuf.length && timingSafeEqual(expectedBuf, tokenBuf);
+      } catch { return false; }
+    })();
+
+    if (!tokenValid) {
       return { status: 401, jsonBody: { error: 'Unauthorized' } };
     }
 

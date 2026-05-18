@@ -83,6 +83,11 @@ app.http('savePicks', {
         bracketPicks?: Record<string, string>;
       };
 
+      // Reject oversized payloads (max 50KB serialized)
+      if (JSON.stringify(body).length > 50_000) {
+        return { status: 413, jsonBody: { error: 'Request body too large' } };
+      }
+
       const now = new Date().toISOString();
       await upsertEntity<PicksEntity>('Picks', user.userId, 'picks', {
         groupPicks: JSON.stringify(body.groupPicks ?? {}),

@@ -50,11 +50,9 @@ export function calculateScore(picks: PicksEntity, results: Results): Omit<Score
         if (actualPos === -1) continue;
 
         if (actualPos === pos) {
-          // Exact position match (positions 1st, 2nd, or 3rd)
-          // For 3rd place, only score if the team actually advanced to the knockout round
-          if (pos === 2) {
-            if (!advancing3rdSet.has(predictedTeam)) continue;
-          }
+          // Exact position match (positions 1st, 2nd, or 3rd) — always scores 3 pts
+          // 4th place is excluded above (pos === 3 continue); 3rd-place exact scores
+          // regardless of whether the team advanced to the knockout round.
           groupPoints += POINTS.GROUP_EXACT_POSITION;
           breakdown[`group_${groupId}_pos${pos + 1}_exact`] = POINTS.GROUP_EXACT_POSITION;
           continue;

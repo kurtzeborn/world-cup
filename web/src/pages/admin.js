@@ -11,7 +11,6 @@ import { renderGroupRanking } from '../components/group-ranking.js';
 let adminGroupPicks = {};
 let adminThirdPlace = [];
 let adminMatchResults = {};  // { matchId: winnerId }
-let adminMatchScores = {};   // { matchId: scoreString }
 
 export async function renderAdminPage(container) {
   container.innerHTML = `
@@ -30,7 +29,6 @@ export async function renderAdminPage(container) {
   adminGroupPicks = {};
   adminThirdPlace = [];
   adminMatchResults = {};
-  adminMatchScores = {};
 
   // Load existing results from backend
   try {
@@ -50,7 +48,6 @@ export async function renderAdminPage(container) {
         for (const [key, val] of Object.entries(existing.matchResults)) {
           const matchId = parseInt(key.replace('M', ''));
           adminMatchResults[matchId] = val.winner;
-          if (val.score) adminMatchScores[matchId] = val.score;
         }
       }
     }
@@ -158,15 +155,10 @@ function refreshAdminKnockoutGrid() {
       const sched = MATCH_SCHEDULE[matchId];
       const infoStr = sched ? `M${matchId} · ${sched.date} · ${sched.city}` : `M${matchId}`;
 
-      const scoreVal = adminMatchScores[matchId] ?? '';
       html += `<div class="admin-match-card">
         ${adminTeamRow(teamA, winner, matchId, infoStr, true)}
         <div class="bk-match-info">${infoStr}</div>
         ${adminTeamRow(teamB, winner, matchId, null, false)}
-        <div class="admin-score-row">
-          <input type="text" class="admin-score-input" data-match-id="${matchId}"
-            placeholder="e.g. 2-1" value="${scoreVal}" />
-        </div>
       </div>`;
     }
 
@@ -185,13 +177,6 @@ function refreshAdminKnockoutGrid() {
     });
   });
 
-  // Attach score input handlers
-  container.querySelectorAll('.admin-score-input').forEach(el => {
-    el.addEventListener('input', () => {
-      const matchId = parseInt(el.dataset.matchId);
-      adminMatchScores[matchId] = el.value;
-    });
-  });
 }
 
 function adminTeamRow(teamId, winner, matchId) {
@@ -313,8 +298,7 @@ async function submitResults() {
         if (!winner) continue;
         const [teamA, teamB] = mt[matchId] || [null, null];
         const loser = winner === teamA ? teamB : teamA;
-        const score = adminMatchScores[matchId]?.trim() || undefined;
-        matchResults[`M${matchId}`] = { winner, loser, ...(score && { score }) };
+        matchResults[`M${matchId}`] = { winner, loser };
       }
     }
     if (Object.keys(matchResults).length > 0) payload.matchResults = matchResults;
@@ -357,7 +341,6 @@ async function clearAllResults() {
     adminGroupPicks = {};
     adminThirdPlace = [];
     adminMatchResults = {};
-    adminMatchScores = {};
 
     // Re-render form
     const contentEl = document.getElementById('admin-content');

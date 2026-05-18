@@ -16,7 +16,7 @@ app.http('adminSetResults', {
       const body = await request.json() as {
         groupStandings?: Record<string, string[]>;
         advancing3rdPlace?: string[];
-        matchResults?: Record<string, { winner: string; loser: string; score?: string }>;
+        matchResults?: Record<string, { winner: string; loser: string }>;
       };
 
       if (!body.groupStandings && !body.advancing3rdPlace && !body.matchResults) {

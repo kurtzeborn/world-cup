@@ -150,8 +150,8 @@ export function renderRulesPage(container) {
         <p style="margin-bottom:.75rem">Once results are entered, your picks are color-coded:</p>
         <div style="display:flex;flex-direction:column;gap:.5rem;font-size:.95rem">
           <div><span style="color:#4CAF50;font-weight:700">● Green</span> — correct pick (exact position / right bracket slot)</div>
-          <div><span style="color:#FF9800;font-weight:700">● Orange</span> — partial credit (team advanced in that round but via a different path)</div>
-          <div><span style="color:#F44336;font-weight:700;text-decoration:line-through">● Red</span> — incorrect pick</div>
+          <div><span style="color:#FF9800;font-weight:700">● Orange</span> — team reached this round but at a different position than predicted</div>
+          <div><span style="color:#F44336;font-weight:700;text-decoration:line-through">● Red</span> — team did not reach this round at all</div>
           <div><span style="color:var(--text-muted);font-weight:700">● Gray</span> — result not yet available</div>
         </div>
       </div>

@@ -7,8 +7,9 @@ import { randomBytes } from 'crypto';
 const MAX_LEAGUES_PER_USER = 5;
 
 function generateJoinCode(): string {
-  // 6-character alphanumeric join code
-  return randomBytes(4).toString('base64url').toUpperCase().slice(0, 6);
+  // 6-character alphanumeric join code (A-Z, 0-9 only)
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  return Array.from(randomBytes(6)).map(b => chars[b % 36]).join('');
 }
 
 // POST /api/leagues — create a new league

@@ -65,26 +65,13 @@ export function renderGroupRanking(gridEl, opts) {
                 ? `<a href="${FIFA_RANKINGS_URL}" target="_blank" rel="noopener" class="fifa-rank" title="FIFA Ranking #${team.fifaRanking}">${team.fifaRanking}</a>`
                 : '';
               let advanceHtml = '';
-              if (pos === 0 || pos === 1) {
-                advanceHtml = '<span class="advance-auto">Advances</span>';
-              } else if (pos === 2) {
-                const has3rdData = advancing3rd.size > 0;
-                if (locked && has3rdData) {
-                  // Show advancement outcome instead of interactive checkbox
-                  const actuallyAdvanced = advancing3rd.has(team.id);
-                  if (thirdAdvances && actuallyAdvanced) {
-                    advanceHtml = '<span class="advance-result advance-result-correct">Advanced ✓</span>';
-                  } else if (thirdAdvances && !actuallyAdvanced) {
-                    advanceHtml = '<span class="advance-result advance-result-incorrect">No adv. ✗</span>';
-                  } else if (!thirdAdvances && actuallyAdvanced) {
-                    advanceHtml = '<span class="advance-result advance-result-missed">Advanced</span>';
-                  }
-                  // else: didn\'t pick, didn\'t advance — no indicator needed
-                } else {
+              if (!locked) {
+                if (pos === 0 || pos === 1) {
+                  advanceHtml = '<span class="advance-auto">Advances</span>';
+                } else if (pos === 2) {
                   advanceHtml = `<label class="advance-toggle" title="Advances to Round of 32">
                        <input type="checkbox" class="advance-cb" data-group="${letter}"
                          ${thirdAdvances ? 'checked' : ''}
-                         ${locked ? 'disabled' : ''}
                          ${!thirdAdvances && thirdPlaceCount >= MAX_THIRD_ADVANCING ? 'disabled' : ''}>
                        <span class="advance-label">Advance?</span>
                      </label>`;

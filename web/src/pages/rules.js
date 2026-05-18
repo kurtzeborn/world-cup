@@ -146,6 +146,17 @@ export function renderRulesPage(container) {
       </div>
 
       <div class="card" style="margin-bottom:1rem">
+        <h3 style="margin-top:0"><i class="fa-solid fa-palette" style="margin-right:.5rem;color:var(--accent)"></i>Color Guide</h3>
+        <p style="margin-bottom:.75rem">Once results are entered, your picks are color-coded:</p>
+        <div style="display:flex;flex-direction:column;gap:.5rem;font-size:.95rem">
+          <div><span style="color:#4CAF50;font-weight:700">● Green</span> — correct pick (exact position / right bracket slot)</div>
+          <div><span style="color:#FF9800;font-weight:700">● Orange</span> — partial credit (team advanced in that round but via a different path)</div>
+          <div><span style="color:#F44336;font-weight:700;text-decoration:line-through">● Red</span> — incorrect pick</div>
+          <div><span style="color:var(--text-muted);font-weight:700">● Gray</span> — result not yet available</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:1rem">
         <h3 style="margin-top:0"><i class="fa-solid fa-users" style="margin-right:.5rem;color:var(--accent)"></i>Leagues</h3>
         <p>You have <strong>one set of picks</strong> for the whole tournament — but you can compete in as many private leagues as you like with that same entry.</p>
         <ul style="margin:.5rem 0;padding-left:1.25rem;line-height:1.8">

@@ -404,7 +404,7 @@ body {
 .result-correct-team { color: #4CAF50; font-weight: 700; }
 .result-incorrect-pick { color: #F44336; font-weight: 700; text-decoration: line-through; }
 .result-partial-team { color: #FF9800; font-weight: 700; }
-.result-correct-name { color: var(--text-color); font-weight: normal; }
+.result-correct-name { color: var(--text-muted); font-size: .8em; font-weight: normal; }
 .flag { width: 20px; height: 15px; vertical-align: middle; margin-right: .3rem; border-radius: 2px; object-fit: cover; }
 .flag-tbd { display: inline-block; width: 20px; text-align: center; font-size: .75rem; color: var(--text-muted); }
 .fifa-rank {

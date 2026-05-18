@@ -97,6 +97,10 @@ export function renderGroupRanking(gridEl, opts) {
                 nameHtml = `<s class="result-incorrect-pick">${fifaRank}${getFlag(team.flagCode)} ${team.name}</s> <span class="result-correct-name">${correctHtml}</span>`;
               } else if (resultCls === 'result-correct') {
                 nameHtml = `<span class="result-correct-team">${fifaRank}${getFlag(team.flagCode)} ${team.name}</span>`;
+              } else if (resultCls === 'result-partial' && actual[pos]) {
+                const correctTeam = TEAMS_BY_ID[actual[pos]];
+                const correctHtml = correctTeam ? correctTeam.name : actual[pos];
+                nameHtml = `<span class="result-partial-team">${fifaRank}${getFlag(team.flagCode)} ${team.name}</span> <span class="result-correct-name">${correctHtml}</span>`;
               } else if (resultCls === 'result-partial') {
                 nameHtml = `<span class="result-partial-team">${fifaRank}${getFlag(team.flagCode)} ${team.name}</span>`;
               } else {

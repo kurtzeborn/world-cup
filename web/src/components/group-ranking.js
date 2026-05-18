@@ -35,7 +35,7 @@ function getDisplayOrder(teams, selected) {
  * @param {(thirdPlaceAdvancing: string[]) => void} opts.onThirdPlaceChange
  */
 export function renderGroupRanking(gridEl, opts) {
-  const { groupPicks, thirdPlaceAdvancing, locked, results, onGroupPickChange, onThirdPlaceChange } = opts;
+  const { groupPicks, thirdPlaceAdvancing, locked, results, hideFifaRank, onGroupPickChange, onThirdPlaceChange } = opts;
   const byGroup = getByGroup();
   const groupStandings = results?.groupStandings ?? {};
   const advancing3rd = new Set(results?.advancing3rdPlace ?? []);
@@ -61,7 +61,7 @@ export function renderGroupRanking(gridEl, opts) {
               const badge = pos >= 0
                 ? `<span class="rank-badge rank-${pos + 1}">${pos + 1}</span>`
                 : '';
-              const fifaRank = team.confirmed
+              const fifaRank = !hideFifaRank && team.confirmed
                 ? `<a href="${FIFA_RANKINGS_URL}" target="_blank" rel="noopener" class="fifa-rank" title="FIFA Ranking #${team.fifaRanking}">${team.fifaRanking}</a>`
                 : '';
               let advanceHtml = '';
@@ -75,7 +75,7 @@ export function renderGroupRanking(gridEl, opts) {
                   if (thirdAdvances && actuallyAdvanced) {
                     advanceHtml = '<span class="advance-result advance-result-correct">Advanced ✓</span>';
                   } else if (thirdAdvances && !actuallyAdvanced) {
-                    advanceHtml = '<span class="advance-result advance-result-incorrect">Didn\'t advance ✗</span>';
+                    advanceHtml = '<span class="advance-result advance-result-incorrect">No adv. ✗</span>';
                   } else if (!thirdAdvances && actuallyAdvanced) {
                     advanceHtml = '<span class="advance-result advance-result-missed">Advanced</span>';
                   }

@@ -60,6 +60,7 @@ export async function renderViewPicksPage(container, userId) {
       thirdPlaceAdvancing: picks.thirdPlaceAdvancing ?? [],
       locked: true,
       results,
+      hideFifaRank: true,
       onGroupPickChange: null,
       onThirdPlaceChange: null,
     });

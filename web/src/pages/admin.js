@@ -117,6 +117,7 @@ function refreshAdminGroupGrid() {
     groupPicks: adminGroupPicks,
     thirdPlaceAdvancing: adminThirdPlace,
     locked: false,
+    hideFifaRank: true,
     onGroupPickChange: (newGroupPicks) => {
       adminGroupPicks = newGroupPicks;
       refreshAdminGroupGrid();

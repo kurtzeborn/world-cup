@@ -52,6 +52,7 @@ export async function renderDashboardPage(container) {
       thirdPlaceAdvancing: picks.thirdPlaceAdvancing ?? [],
       locked: true,
       results,
+      hideFifaRank: true,
       onGroupPickChange: null,
       onThirdPlaceChange: null,
     });

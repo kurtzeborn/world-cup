@@ -2,7 +2,7 @@
 
 import { getState } from '../state.js';
 import { api } from '../api.js';
-import { escapeHtml } from '../utils.js';
+import { escapeHtml, getFlag } from '../utils.js';
 import { TEAMS_BY_ID } from '../data/teams.js';
 
 export async function renderLeaderboardPage(container, leagueId) {
@@ -52,7 +52,7 @@ function championFlagCell(teamId) {
   if (!teamId) return '<td class="lb-champion-cell">—</td>';
   const team = TEAMS_BY_ID[teamId];
   if (!team) return `<td class="lb-champion-cell"><span style="font-size:.75em;color:var(--text-muted)">${escapeHtml(teamId)}</span></td>`;
-  return `<td class="lb-champion-cell"><img src="https://flagcdn.com/20x15/${team.flagCode}.png" width="20" height="15" alt="${escapeHtml(team.name)}" title="${escapeHtml(team.name)}"></td>`;
+  return `<td class="lb-champion-cell" title="${escapeHtml(team.name)}">${getFlag(team.flagCode)}</td>`;
 }
 
 function renderTable(leaderboard, { leagueId, createdBy } = {}) {

@@ -95,7 +95,7 @@ function renderTable(leaderboard, { leagueId, createdBy } = {}) {
           } else if (isCreator) {
             kickCell = '<td></td>';
           }
-          const flagCell = locked ? championFlagCell(row.championPick, teams) : '<td class="lb-champion-cell lb-champion-hidden">—</td>';
+          const flagCell = championFlagCell(row.championPick, teams);
           return `
           <tr ${classes.length ? `class="${classes.join(' ')}"` : ''} ${locked ? `data-user-id="${row.userId}"` : ''}>
             <td class="rank-num">${i + 1}</td>

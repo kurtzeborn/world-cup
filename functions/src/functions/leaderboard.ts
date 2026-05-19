@@ -1,9 +1,9 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { getEntity, listEntitiesByPartition } from '../shared/storage.js';
-import { LeagueMemberEntity, LeagueEntity, UserEntity } from '../shared/types.js';
+import { LeagueMemberEntity, LeagueEntity, UserEntity, PicksEntity } from '../shared/types.js';
 import { requireAuth, AuthError } from '../shared/auth.js';
 
-function userToLeaderboardEntry(u: UserEntity & { rowKey?: string }, extra?: { joinedAt?: string }) {
+function userToLeaderboardEntry(u: UserEntity & { rowKey?: string }, championPick: string | null, extra?: { joinedAt?: string }) {
   return {
     userId: u.rowKey,
     displayName: u.displayName ?? u.rowKey,
@@ -13,8 +13,20 @@ function userToLeaderboardEntry(u: UserEntity & { rowKey?: string }, extra?: { j
     knockoutPoints: u.knockoutPoints ?? 0,
     maxPossiblePoints: u.maxPossiblePoints ?? 0,
     calculatedAt: u.calculatedAt ?? null,
+    championPick,
     ...extra,
   };
+}
+
+async function getChampionPick(userId: string): Promise<string | null> {
+  try {
+    const picks = await getEntity<PicksEntity>('Picks', userId, 'picks');
+    if (!picks?.bracketPicks) return null;
+    const bp = JSON.parse(picks.bracketPicks) as Record<string, string>;
+    return bp['F_104'] ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // GET /api/leaderboard — global leaderboard
@@ -27,8 +39,10 @@ app.http('getLeaderboard', {
       requireAuth(request);
       const users = await listEntitiesByPartition<UserEntity>('Users', 'user');
 
+      const championPicks = await Promise.all(users.map(u => getChampionPick(u.rowKey!)));
+
       const leaderboard = users
-        .map((u) => userToLeaderboardEntry(u))
+        .map((u, i) => userToLeaderboardEntry(u, championPicks[i]))
         .sort((a, b) => b.totalPoints - a.totalPoints);
 
       return {
@@ -60,9 +74,10 @@ app.http('getLeagueLeaderboard', {
         return { status: 404, jsonBody: { error: 'League not found or has no members' } };
       }
 
-      const [league, userRows] = await Promise.all([
+      const [league, userRows, championPicks] = await Promise.all([
         getEntity<LeagueEntity>('Leagues', 'leagues', leagueId),
         Promise.all(members.map((m) => getEntity<UserEntity>('Users', 'user', m.rowKey!))),
+        Promise.all(members.map((m) => getChampionPick(m.rowKey!))),
       ]);
 
       const leaderboard = members
@@ -70,6 +85,7 @@ app.http('getLeagueLeaderboard', {
           const u = userRows[i];
           return userToLeaderboardEntry(
             u ?? { rowKey: m.rowKey, displayName: m.rowKey! } as any,
+            championPicks[i],
             { joinedAt: m.joinedAt },
           );
         })

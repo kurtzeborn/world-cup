@@ -778,6 +778,16 @@ body {
 .rank-num { font-weight: 700; color: var(--text-muted); }
 .points-total { font-weight: 700; color: var(--green-dark); }
 .points-max { color: var(--text-muted); font-size: .85em; }
+.lb-champion-header { text-align: center; padding-left: .25rem; padding-right: .25rem; }
+.lb-champion-cell { text-align: center; padding-left: .25rem; padding-right: .25rem; vertical-align: middle; }
+.lb-champion-cell img { display: block; margin: 0 auto; }
+.lb-champion-hidden { color: var(--text-muted); font-size: .85em; }
+
+@media (max-width: 600px) {
+  .lb-hide-mobile { display: none; }
+  .leaderboard-table td,
+  .leaderboard-table th { padding: .35rem .5rem; }
+}
 
 /* View-picks score badge */
 .view-picks-score {

@@ -47,11 +47,18 @@ export async function renderLeaderboardPage(container, leagueId) {
   }
 }
 
+function championFlagCell(teamId, teams) {
+  if (!teamId) return '<td class="lb-champion-cell">—</td>';
+  const team = teams?.find(t => t.id === teamId);
+  if (!team) return `<td class="lb-champion-cell"><span style="font-size:.75em;color:var(--text-muted)">${escapeHtml(teamId)}</span></td>`;
+  return `<td class="lb-champion-cell"><img src="https://flagcdn.com/20x15/${team.flagCode}.png" width="20" height="15" alt="${escapeHtml(team.name)}" title="${escapeHtml(team.name)}"></td>`;
+}
+
 function renderTable(leaderboard, { leagueId, createdBy } = {}) {
   const el = document.getElementById('leaderboard-content');
   if (!el) return;
 
-  const { user, locked } = getState();
+  const { user, locked, teams } = getState();
   const isCreator = leagueId && user && createdBy === user.userId;
 
   if (!leaderboard.length) {
@@ -66,12 +73,13 @@ function renderTable(leaderboard, { leagueId, createdBy } = {}) {
       <thead>
         <tr>
           <th>#</th>
+          <th class="lb-champion-header" title="Predicted champion">🏆</th>
           <th>Player</th>
           <th>Total</th>
           <th>Max</th>
-          <th>Group</th>
-          <th>3rd Place</th>
-          <th>Knockout</th>
+          <th class="lb-hide-mobile">Group</th>
+          <th class="lb-hide-mobile">3rd Place</th>
+          <th class="lb-hide-mobile">Knockout</th>
           ${isCreator ? '<th></th>' : ''}
         </tr>
       </thead>
@@ -87,15 +95,17 @@ function renderTable(leaderboard, { leagueId, createdBy } = {}) {
           } else if (isCreator) {
             kickCell = '<td></td>';
           }
+          const flagCell = locked ? championFlagCell(row.championPick, teams) : '<td class="lb-champion-cell lb-champion-hidden">—</td>';
           return `
           <tr ${classes.length ? `class="${classes.join(' ')}"` : ''} ${locked ? `data-user-id="${row.userId}"` : ''}>
             <td class="rank-num">${i + 1}</td>
+            ${flagCell}
             <td>${name}</td>
             <td class="points-total">${row.totalPoints}</td>
             <td class="points-max">${row.maxPossiblePoints ?? '—'}</td>
-            <td>${row.groupPoints}</td>
-            <td>${row.thirdPlacePoints}</td>
-            <td>${row.knockoutPoints}</td>
+            <td class="lb-hide-mobile">${row.groupPoints}</td>
+            <td class="lb-hide-mobile">${row.thirdPlacePoints}</td>
+            <td class="lb-hide-mobile">${row.knockoutPoints}</td>
             ${kickCell}
           </tr>`;
         }).join('')}

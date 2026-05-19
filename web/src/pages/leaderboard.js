@@ -3,6 +3,7 @@
 import { getState } from '../state.js';
 import { api } from '../api.js';
 import { escapeHtml } from '../utils.js';
+import { TEAMS_BY_ID } from '../data/teams.js';
 
 export async function renderLeaderboardPage(container, leagueId) {
   const { user } = getState();
@@ -47,9 +48,9 @@ export async function renderLeaderboardPage(container, leagueId) {
   }
 }
 
-function championFlagCell(teamId, teams) {
+function championFlagCell(teamId) {
   if (!teamId) return '<td class="lb-champion-cell">—</td>';
-  const team = teams?.find(t => t.id === teamId);
+  const team = TEAMS_BY_ID[teamId];
   if (!team) return `<td class="lb-champion-cell"><span style="font-size:.75em;color:var(--text-muted)">${escapeHtml(teamId)}</span></td>`;
   return `<td class="lb-champion-cell"><img src="https://flagcdn.com/20x15/${team.flagCode}.png" width="20" height="15" alt="${escapeHtml(team.name)}" title="${escapeHtml(team.name)}"></td>`;
 }
@@ -58,7 +59,7 @@ function renderTable(leaderboard, { leagueId, createdBy } = {}) {
   const el = document.getElementById('leaderboard-content');
   if (!el) return;
 
-  const { user, locked, teams } = getState();
+  const { user, locked } = getState();
   const isCreator = leagueId && user && createdBy === user.userId;
 
   if (!leaderboard.length) {
@@ -95,7 +96,7 @@ function renderTable(leaderboard, { leagueId, createdBy } = {}) {
           } else if (isCreator) {
             kickCell = '<td></td>';
           }
-          const flagCell = championFlagCell(row.championPick, teams);
+          const flagCell = championFlagCell(row.championPick);
           return `
           <tr ${classes.length ? `class="${classes.join(' ')}"` : ''} ${locked ? `data-user-id="${row.userId}"` : ''}>
             <td class="rank-num">${i + 1}</td>

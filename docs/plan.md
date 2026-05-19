@@ -263,7 +263,8 @@ When viewing bracket, 120px of groups peeks from the left.
   - Other users enter the code to join
   - League leaderboard shows only league members
   - A user can be in multiple leagues
-- Leaderboard shows: Rank, Display Name, Total Points, Group Points, Knockout Points
+- Leaderboard shows: Rank, Predicted Champion (flag, visible after lock), Display Name, Total Points, Max Possible, Group Points, 3rd Place Points, Knockout Points
+- On mobile (≤600px), Group, 3rd Place, and Knockout columns are hidden; Rank, Champion flag, Name, Total, and Max remain visible
 - Click on a user to view their full picks (only after lock deadline)
 
 ### 3.12 Dashboard

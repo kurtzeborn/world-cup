@@ -778,7 +778,7 @@ body {
 .rank-num { font-weight: 700; color: var(--text-muted); }
 .points-total { font-weight: 700; color: var(--green-dark); }
 .points-max { color: var(--text-muted); font-size: .85em; }
-.lb-champion-header { text-align: center; padding-left: .25rem; padding-right: .25rem; }
+.leaderboard-table th.lb-champion-header { text-align: center; padding-left: .25rem; padding-right: .25rem; }
 .lb-champion-cell { text-align: center; padding-left: .25rem; padding-right: .25rem; vertical-align: middle; }
 .lb-champion-cell img { display: inline-block; vertical-align: middle; margin-right: 0; }
 .lb-champion-hidden { color: var(--text-muted); font-size: .85em; }

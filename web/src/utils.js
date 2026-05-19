@@ -10,8 +10,9 @@ export function escapeHtml(str) {
   );
 }
 
-export function getFlag(flagCode) {
+export function getFlag(flagCode, altText = '') {
   if (!flagCode || flagCode === 'xx') return '<span class="flag flag-tbd">?</span>';
-  return `<img class="flag" src="https://flagcdn.com/w40/${flagCode}.png" srcset="https://flagcdn.com/w80/${flagCode}.png 2x" alt="" width="20" height="15" loading="lazy">`;
+  const escapedAlt = altText.replace(/"/g, '&quot;');
+  return `<img class="flag" src="https://flagcdn.com/w40/${flagCode}.png" srcset="https://flagcdn.com/w80/${flagCode}.png 2x" alt="${escapedAlt}" width="20" height="15" loading="lazy">`;
 }
 

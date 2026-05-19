@@ -780,7 +780,7 @@ body {
 .points-max { color: var(--text-muted); font-size: .85em; }
 .lb-champion-header { text-align: center; padding-left: .25rem; padding-right: .25rem; }
 .lb-champion-cell { text-align: center; padding-left: .25rem; padding-right: .25rem; vertical-align: middle; }
-.lb-champion-cell img { display: block; margin: 0 auto; }
+.lb-champion-cell img { display: inline-block; vertical-align: middle; margin-right: 0; }
 .lb-champion-hidden { color: var(--text-muted); font-size: .85em; }
 
 @media (max-width: 600px) {

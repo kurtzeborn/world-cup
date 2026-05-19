@@ -52,7 +52,7 @@ function championFlagCell(teamId) {
   if (!teamId) return '<td class="lb-champion-cell">—</td>';
   const team = TEAMS_BY_ID[teamId];
   if (!team) return `<td class="lb-champion-cell"><span style="font-size:.75em;color:var(--text-muted)">${escapeHtml(teamId)}</span></td>`;
-  return `<td class="lb-champion-cell" title="${escapeHtml(team.name)}">${getFlag(team.flagCode)}</td>`;
+  return `<td class="lb-champion-cell" title="${escapeHtml(team.name)}">${getFlag(team.flagCode, team.name)}</td>`;
 }
 
 function renderTable(leaderboard, { leagueId, createdBy } = {}) {

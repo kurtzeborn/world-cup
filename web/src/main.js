@@ -137,8 +137,18 @@ async function init() {
         await syncToServer();
         clearLocalPicks();
       } else if (!serverEmpty && !localEmpty) {
-        // Both exist — ask the user which to keep
-        const choice = await showPicksConflictModal();
+        // Both exist — only ask if they differ
+        const localSerialized = JSON.stringify({
+          groupPicks: localPicks.groupPicks ?? {},
+          thirdPlaceAdvancing: localPicks.thirdPlaceAdvancing ?? [],
+          bracketPicks: localPicks.bracketPicks ?? {},
+        });
+        const serverSerialized = JSON.stringify({
+          groupPicks: serverPicks.groupPicks ?? {},
+          thirdPlaceAdvancing: serverPicks.thirdPlaceAdvancing ?? [],
+          bracketPicks: serverPicks.bracketPicks ?? {},
+        });
+        const choice = localSerialized === serverSerialized ? 'server' : await showPicksConflictModal();
         if (choice === 'local') {
           setState({ picks: localPicks, locked: serverPicks?.isLocked ?? false });
           await syncToServer();

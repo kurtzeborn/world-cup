@@ -12,6 +12,7 @@ import { renderRulesPage } from './pages/rules.js';
 import { renderViewPicksPage } from './pages/view-picks.js';
 import { renderAdminPage } from './pages/admin.js';
 import { renderManageUsersPage } from './pages/manage-users.js';
+import { renderManageLeaguesPage } from './pages/manage-leagues.js';
 import { renderDashboardPage } from './pages/dashboard.js';
 import { initAutoSave, loadLocalPicks, clearLocalPicks, syncToServer } from './autosave.js';
 import { initPicksStatus } from './picks-status.js';
@@ -314,7 +315,8 @@ async function navigateTo(page) {
 
   switch (page) {
     case 'admin':
-    case 'manage-users': {
+    case 'manage-users':
+    case 'manage-leagues': {
       // Check admin access
       const { user } = getState();
       if (!user?.isAdmin) {
@@ -322,6 +324,7 @@ async function navigateTo(page) {
         return;
       }
       if (page === 'manage-users') await renderManageUsersPage(app);
+      else if (page === 'manage-leagues') await renderManageLeaguesPage(app);
       else await renderAdminPage(app);
       break;
     }

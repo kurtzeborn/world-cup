@@ -54,6 +54,11 @@ export const api = {
   deleteUserPicks:   (uid)   => request('DELETE', `/api/manage/picks/${uid}`),
   adminToggleUserLock: (uid, locked) => request('POST', `/api/manage/picks/${uid}/lock`, { locked }),
 
+  // Admin — Leagues
+  getAdminLeagues:        ()          => request('GET',    '/api/manage/leagues'),
+  adminDeleteLeague:      (lid)       => request('DELETE', `/api/manage/leagues/${lid}`),
+  adminKickLeagueMember:  (lid, uid)  => request('DELETE', `/api/manage/leagues/${lid}/members/${uid}`),
+
   // Auth helpers
   loginUrl:  '/.auth/login/aad?post_login_redirect_uri=/',
   loginGoogleUrl: '/.auth/login/google?post_login_redirect_uri=/',

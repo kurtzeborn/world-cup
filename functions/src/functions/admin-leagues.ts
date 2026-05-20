@@ -17,12 +17,29 @@ app.http('adminGetLeagues', {
         const leagueId = league.rowKey!;
         const members = await listEntitiesByPartition<LeagueMemberEntity>('LeagueMembers', leagueId);
 
-        // Look up creator display name
+        // Look up creator display name and member display names in parallel
         let creatorName: string | undefined;
-        try {
-          const creator = await getEntity<UserEntity>('Users', 'user', league.createdBy);
-          creatorName = creator?.displayName;
-        } catch { /* ignore */ }
+        const memberDetails = await Promise.all(members.map(async (m) => {
+          try {
+            const userEntity = await getEntity<UserEntity>('Users', 'user', m.rowKey!);
+            if (m.rowKey === league.createdBy) creatorName = userEntity?.displayName;
+            return {
+              userId: m.rowKey!,
+              displayName: userEntity?.displayName,
+              joinedAt: m.joinedAt,
+            };
+          } catch {
+            return { userId: m.rowKey!, displayName: undefined, joinedAt: m.joinedAt };
+          }
+        }));
+
+        // If creator is not a member, look them up separately
+        if (!creatorName) {
+          try {
+            const creator = await getEntity<UserEntity>('Users', 'user', league.createdBy);
+            creatorName = creator?.displayName;
+          } catch { /* ignore */ }
+        }
 
         return {
           leagueId,
@@ -32,10 +49,7 @@ app.http('adminGetLeagues', {
           creatorName,
           createdAt: league.createdAt,
           memberCount: members.length,
-          members: members.map(m => ({
-            userId: m.rowKey!,
-            joinedAt: m.joinedAt,
-          })),
+          members: memberDetails,
         };
       }));
 

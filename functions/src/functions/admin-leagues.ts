@@ -26,10 +26,12 @@ app.http('adminGetLeagues', {
             return {
               userId: m.rowKey!,
               displayName: userEntity?.displayName,
+              email: userEntity?.email,
+              authProvider: userEntity?.authProvider,
               joinedAt: m.joinedAt,
             };
           } catch {
-            return { userId: m.rowKey!, displayName: undefined, joinedAt: m.joinedAt };
+            return { userId: m.rowKey!, displayName: undefined, email: undefined, authProvider: undefined, joinedAt: m.joinedAt };
           }
         }));
 

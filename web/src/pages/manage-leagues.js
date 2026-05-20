@@ -39,8 +39,11 @@ function renderLeagueList(el) {
   const html = allLeagues.map(league => {
     const memberRows = league.members.map(m => `
       <tr>
-        <td style="padding:.3rem .5rem; border-bottom:1px solid var(--border); font-size:.85rem">${escapeHtml(m.displayName || m.userId)}</td>
-        <td style="padding:.3rem .5rem; border-bottom:1px solid var(--border); font-size:.85rem; color:var(--text-muted)">${escapeHtml(m.userId)}</td>
+        <td style="padding:.3rem .5rem; border-bottom:1px solid var(--border); font-size:.85rem">${escapeHtml(m.displayName || m.email || '—')}</td>
+        <td style="padding:.3rem .5rem; border-bottom:1px solid var(--border); font-size:.85rem; color:var(--text-muted)">
+          ${m.email ? escapeHtml(m.email) : '—'}
+          ${m.authProvider === 'aad' ? '<span title="Microsoft" style="margin-left:.3rem">🪟</span>' : m.authProvider === 'google' ? '<span title="Google" style="margin-left:.3rem">🔵</span>' : ''}
+        </td>
         <td style="padding:.3rem .5rem; border-bottom:1px solid var(--border); font-size:.85rem; color:var(--text-muted); white-space:nowrap">${m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : '—'}</td>
         <td style="padding:.3rem .5rem; border-bottom:1px solid var(--border); text-align:right">
           <button class="btn btn-danger btn-sm kick-member-btn"
@@ -77,7 +80,7 @@ function renderLeagueList(el) {
             <table style="width:100%; border-collapse:collapse; margin-top:.4rem">
               <thead><tr>
                 <th style="text-align:left; padding:.3rem .5rem; font-size:.8rem; color:var(--text-muted); border-bottom:1px solid var(--border)">Name</th>
-                <th style="text-align:left; padding:.3rem .5rem; font-size:.8rem; color:var(--text-muted); border-bottom:1px solid var(--border)">User ID</th>
+                <th style="text-align:left; padding:.3rem .5rem; font-size:.8rem; color:var(--text-muted); border-bottom:1px solid var(--border)">Email</th>
                 <th style="text-align:left; padding:.3rem .5rem; font-size:.8rem; color:var(--text-muted); border-bottom:1px solid var(--border)">Joined</th>
                 <th></th>
               </tr></thead>

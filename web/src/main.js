@@ -108,8 +108,18 @@ async function init() {
 
   setState({ user: authUser, teams, results, locked: false });
 
+  // Track session state for expiry detection
+  if (authUser) {
+    localStorage.setItem('hadSession', '1');
+  }
+
   // Render auth header & countdown
   renderAuthHeader(authUser);
+
+  // If session expired (had a session before but now unauthenticated), prompt re-login
+  if (!authUser && localStorage.getItem('hadSession')) {
+    showSessionExpiredModal();
+  }
   startCountdown(kickoff);
 
   // If authenticated, fetch server profile for display name
@@ -216,11 +226,38 @@ function renderAuthHeader(user) {
       : user.identityProvider === 'aad'
         ? '<i class="fa-brands fa-microsoft auth-provider-icon" title="Signed in with Microsoft"></i>'
         : '';
-    el.innerHTML = `${providerIcon}<span class="auth-name">${escapeHtml(user.userDetails)}</span> · <a href="${api.logoutUrl}">Sign out</a>`;
+    el.innerHTML = `${providerIcon}<span class="auth-name">${escapeHtml(user.userDetails)}</span> · <a href="${api.logoutUrl}" id="sign-out-link">Sign out</a>`;
+    document.getElementById('sign-out-link')?.addEventListener('click', () => {
+      localStorage.removeItem('hadSession');
+    });
   } else {
     el.innerHTML = `<button class="auth-login-btn" id="show-login-modal">Sign in</button>`;
     document.getElementById('show-login-modal').addEventListener('click', showLoginModal);
   }
+}
+
+function showSessionExpiredModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box" style="max-width:400px">
+      <h3>Session Expired</h3>
+      <p style="color:var(--text-muted); font-size:.9rem; margin-bottom:1.5rem;">Your session has expired. Sign in again to save your picks.</p>
+      <div class="login-options">
+        <a href="${api.loginUrl}" class="btn btn-primary login-btn">
+          <i class="fa-brands fa-microsoft"></i> Sign in with Microsoft
+        </a>
+        <a href="${api.loginGoogleUrl}" class="btn btn-secondary login-btn">
+          <i class="fa-brands fa-google"></i> Sign in with Google
+        </a>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="btn-close-expired">Continue without signing in</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('btn-close-expired').addEventListener('click', () => overlay.remove());
 }
 
 function showLoginModal() {

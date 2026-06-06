@@ -124,6 +124,7 @@ After running all test scenarios, verify the following end-to-end:
 - [ ] Auto-save fires after changes (tab bar shows "✓ Saved")
 - [ ] Picks persist on page reload (localStorage + server roundtrip)
 - [ ] Completeness counter reaches 88/88 when all picks are complete
+- [ ] Completeness counter drops below 88/88 when a group pick change invalidates bracket picks (e.g., rank Group A so a different team is 1st, then verify the R32 Match 79 bracket slot is cleared and the counter decreases)
 
 ### Admin
 - [ ] Group results save without error (all 12 groups with valid 1st and 2nd)

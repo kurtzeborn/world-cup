@@ -3,6 +3,7 @@
 import { getState, setState } from '../state.js';
 import { renderGroupRanking } from '../components/group-ranking.js';
 import { checkAuthPrompt } from '../auth-prompt.js';
+import { cascadeClearBracketPicks } from './bracket.js';
 
 export function renderGroupsPage(container) {
   container.innerHTML = `
@@ -23,13 +24,23 @@ export function renderGroupsPage(container) {
       results: r,
       onGroupPickChange: (newGroupPicks) => {
         const { picks } = getState();
-        setState({ picks: { ...(picks ?? {}), groupPicks: newGroupPicks } });
+        const cleanedBracket = cascadeClearBracketPicks(
+          newGroupPicks,
+          picks?.thirdPlaceAdvancing ?? [],
+          picks?.bracketPicks ?? {}
+        );
+        setState({ picks: { ...(picks ?? {}), groupPicks: newGroupPicks, bracketPicks: cleanedBracket } });
         refresh();
         checkAuthPrompt();
       },
       onThirdPlaceChange: (newThirdPlace) => {
         const { picks } = getState();
-        setState({ picks: { ...(picks ?? {}), thirdPlaceAdvancing: newThirdPlace } });
+        const cleanedBracket = cascadeClearBracketPicks(
+          picks?.groupPicks ?? {},
+          newThirdPlace,
+          picks?.bracketPicks ?? {}
+        );
+        setState({ picks: { ...(picks ?? {}), thirdPlaceAdvancing: newThirdPlace, bracketPicks: cleanedBracket } });
         refresh();
         checkAuthPrompt();
       },

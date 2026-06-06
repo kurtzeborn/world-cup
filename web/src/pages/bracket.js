@@ -363,29 +363,37 @@ function slotDesc(slot) {
 
 // ─── State & persistence ────────────────────────────────────
 
-function onBracketPick(matchKey, winnerId) {
-  const { picks } = getState();
-  const gp = picks?.groupPicks ?? {};
-  const tpa = picks?.thirdPlaceAdvancing ?? [];
-  let bracketPicks = { ...(picks?.bracketPicks ?? {}), [matchKey]: winnerId };
-
-  // Cascade: clear any downstream picks that are now invalid.
-  // Loop because clearing one pick can invalidate further rounds.
+/**
+ * Remove any bracket picks that are no longer valid given the current group/3rd-place picks.
+ * Returns a new bracketPicks object with stale entries deleted.
+ */
+export function cascadeClearBracketPicks(groupPicks, thirdPlaceAdvancing, bracketPicks) {
+  let bp = { ...bracketPicks };
   let changed = true;
   while (changed) {
     changed = false;
-    const mt = resolveMatchTeams(gp, tpa, bracketPicks);
-    for (const key of Object.keys(bracketPicks)) {
+    const mt = resolveMatchTeams(groupPicks, thirdPlaceAdvancing, bp);
+    for (const key of Object.keys(bp)) {
       const matchId = parseInt(key.split('_')[1]);
       const [a, b] = mt[matchId] || [null, null];
-      const picked = bracketPicks[key];
+      const picked = bp[key];
       if (picked && picked !== a && picked !== b) {
-        delete bracketPicks[key];
+        delete bp[key];
         changed = true;
       }
     }
   }
+  return bp;
+}
 
+function onBracketPick(matchKey, winnerId) {
+  const { picks } = getState();
+  const gp = picks?.groupPicks ?? {};
+  const tpa = picks?.thirdPlaceAdvancing ?? [];
+  const bracketPicks = cascadeClearBracketPicks(
+    gp, tpa,
+    { ...(picks?.bracketPicks ?? {}), [matchKey]: winnerId }
+  );
   setState({ picks: { ...(picks ?? {}), bracketPicks } });
 }
 

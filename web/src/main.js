@@ -670,3 +670,26 @@ function updateCountdown(target) {
 }
 
 init().catch(console.error);
+
+// ─── Session expiry detection for long-lived tabs ───────────
+// When the user backgrounds the tab for hours and returns, the SWA session
+// may have expired while in-memory state still shows them as logged in.
+// Re-check /.auth/me on visibility restore (at most once per 5 minutes).
+let lastAuthCheck = 0;
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible') return;
+  const { user } = getState();
+  if (!user) return; // not logged in — nothing to check
+
+  const now = Date.now();
+  if (now - lastAuthCheck < 5 * 60 * 1000) return; // checked recently
+  lastAuthCheck = now;
+
+  const freshUser = await fetchAuthUser();
+  if (!freshUser) {
+    // Session expired while tab was in the background
+    setState({ user: null });
+    renderAuthHeader(null);
+    showSessionExpiredModal();
+  }
+});

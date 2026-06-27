@@ -278,16 +278,14 @@ async function submitResults() {
     }
     if (Object.keys(groupStandings).length > 0) payload.groupStandings = groupStandings;
 
-    // Convert 3rd-place group letters → team IDs (only if 8 are selected)
-    if (adminThirdPlace.length === 8) {
+    // Convert 3rd-place group letters → team IDs (save partial sets too)
+    if (adminThirdPlace.length > 0) {
       const advancing3rdPlace = [];
-      let valid = true;
       for (const letter of adminThirdPlace) {
         const thirdTeamId = groupStandings[letter]?.[2];
-        if (!thirdTeamId) { valid = false; break; }
-        advancing3rdPlace.push(thirdTeamId);
+        if (thirdTeamId) advancing3rdPlace.push(thirdTeamId);
       }
-      if (valid) payload.advancing3rdPlace = advancing3rdPlace;
+      if (advancing3rdPlace.length > 0) payload.advancing3rdPlace = advancing3rdPlace;
     }
 
     // Build match results — include only matches with a winner selected

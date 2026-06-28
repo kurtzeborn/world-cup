@@ -46,3 +46,6 @@ __queuestorage__/
 
 cookies*.txt
 temp_cookies*.txt
+
+# Migration backups (contain user picks)
+tools/backups/

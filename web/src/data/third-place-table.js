@@ -2,8 +2,10 @@
 // Source: https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_knockout_stage (Annex C)
 //
 // Key: sorted 8-char string of the 8 qualifying 3rd-place group letters
-// Value: [M74, M77, M79, M80, M82, M81, M85, M87]
-//   each element is the group letter whose 3rd-place team fills that match slot
+// Value order matches FIFA Annex C columns, which are ordered by group winner
+// (1A, 1B, 1D, 1E, 1G, 1I, 1K, 1L) → match slots [M79, M85, M81, M74, M82, M77, M87, M80]
+// Each element is the group letter whose 3rd-place team fills that match slot.
+// See THIRD_PLACE_SLOTS in bracket-structure.js for the slot ordering.
 
 export const THIRD_PLACE_TABLE = {
   "EFGHIJKL": ["E","J","I","F","H","G","L","K"],

@@ -108,8 +108,8 @@ The R32 matchups are predetermined by the draw. Group winners (1X), runners-up (
 | 80 | 1L (England) | 3rd from EHIJK |
 | 86 | 1J (Argentina) | 2H |
 | 88 | 2D | 2G |
-| 85 | 1K (Portugal) | 3rd from EFGIJ |
-| 87 | 1B (Canada) | 3rd from DEIJL |
+| 85 | 1B (Canada) | 3rd from EFGIJ |
+| 87 | 1K (Portugal) | 3rd from DEIJL |
 
 **Round of 16 matchups:**
 

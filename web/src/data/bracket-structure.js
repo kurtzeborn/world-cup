@@ -35,8 +35,8 @@ export const R32_MATCHES = [
   { match: 80, teamA: '1L', teamB: '3P_80' },   // ENG vs 3rd EHIJK
   { match: 86, teamA: '1J', teamB: '2H' },       // ARG vs 2H
   { match: 88, teamA: '2D', teamB: '2G' },
-  { match: 85, teamA: '1K', teamB: '3P_85' },   // POR vs 3rd EFGIJ
-  { match: 87, teamA: '1B', teamB: '3P_87' },   // CAN vs 3rd DEIJL
+  { match: 85, teamA: '1B', teamB: '3P_85' },   // 1B vs 3rd EFGIJ
+  { match: 87, teamA: '1K', teamB: '3P_87' },   // 1K vs 3rd DEIJL
 ];
 
 // R16 matchups
@@ -93,8 +93,9 @@ export function getMatchRound(matchNum) {
 }
 
 // 3rd-place slot → R32 match number mapping
-// These are the 8 slots in the R32 that go to 3rd-place teams
-export const THIRD_PLACE_SLOTS = [74, 77, 79, 80, 81, 82, 85, 87];
+// Order matches FIFA Annex C column order (by group winner: 1A,1B,1D,1E,1G,1I,1K,1L)
+// So index i in a THIRD_PLACE_TABLE value corresponds to THIRD_PLACE_SLOTS[i]
+export const THIRD_PLACE_SLOTS = [79, 85, 81, 74, 82, 77, 87, 80];
 
 // Full bracket with id and round fields for easy filtering/lookup by bracket.js
 export const BRACKET_STRUCTURE = ALL_MATCHES.map(m => ({

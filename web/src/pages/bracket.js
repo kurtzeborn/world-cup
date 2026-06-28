@@ -139,7 +139,9 @@ export function renderBracketContent({ preserveScroll = false, picksData = null,
   const elim = locked ? getEliminatedTeams(results) : new Set();
   const amt = locked ? resolveActualTeams(results) : {};
 
-  // Build a per-round set of teams that participated (played) in that round
+  // Build a per-round set of teams that participated in that round.
+  // For R32, seed from actual group standings + advancing 3rd-place teams so coloring works before any R32 matches are played.
+  // For later rounds, populated as match results come in.
   const participantsByRound = {};
   if (locked) {
     for (const [matchKey, res] of Object.entries(mr)) {
@@ -150,6 +152,14 @@ export function renderBracketContent({ preserveScroll = false, picksData = null,
         if (res.winner) participantsByRound[match.round].add(res.winner);
         if (res.loser) participantsByRound[match.round].add(res.loser);
       }
+    }
+    if (results?.groupStandings) {
+      if (!participantsByRound['R32']) participantsByRound['R32'] = new Set();
+      for (const teams of Object.values(results.groupStandings)) {
+        if (teams[0]) participantsByRound['R32'].add(teams[0]);
+        if (teams[1]) participantsByRound['R32'].add(teams[1]);
+      }
+      for (const t of (results.advancing3rdPlace ?? [])) participantsByRound['R32'].add(t);
     }
   }
 
@@ -311,21 +321,23 @@ function teamRow(resolved, slotStr, picked, canPick, pickKey, result, elim, actu
     if (resolved === actualWinner) {
       cls.push('correct');
     } else if (resolved) {
-      // Team was predicted here but didn't win this match
-      // Orange if they played in this round at all (different slot); red if they weren't here at all
-      cls.push(participantsByRound?.[round]?.has(resolved) ? 'partial' : 'incorrect');
+      if (elim.has(resolved)) {
+        cls.push('eliminated');
+      } else {
+        // Team was predicted here but didn't win this match.
+        // Orange if they made this round (in a different slot); red if they didn't.
+        cls.push(participantsByRound?.[round]?.has(resolved) ? 'partial' : 'incorrect');
+      }
     }
-  } else if (resolved && actualTeam) {
-    // No match result yet — compare slot prediction against actual
+  } else if (resolved) {
+    // No match result yet — classify based on whether the team is alive and in the right slot
     if (elim.has(resolved)) {
       cls.push('eliminated');
-    } else if (resolved === actualTeam) {
+    } else if (actualTeam && resolved === actualTeam) {
       cls.push('correct');
-    } else if (isPicked) {
+    } else if (participantsByRound?.[round]?.has(resolved)) {
       cls.push('partial');
     }
-  } else if (isPicked && elim.has(resolved)) {
-    cls.push('eliminated');
   }
   const attrs = canPick && resolved
     ? `data-pick-team="${resolved}" data-pick-key="${pickKey}"`

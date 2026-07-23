@@ -122,7 +122,7 @@ export function calculateScore(picks: PicksEntity, results: Results): Omit<Score
         knockoutPoints += roundPoints.full;
         breakdown[`ko_${slot}_full`] = roundPoints.full;
       } else if (roundMap[predictedWinner]?.has(getRoundForSlot(roundName))) {
-        // Partial credit: team won a match in this round, but different slot
+        // Partial credit: team played a match in this round (won or lost), but different slot
         knockoutPoints += roundPoints.partial;
         breakdown[`ko_${slot}_partial`] = roundPoints.partial;
       }
@@ -140,7 +140,9 @@ export function calculateScore(picks: PicksEntity, results: Results): Omit<Score
   };
 }
 
-/** Build a map of team → set of rounds they won in */
+/** Build a map of team → set of rounds they played in (as winner or loser).
+ *  A team "played" a round if they participated in a match of that round —
+ *  used for partial-credit scoring. */
 export function buildRoundMap(matchResults: Record<string, { winner: string; loser: string }>): Record<string, Set<string>> {
   const roundMap: Record<string, Set<string>> = {};
 
@@ -148,11 +150,11 @@ export function buildRoundMap(matchResults: Record<string, { winner: string; los
     const round = getRoundFromMatchKey(matchKey);
     if (!round) continue;
 
-    const team = result.winner;
-    if (!roundMap[team]) {
-      roundMap[team] = new Set();
+    for (const team of [result.winner, result.loser]) {
+      if (!team) continue;
+      if (!roundMap[team]) roundMap[team] = new Set();
+      roundMap[team].add(round);
     }
-    roundMap[team].add(round);
   }
 
   return roundMap;

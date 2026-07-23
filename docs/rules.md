@@ -143,10 +143,10 @@ The knockout bracket has 32 matches total across 6 rounds. Points increase with 
 - The team you predicted to win a specific match **did win that match** in exactly the bracket position you predicted. In other words, the team advanced through the correct path (the correct sequence of matchups) to arrive at the slot you picked them for, and they won.
 
 **Partial credit** is awarded when:
-- A team you predicted to win **in a given round** did win a match **in that same round**, but in a **different bracket position** than you predicted.
+- A team you predicted to win **in a given round** played a match **in that same round** (whether they won or lost), but in a **different bracket position** than you predicted.
 - In other words: the team is correct, the round is correct, but the path is different.
 
-> **Key principle:** Partial credit is based solely on whether the team advanced in the correct round, **not** whether the matchup was correct. If you picked Team X to win in the quarterfinals and Team X does win a quarterfinal match — but in a different quarter of the bracket than you predicted — you receive partial credit.
+> **Key principle:** Partial credit is based solely on whether the team reached the correct round, **not** whether the matchup was correct or whether the team advanced further. If you picked Team X to win in the quarterfinals and Team X reached the QF — whether they won or lost that QF match — you receive partial credit as long as Team X's QF match was in a different quarter of the bracket than you predicted.
 
 This is intentionally the most generous interpretation. Because 3rd-place placement can cause cascading bracket differences, strict matchup-based scoring would unfairly punish users who correctly predicted a team's tournament run but had a slightly different group-stage prediction.
 
@@ -159,18 +159,18 @@ This is intentionally the most generous interpretation. Because 3rd-place placem
 
 **Example 2 — Partial credit:**
 - You predicted Brazil beats Germany in QF Match 93
-- Brazil actually beats France in QF Match 94 (different quarter of bracket)
-- → **4 points** (partial QF credit — Brazil won a QF, just not the one you predicted)
+- Brazil actually played QF Match 94 (different quarter of bracket), whether they won or lost
+- → **4 points** (partial QF credit — Brazil reached QF, just not the one you predicted)
 
 **Example 3 — No credit:**
 - You predicted Brazil beats Germany in QF Match 93
-- Brazil was eliminated in the Round of 16
+- Brazil was eliminated in the Round of 16 (never reached QF)
 - → **0 points**
 
 **Example 4 — Partial credit, cascading difference:**
 - You predicted Argentina to win R32 Match 74, then win R16 Match 89
-- Due to different 3rd-place outcomes, Argentina actually played (and won) R32 Match 75, then won R16 Match 90
-- → **1 point** for R32 (partial — Argentina won R32, different match) + **2 points** for R16 (partial — Argentina won R16, different match) = **3 points total**
+- Due to different 3rd-place outcomes, Argentina actually played R32 Match 75 and R16 Match 90 (different slots)
+- → **1 point** for R32 (partial — Argentina reached R32, different match) + **2 points** for R16 (partial — Argentina reached R16, different match) = **3 points total**
 
 ---
 

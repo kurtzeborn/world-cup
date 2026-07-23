@@ -296,6 +296,23 @@ describe('calculateScore — Knockout Stage', () => {
     expect(score.knockoutPoints).toBe(0);
   });
 
+  // T9c: Team reached the round but lost — still gets partial credit for a wrong-slot pick in that round
+  it('T9c — team lost in the predicted round in a different slot: partial credit', () => {
+    const picks = makePicks({
+      // R16 pick: user picked COL to win R16 slot M93; actually COL played R16 in M96 but lost
+      bracketPicks: { R16_93: 'COL' },
+    });
+    const results = makeResults({
+      matchResults: {
+        M93: { winner: 'ESP', loser: 'POR' }, // R16_93 won by ESP
+        M96: { winner: 'SUI', loser: 'COL' }, // COL played R16 (as loser) in M96
+      },
+    });
+
+    const score = calculateScore(picks, results);
+    expect(score.knockoutPoints).toBe(2); // R16 partial: COL reached R16, wrong slot
+  });
+
   it('T9b — picking wrong team and the predicted team never entered the round: 0 pts', () => {
     const picks = makePicks({
       bracketPicks: { F_104: 'NED' }, // user picks NED to win Final

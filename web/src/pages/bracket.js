@@ -321,22 +321,18 @@ function teamRow(resolved, slotStr, picked, canPick, pickKey, result, elim, actu
     if (resolved === actualWinner) {
       cls.push('correct');
     } else if (resolved) {
-      if (elim.has(resolved)) {
-        cls.push('eliminated');
-      } else {
-        // Team was predicted here but didn't win this match.
-        // Orange if they made this round (in a different slot); red if they didn't.
-        cls.push(participantsByRound?.[round]?.has(resolved) ? 'partial' : 'incorrect');
-      }
+      // Team was predicted here but didn't win this match.
+      // Orange if they played this round (won or lost, different slot); red if they didn't reach this round at all.
+      cls.push(participantsByRound?.[round]?.has(resolved) ? 'partial' : 'incorrect');
     }
   } else if (resolved) {
     // No match result yet — classify based on whether the team is alive and in the right slot
-    if (elim.has(resolved)) {
-      cls.push('eliminated');
-    } else if (actualTeam && resolved === actualTeam) {
+    if (actualTeam && resolved === actualTeam) {
       cls.push('correct');
     } else if (participantsByRound?.[round]?.has(resolved)) {
       cls.push('partial');
+    } else if (elim.has(resolved)) {
+      cls.push('eliminated');
     }
   }
   const attrs = canPick && resolved

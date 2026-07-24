@@ -94,9 +94,16 @@ body {
 }
 .header-auth { font-size: .8rem; display: flex; align-items: center; gap: .5rem; min-width: 0; }
 .header-auth a { color: var(--gold); white-space: nowrap; }
-#auth-status { display: flex; align-items: center; gap: .25rem; min-width: 0; white-space: nowrap; }
-#auth-status .auth-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-#auth-status .auth-provider-icon { opacity: .8; flex-shrink: 0; }
+.archive-badge {
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  padding: .2rem .5rem;
+  border: 1px solid rgba(255,255,255,.4);
+  border-radius: 4px;
+  opacity: .85;
+}
 
 /* Countdown timer (inside nav row, pushed right by space-between) */
 .header-countdown {

@@ -25,18 +25,10 @@ vi.mock('@azure/functions', async (importOriginal) => {
   };
 });
 
-import { lockPicksHandler, getPicksForUserHandler } from '../functions/picks.js';
-import { getEntity, upsertEntity } from '../shared/storage.js';
+import { getPicksForUserHandler } from '../functions/picks.js';
+import { getEntity } from '../shared/storage.js';
 
 const mockGetEntity = vi.mocked(getEntity);
-const mockUpsertEntity = vi.mocked(upsertEntity);
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function makeAuthHeader(userId: string, roles: string[] = ['authenticated']): string {
-  const principal = { userId, userDetails: `${userId}@test.com`, identityProvider: 'aad', userRoles: roles };
-  return Buffer.from(JSON.stringify(principal)).toString('base64');
-}
 
 function makeRequest(method: string, url: string, options: {
   headers?: Record<string, string>;
@@ -82,73 +74,9 @@ function makeStoredPicksEntity(overrides: Partial<StoredPicksEntity> = {}): Stor
   } as StoredPicksEntity;
 }
 
-// ─── Lock Handler Tests ──────────────────────────────────────────────────────
+// ─── Public archive view tests ──────────────────────────────────────────────
 
-describe('lockPicksHandler', () => {
-
-  beforeEach(() => {
-    vi.resetAllMocks();
-    // Default: time is before lock deadline (not locked)
-    vi.stubEnv('LOCK_DEADLINE', '2030-01-01T00:00:00Z');
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  it('returns 401 when not authenticated', async () => {
-    const req = makeRequest('POST', 'http://localhost/api/picks/lock');
-    const res = await lockPicksHandler(req, mockCtx);
-    expect(res.status).toBe(401);
-  });
-
-  it('returns 400 when user has no picks saved', async () => {
-    mockGetEntity.mockResolvedValueOnce(null);
-
-    const req = makeRequest('POST', 'http://localhost/api/picks/lock', {
-      headers: { 'x-ms-client-principal': makeAuthHeader('user1') },
-    });
-    const res = await lockPicksHandler(req, mockCtx);
-    expect(res.status).toBe(400);
-    expect((res.jsonBody as { error: string }).error).toContain('No picks to lock');
-  });
-
-  it('returns 200 idempotently when picks already locked', async () => {
-    const alreadyLocked = makeStoredPicksEntity({ lockedAt: '2026-03-05T00:00:00Z' });
-    mockGetEntity.mockResolvedValueOnce(alreadyLocked);
-
-    const req = makeRequest('POST', 'http://localhost/api/picks/lock', {
-      headers: { 'x-ms-client-principal': makeAuthHeader('user1') },
-    });
-    const res = await lockPicksHandler(req, mockCtx);
-    expect(res.status).toBe(200);
-    expect((res.jsonBody as { lockedAt: string }).lockedAt).toBe('2026-03-05T00:00:00Z');
-    expect(mockUpsertEntity).not.toHaveBeenCalled();
-  });
-
-  it('returns 200 and calls upsert when picks exist (partial picks allowed)', async () => {
-    const complete = makeStoredPicksEntity();
-    mockGetEntity.mockResolvedValueOnce(complete);
-    mockUpsertEntity.mockResolvedValueOnce(undefined as never);
-
-    const req = makeRequest('POST', 'http://localhost/api/picks/lock', {
-      headers: { 'x-ms-client-principal': makeAuthHeader('user1') },
-    });
-    const res = await lockPicksHandler(req, mockCtx);
-    expect(res.status).toBe(200);
-    const body = res.jsonBody as { lockedAt: string };
-    expect(body.lockedAt).toBeTruthy();
-    expect(mockUpsertEntity).toHaveBeenCalledOnce();
-    // Verify lockedAt was written
-    const upsertArgs = mockUpsertEntity.mock.calls[0][3] as { lockedAt: string };
-    expect(upsertArgs.lockedAt).toBeTruthy();
-  });
-
-});
-
-// ─── Visibility Gate Tests (T12) ─────────────────────────────────────────────
-
-describe('getPicksForUserHandler — visibility gate', () => {
+describe('getPicksForUserHandler — public archive', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -158,11 +86,12 @@ describe('getPicksForUserHandler — visibility gate', () => {
     vi.unstubAllEnvs();
   });
 
-  it('T12a — returns 403 when lock deadline has NOT passed', async () => {
+  it('returns 403 when lock deadline has NOT passed and picks are not locked', async () => {
     vi.stubEnv('LOCK_DEADLINE', '2030-01-01T00:00:00Z'); // far future
 
+    mockGetEntity.mockResolvedValueOnce(makeStoredPicksEntity({ lockedAt: null }));
+
     const req = makeRequest('GET', 'http://localhost/api/picks/targetUser', {
-      headers: { 'x-ms-client-principal': makeAuthHeader('viewer1') },
       params: { userId: 'targetUser' },
     });
     const res = await getPicksForUserHandler(req, mockCtx);
@@ -170,16 +99,16 @@ describe('getPicksForUserHandler — visibility gate', () => {
     expect((res.jsonBody as { error: string }).error).toContain('not yet visible');
   });
 
-  it('T12b — returns 200 with picks when lock deadline HAS passed and picks are locked', async () => {
+  it('returns 200 with picks when lock deadline HAS passed and picks are locked', async () => {
     vi.stubEnv('LOCK_DEADLINE', '2020-01-01T00:00:00Z'); // past
 
     const lockedPicks = makeStoredPicksEntity({
       lockedAt: '2026-06-10T12:00:00Z',
     });
     mockGetEntity.mockResolvedValueOnce(lockedPicks);
+    mockGetEntity.mockResolvedValueOnce(null); // no user record
 
     const req = makeRequest('GET', 'http://localhost/api/picks/targetUser', {
-      headers: { 'x-ms-client-principal': makeAuthHeader('viewer1') },
       params: { userId: 'targetUser' },
     });
     const res = await getPicksForUserHandler(req, mockCtx);
@@ -188,27 +117,29 @@ describe('getPicksForUserHandler — visibility gate', () => {
     expect(body.lockedAt).toBe('2026-06-10T12:00:00Z');
   });
 
-  it('returns 404 when lock deadline passed but target user has no locked picks', async () => {
-    vi.stubEnv('LOCK_DEADLINE', '2020-01-01T00:00:00Z'); // past
+  it('returns 404 when lock deadline passed but target user has no picks', async () => {
+    vi.stubEnv('LOCK_DEADLINE', '2020-01-01T00:00:00Z');
 
-    mockGetEntity.mockResolvedValueOnce(null); // no picks for target user
+    mockGetEntity.mockResolvedValueOnce(null);
 
     const req = makeRequest('GET', 'http://localhost/api/picks/unknownUser', {
-      headers: { 'x-ms-client-principal': makeAuthHeader('viewer1') },
       params: { userId: 'unknownUser' },
     });
     const res = await getPicksForUserHandler(req, mockCtx);
     expect(res.status).toBe(404);
   });
 
-  it('returns 401 when viewer is not authenticated', async () => {
-    vi.stubEnv('LOCK_DEADLINE', '2020-01-01T00:00:00Z'); // past
+  it('does not require any authentication header', async () => {
+    vi.stubEnv('LOCK_DEADLINE', '2020-01-01T00:00:00Z');
+
+    mockGetEntity.mockResolvedValueOnce(makeStoredPicksEntity({ lockedAt: '2026-06-10T12:00:00Z' }));
+    mockGetEntity.mockResolvedValueOnce(null);
 
     const req = makeRequest('GET', 'http://localhost/api/picks/targetUser', {
       params: { userId: 'targetUser' },
     });
     const res = await getPicksForUserHandler(req, mockCtx);
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(200);
   });
 
 });

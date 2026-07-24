@@ -1,33 +1,11 @@
-// main.js — app entry point
+// main.js — archive-mode app entry point
+// The tournament is over. The site is now a read-only, anonymous archive.
 
-import { fetchAuthUser } from './auth.js';
 import { api } from './api.js';
-import { getState, setState, subscribe } from './state.js';
-import { escapeHtml } from './utils.js';
-import { renderGroupsPage } from './pages/groups.js';
-import { renderBracketPage, renderBracketContent } from './pages/bracket.js';
+import { setState } from './state.js';
 import { renderLeaderboardPage } from './pages/leaderboard.js';
-import { renderLeaguesPage } from './pages/leagues.js';
 import { renderRulesPage } from './pages/rules.js';
 import { renderViewPicksPage } from './pages/view-picks.js';
-import { renderAdminPage } from './pages/admin.js';
-import { renderManageUsersPage } from './pages/manage-users.js';
-import { renderManageLeaguesPage } from './pages/manage-leagues.js';
-import { renderDashboardPage } from './pages/dashboard.js';
-import { initAutoSave, loadLocalPicks, clearLocalPicks, syncToServer } from './autosave.js';
-import { initPicksStatus } from './picks-status.js';
-
-const KICKOFF = '2026-06-11T19:00:00Z'; // June 11 2026 1pm MDT (UTC-6) — countdown target
-
-// ─── Slide Panel (Groups ↔ Bracket transition) ─────────────
-const PEEK_WIDTH = 180;        // px of bracket visible while on groups page
-const PEEK_LEFT = 120;         // px of groups visible when on bracket page
-const PANEL_GAP = 24;          // px gap between groups and bracket panels
-const GROUPS_MAX_W = 340;      // max width for groups panel (1-col cards)
-let sliderActive = false;
-let currentSlide = 'groups';
-let unsubBracketSync = null;
-let savedScrollY = { groups: 0, bracket: 0 };
 
 // --- Dark Mode ---
 function initTheme() {
@@ -36,7 +14,6 @@ function initTheme() {
   const theme = stored || (prefersDark ? 'dark' : 'light');
   applyTheme(theme);
 
-  // Listen for system preference changes when no user override
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
     if (!localStorage.getItem('theme')) applyTheme(e.matches ? 'dark' : 'light');
   });
@@ -59,229 +36,20 @@ function applyTheme(theme) {
   }
 }
 
-/** Check if a picks object has any meaningful data. */
-function picksAreEmpty(picks) {
-  if (!picks) return true;
-  const hasGroups = Object.keys(picks.groupPicks ?? {}).length > 0;
-  const hasThird = (picks.thirdPlaceAdvancing ?? []).length > 0;
-  const hasBracket = Object.keys(picks.bracketPicks ?? {}).length > 0;
-  return !hasGroups && !hasThird && !hasBracket;
-}
-
-/** Show a modal when local and server picks conflict. Returns 'local' or 'server'. */
-function showPicksConflictModal() {
-  return new Promise(resolve => {
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.innerHTML = `
-      <div class="modal-box">
-        <h3>Picks Found</h3>
-        <p>You have saved picks on your account, but you also made picks before signing in. Which would you like to keep?</p>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" id="btn-keep-server">Use Saved Picks</button>
-          <button class="btn btn-primary" id="btn-keep-local">Use Current Picks</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    document.getElementById('btn-keep-server').addEventListener('click', () => {
-      overlay.remove();
-      resolve('server');
-    });
-    document.getElementById('btn-keep-local').addEventListener('click', () => {
-      overlay.remove();
-      resolve('local');
-    });
-  });
-}
-
 async function init() {
   initTheme();
-  // Load auth + teams + results in parallel
-  const [authUser, teams, results] = await Promise.all([
-    fetchAuthUser(),
+
+  // Load teams + results (both public in archive mode)
+  const [teams, results] = await Promise.all([
     api.getTeams().catch(() => []),
     api.getResults().catch(() => ({})),
   ]);
 
-  const kickoff = new Date(KICKOFF);
+  setState({ user: null, teams, results, locked: true });
 
-  setState({ user: authUser, teams, results, locked: false });
-
-  // Track session state for expiry detection
-  if (authUser) {
-    localStorage.setItem('hadSession', '1');
-  }
-
-  // Render auth header & countdown
-  renderAuthHeader(authUser);
-
-  // If session expired (had a session before but now unauthenticated), prompt re-login
-  if (!authUser && localStorage.getItem('hadSession')) {
-    showSessionExpiredModal();
-  }
-  startCountdown(kickoff);
-
-  // If authenticated, fetch server profile for display name
-  let hasDisplayName = false;
-  if (authUser) {
-    try {
-      const me = await api.getMe();
-      if (me?.hasDisplayName) {
-        setState({ displayName: me.displayName });
-        hasDisplayName = true;
-      }
-    } catch { /* profile fetch failed — will prompt for name */ }
-  }
-
-  // Load picks: server (if logged in) or localStorage (if anonymous)
-  if (authUser) {
-    try {
-      const serverPicks = await api.getPicks();
-      const localPicks = loadLocalPicks();
-      const serverEmpty = picksAreEmpty(serverPicks);
-      const localEmpty = picksAreEmpty(localPicks);
-
-      if (serverEmpty && !localEmpty) {
-        // Server has no real picks — use local drafts from anonymous session
-        setState({ picks: localPicks, locked: serverPicks?.isLocked ?? false });
-        await syncToServer();
-        clearLocalPicks();
-      } else if (!serverEmpty && !localEmpty) {
-        // Both exist — only ask if they differ
-        const localSerialized = JSON.stringify({
-          groupPicks: localPicks.groupPicks ?? {},
-          thirdPlaceAdvancing: localPicks.thirdPlaceAdvancing ?? [],
-          bracketPicks: localPicks.bracketPicks ?? {},
-        });
-        const serverSerialized = JSON.stringify({
-          groupPicks: serverPicks.groupPicks ?? {},
-          thirdPlaceAdvancing: serverPicks.thirdPlaceAdvancing ?? [],
-          bracketPicks: serverPicks.bracketPicks ?? {},
-        });
-        const choice = localSerialized === serverSerialized ? 'server' : await showPicksConflictModal();
-        if (choice === 'local') {
-          setState({ picks: localPicks, locked: serverPicks?.isLocked ?? false });
-          await syncToServer();
-        } else {
-          setState({
-            picks: serverPicks,
-            locked: !!serverPicks.isLocked,
-            score: serverPicks.score ?? null,
-          });
-        }
-        clearLocalPicks();
-      } else {
-        // Server has picks (or both empty) — use server
-        if (serverPicks) {
-          setState({
-            picks: serverPicks,
-            locked: !!serverPicks.isLocked,
-            score: serverPicks.score ?? null,
-          });
-        }
-        if (!localEmpty) clearLocalPicks();
-      }
-    } catch {
-      // Server error — try local picks
-      const localPicks = loadLocalPicks();
-      if (localPicks) {
-        setState({ picks: localPicks });
-        await syncToServer().catch(() => {});
-        clearLocalPicks();
-      }
-    }
-  } else {
-    // Not logged in — load from localStorage
-    const localPicks = loadLocalPicks();
-    if (localPicks) {
-      setState({ picks: localPicks });
-    }
-  }
-
-  // Start auto-save (must be after initial picks load so it doesn't re-save immediately)
-  initAutoSave();
-
-  // Set up navigation
   setupNavigation();
-
-  // Route to initial page
-  const path = location.pathname.replace(/^\//, '') || 'groups';
+  const path = location.pathname.replace(/^\//, '') || 'leaderboard';
   navigateTo(path);
-
-  // Gate: authenticated users must set a display name before interacting
-  if (authUser && !hasDisplayName) {
-    const { showDisplayNameModal } = await import('./display-name-modal.js');
-    const name = await showDisplayNameModal();
-    if (name) setState({ displayName: name });
-  }
-}
-
-function renderAuthHeader(user) {
-  const el = document.getElementById('auth-status');
-  if (!el) return;
-  if (user) {
-    const providerIcon = user.identityProvider === 'google'
-      ? '<i class="fa-brands fa-google auth-provider-icon" title="Signed in with Google"></i>'
-      : user.identityProvider === 'aad'
-        ? '<i class="fa-brands fa-microsoft auth-provider-icon" title="Signed in with Microsoft"></i>'
-        : '';
-    el.innerHTML = `${providerIcon}<span class="auth-name">${escapeHtml(user.userDetails)}</span> · <a href="${api.logoutUrl}" id="sign-out-link">Sign out</a>`;
-    document.getElementById('sign-out-link')?.addEventListener('click', () => {
-      localStorage.removeItem('hadSession');
-    });
-  } else {
-    el.innerHTML = `<button class="auth-login-btn" id="show-login-modal">Sign in</button>`;
-    document.getElementById('show-login-modal').addEventListener('click', showLoginModal);
-  }
-}
-
-function showSessionExpiredModal() {
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.innerHTML = `
-    <div class="modal-box" style="max-width:400px">
-      <h3>Session Expired</h3>
-      <p style="color:var(--text-muted); font-size:.9rem; margin-bottom:1.5rem;">Your session has expired. Sign in again to save your picks.</p>
-      <div class="login-options">
-        <a href="${api.loginUrl}" class="btn btn-primary login-btn">
-          <i class="fa-brands fa-microsoft"></i> Sign in with Microsoft
-        </a>
-        <a href="${api.loginGoogleUrl}" class="btn btn-secondary login-btn">
-          <i class="fa-brands fa-google"></i> Sign in with Google
-        </a>
-      </div>
-      <div class="modal-actions">
-        <button class="btn btn-secondary" id="btn-close-expired">Continue without signing in</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  document.getElementById('btn-close-expired').addEventListener('click', () => overlay.remove());
-}
-
-function showLoginModal() {
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.innerHTML = `
-    <div class="modal-box" style="max-width:400px">
-      <h3>Sign In</h3>
-      <p style="color:var(--text-muted); font-size:.9rem; margin-bottom:1.5rem;">Choose your login method:</p>
-      <div class="login-options">
-        <a href="${api.loginUrl}" class="btn btn-primary login-btn">
-          <i class="fa-brands fa-microsoft"></i> Sign in with Microsoft
-        </a>
-        <a href="${api.loginGoogleUrl}" class="btn btn-secondary login-btn">
-          <i class="fa-brands fa-google"></i> Sign in with Google
-        </a>
-      </div>
-      <div class="modal-actions">
-        <button class="btn btn-secondary" id="btn-close-login">Cancel</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  document.getElementById('btn-close-login').addEventListener('click', () => overlay.remove());
 }
 
 function setupNavigation() {
@@ -305,391 +73,59 @@ function setupNavigation() {
     if (href.startsWith('/')) {
       e.preventDefault();
       history.pushState(null, '', href);
-      navigateTo(href.replace(/^\//, '') || 'groups');
+      navigateTo(href.replace(/^\//, '') || 'leaderboard');
     }
   });
   window.addEventListener('popstate', () => {
-    const path = location.pathname.replace(/^\//, '') || 'groups';
+    const path = location.pathname.replace(/^\//, '') || 'leaderboard';
     navigateTo(path);
   });
 }
 
 function setActiveNav(page) {
-  const navPage = (page === 'groups' || page === 'bracket') ? 'picks' : page;
   document.querySelectorAll('.header-nav a').forEach(a => {
-    a.classList.toggle('active', a.dataset.page === navPage);
+    a.classList.toggle('active', a.dataset.page === page);
   });
 }
 
 async function navigateTo(page) {
-  // Map 'picks' to 'groups' (slide panel entry point)
-  if (page === 'picks') page = 'groups';
+  const app = document.getElementById('app');
 
-  // Handle view-picks/:userId route
+  // view-picks/:userId
   const viewPicksMatch = page.match(/^view-picks\/(.+)$/);
   if (viewPicksMatch) {
-    destroySlidePanel();
-    const app = document.getElementById('app');
     app.innerHTML = '<div class="loading-screen"><p>Loading…</p></div>';
-    setActiveNav(''); // No nav active for view-picks
+    setActiveNav('');
     await renderViewPicksPage(app, viewPicksMatch[1]);
     return;
   }
 
-  setActiveNav(page);
-  const app = document.getElementById('app');
-
-  // Groups / Bracket → sliding panel
-  if (page === 'groups' || page === 'bracket') {
-    ensureSlidePanel(app, page);
-    slideToPage(page);
+  // leaderboard/:leagueId
+  const leagueMatch = page.match(/^leaderboard\/(.+)$/);
+  if (leagueMatch) {
+    setActiveNav('leaderboard');
+    app.innerHTML = '<div class="loading-screen"><p>Loading…</p></div>';
+    await renderLeaderboardPage(app, leagueMatch[1]);
     return;
   }
 
-  // Other pages → tear down slider, render normally
-  destroySlidePanel();
+  setActiveNav(page);
   app.innerHTML = '<div class="loading-screen"><p>Loading…</p></div>';
 
   switch (page) {
-    case 'admin':
-    case 'manage-users':
-    case 'manage-leagues': {
-      // Check admin access
-      const { user } = getState();
-      if (!user?.isAdmin) {
-        app.innerHTML = '<div class="card"><p style="color:#f44336">Access denied: Admin role required</p></div>';
-        return;
-      }
-      if (page === 'manage-users') await renderManageUsersPage(app);
-      else if (page === 'manage-leagues') await renderManageLeaguesPage(app);
-      else await renderAdminPage(app);
-      break;
-    }
-    case 'dashboard':
-      if (!getState().locked) {
-        // Before lock, redirect to picks
-        history.replaceState(null, '', '/picks');
-        navigateTo('picks');
-        return;
-      }
-      await renderDashboardPage(app);
+    case 'rules':
+      renderRulesPage(app);
       break;
     case 'leaderboard':
       await renderLeaderboardPage(app);
       break;
-    case 'leagues':
-      await renderLeaguesPage(app);
-      break;
-    case 'rules':
-      renderRulesPage(app);
-      break;
     default:
-      // Handle leaderboard/:leagueId route
-      const leagueMatch = page.match(/^leaderboard\/(.+)$/);
-      if (leagueMatch) {
-        setActiveNav('leaderboard');
-        await renderLeaderboardPage(app, leagueMatch[1]);
-        break;
-      }
-      ensureSlidePanel(app, 'groups');
-      slideToPage('groups');
+      // All legacy routes (picks, groups, bracket, dashboard, leagues, admin…)
+      // redirect to the leaderboard.
+      history.replaceState(null, '', '/leaderboard');
+      setActiveNav('leaderboard');
+      await renderLeaderboardPage(app);
   }
 }
 
-// ─── Slide Panel (Groups ↔ Bracket) ────────────────────────
-
-function ensureSlidePanel(app, initialPage) {
-  if (sliderActive) return;
-
-  app.innerHTML = `
-    <div class="picks-sticky-header" id="picks-sticky-header">
-      <div class="slide-tabs" id="slide-tabs">
-        <button class="active" data-slide="groups">Groups</button>
-        <button data-slide="bracket">Bracket</button>
-        <span id="save-indicator" class="save-indicator"></span>
-      </div>
-      <div class="picks-status-bar" id="picks-status-bar">
-        <div class="picks-status-name" id="picks-status-name"></div>
-        <div class="picks-status-right">
-          <div class="picks-status-completeness" id="picks-status-completeness"></div>
-          <button class="tab-icon-btn find-pick-btn" id="find-pick-btn" title="Find a remaining pick" style="display:none">
-            <i class="fa-solid fa-magnifying-glass"></i>
-          </button>
-          <button class="tab-icon-btn" id="export-pdf-btn" title="Export picks to PDF">
-            <i class="fa-solid fa-file-pdf"></i>
-          </button>
-          <span class="lock-icon" id="picks-lock-icon" title="Picks are locked" style="display:none">
-            <i class="fa-solid fa-lock"></i>
-          </span>
-        </div>
-      </div>
-    </div>
-    <div class="slide-container">
-      <div class="slide-track">
-        <div class="slide-panel slide-panel-groups"></div>
-        <div class="slide-panel slide-panel-bracket"></div>
-      </div>
-      <div class="slide-peek-overlay slide-peek-right"></div>
-      <div class="slide-peek-overlay slide-peek-left"></div>
-    </div>
-  `;
-
-  renderGroupsPage(app.querySelector('.slide-panel-groups'));
-  renderBracketPage(app.querySelector('.slide-panel-bracket'));
-
-  // Initialize picks status bar (name + completeness + find-pick navigation)
-  initPicksStatus((page, elementId) => {
-    slideToPage(page);
-    requestAnimationFrame(() => {
-      const el = document.getElementById(elementId);
-      if (!el) return;
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.add('pick-highlight');
-      setTimeout(() => el.classList.remove('pick-highlight'), 2000);
-    });
-  });
-
-  sizeSlidePanels();
-  sliderActive = true;
-  currentSlide = initialPage;
-
-  // Position instantly (no animation on first render)
-  const track = app.querySelector('.slide-track');
-  track.style.transition = 'none';
-  positionTrack(initialPage);
-  updateOverlay(initialPage);
-  track.offsetHeight; // force reflow
-  track.style.transition = '';
-
-  // Click right peek overlay or bracket panel (in groups view) → navigate to bracket
-  app.querySelector('.slide-peek-right')?.addEventListener('click', () => slideTo('bracket'));
-  // Click left peek overlay → navigate back to groups
-  app.querySelector('.slide-peek-left')?.addEventListener('click', () => slideTo('groups'));
-  // Click anywhere on the bracket panel while in groups view → slide to bracket
-  app.querySelector('.slide-panel-bracket')?.addEventListener('click', () => {
-    if (currentSlide === 'groups') slideTo('bracket');
-  });
-
-  // Tab bar click handlers
-  const tabBar = document.getElementById('slide-tabs');
-  if (tabBar) {
-    tabBar.querySelectorAll('button[data-slide]').forEach(btn => {
-      btn.addEventListener('click', () => slideTo(btn.dataset.slide));
-    });
-  }
-
-  // PDF export (lazy-loaded)
-  document.getElementById('export-pdf-btn')?.addEventListener('click', async () => {
-    const { exportPicksPDF } = await import('./pdf-export.js');
-    await exportPicksPDF();
-  });
-
-  // Keep bracket in sync with group picks
-  let lastGroupSnap = serializeGroupState();
-  unsubBracketSync = subscribe(() => {
-    if (!sliderActive) return;
-    const snap = serializeGroupState();
-    if (snap !== lastGroupSnap) {
-      lastGroupSnap = snap;
-      renderBracketContent({ preserveScroll: true });
-    }
-  });
-
-  // Touch swipe to slide between panels
-  initSwipeGesture(app.querySelector('.slide-container'));
-}
-
-function destroySlidePanel() {
-  if (!sliderActive) return;
-  sliderActive = false;
-  savedScrollY = { groups: 0, bracket: 0 };
-  if (unsubBracketSync) { unsubBracketSync(); unsubBracketSync = null; }
-}
-
-/** Compute layout dimensions from container width. */
-function getSlideLayout() {
-  const ct = document.querySelector('.slide-container');
-  if (!ct) return null;
-  const w = ct.clientWidth;
-  const peek = getPeekWidth();
-  const gap = peek > 0 ? PANEL_GAP : 0;
-  // Only cap groups width when peek is active; otherwise fill container
-  const groupsW = peek > 0 ? Math.min(GROUPS_MAX_W, w - peek - gap) : w;
-  const leftPeek = peek > 0 ? PEEK_LEFT : 0;
-  return { ct, w, peek, gap, groupsW, leftPeek };
-}
-
-function sizeSlidePanels() {
-  const lay = getSlideLayout();
-  if (!lay) return;
-  lay.ct.querySelector('.slide-panel-groups').style.width = lay.groupsW + 'px';
-  lay.ct.querySelector('.slide-panel-bracket').style.width = lay.w + 'px';
-  lay.ct.querySelector('.slide-track').style.gap = lay.gap + 'px';
-}
-
-function slideToPage(page) {
-  if (currentSlide === page) return;
-  // Save scroll position before sliding away
-  savedScrollY[currentSlide] = window.scrollY;
-  currentSlide = page;
-  positionTrack(page);
-  updateOverlay(page);
-  // Restore scroll position for the target page
-  requestAnimationFrame(() => window.scrollTo(0, savedScrollY[page] || 0));
-}
-
-/** Navigate to a slide page, updating the URL hash. */
-function slideTo(page) {
-  history.pushState(null, '', `/${page}`);
-  navigateTo(page);
-}
-
-function positionTrack(page) {
-  const lay = getSlideLayout();
-  if (!lay) return;
-  lay.ct.querySelector('.slide-track').style.transform = page === 'bracket'
-    ? `translateX(-${lay.groupsW + lay.gap - lay.leftPeek}px)`
-    : 'translateX(0)';
-}
-
-function updateOverlay(page) {
-  const lay = getSlideLayout();
-  const peek = lay?.peek ?? 0;
-  const leftPeek = lay?.leftPeek ?? 0;
-
-  const rightOv = document.querySelector('.slide-peek-right');
-  if (rightOv) {
-    rightOv.style.width = peek + 'px';
-    rightOv.classList.toggle('active', page === 'groups' && peek > 0);
-  }
-
-  const leftOv = document.querySelector('.slide-peek-left');
-  if (leftOv) {
-    leftOv.style.width = leftPeek + 'px';
-    leftOv.classList.toggle('active', page === 'bracket' && leftPeek > 0);
-  }
-
-  // Update tab bar active state
-  document.querySelectorAll('#slide-tabs button').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.slide === page);
-  });
-}
-
-function getPeekWidth() {
-  return window.innerWidth >= 900 ? PEEK_WIDTH : 0;
-}
-
-function serializeGroupState() {
-  const { picks } = getState();
-  return JSON.stringify({ gp: picks?.groupPicks, tpa: picks?.thirdPlaceAdvancing });
-}
-
-window.addEventListener('resize', () => {
-  if (!sliderActive) return;
-  sizeSlidePanels();
-  positionTrack(currentSlide);
-  updateOverlay(currentSlide);
-});
-
-// ─── Touch swipe gesture ────────────────────────────────────
-const SWIPE_THRESHOLD = 50; // min px to trigger slide
-let lastSwipeTime = 0;
-
-function initSwipeGesture(container) {
-  if (!container) return;
-  let startX = 0, startY = 0, tracking = false;
-
-  // Suppress ghost clicks that fire after a swipe (capture phase)
-  container.addEventListener('click', e => {
-    if (Date.now() - lastSwipeTime < 400) {
-      e.stopPropagation();
-      e.preventDefault();
-    }
-  }, true);
-
-  container.addEventListener('touchstart', e => {
-    if (e.touches.length !== 1) return;
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    tracking = true;
-  }, { passive: true });
-
-  container.addEventListener('touchend', e => {
-    if (!tracking) return;
-    tracking = false;
-    const endX = e.changedTouches[0].clientX;
-    const endY = e.changedTouches[0].clientY;
-    const dx = endX - startX;
-    const dy = endY - startY;
-    // Only trigger if horizontal swipe dominates vertical
-    if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) return;
-
-    // When on bracket and swiping right (back to groups), only allow if
-    // all bracket scroll areas are at the far left — otherwise the
-    // user is just scrolling content, not trying to navigate.
-    if (dx > 0 && currentSlide === 'bracket') {
-      const scrollEls = container.querySelectorAll('.slide-panel-bracket .bk-scroll');
-      const anyScrolled = Array.from(scrollEls).some(el => el.scrollLeft > 5);
-      if (anyScrolled) return;
-    }
-
-    lastSwipeTime = Date.now();
-
-    if (dx < 0 && currentSlide === 'groups') {
-      slideTo('bracket');
-    } else if (dx > 0 && currentSlide === 'bracket') {
-      slideTo('groups');
-    }
-  }, { passive: true });
-}
-
-// ─── Countdown Timer ────────────────────────────────────────
-let countdownInterval = null;
-
-function startCountdown(target) {
-  updateCountdown(target);
-  countdownInterval = setInterval(() => updateCountdown(target), 1000);
-}
-
-function updateCountdown(target) {
-  const el = document.getElementById('header-countdown');
-  if (!el) return;
-  const now = new Date();
-  const diff = target - now;
-  if (diff <= 0) {
-    el.hidden = true;
-    clearInterval(countdownInterval);
-    countdownInterval = null;
-    return;
-  }
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  const secs = Math.floor((diff % (1000 * 60)) / 1000);
-  el.textContent = `⏱ ${days}d ${hours}h ${mins}m ${secs}s`;
-}
-
-init().catch(console.error);
-
-// ─── Session expiry detection for long-lived tabs ───────────
-// When the user backgrounds the tab for hours and returns, the SWA session
-// may have expired while in-memory state still shows them as logged in.
-// Re-check /.auth/me on visibility restore (at most once per 5 minutes).
-let lastAuthCheck = 0;
-document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState !== 'visible') return;
-  const { user } = getState();
-  if (!user) return; // not logged in — nothing to check
-
-  const now = Date.now();
-  if (now - lastAuthCheck < 5 * 60 * 1000) return; // checked recently
-  lastAuthCheck = now;
-
-  const freshUser = await fetchAuthUser();
-  if (!freshUser) {
-    // Session expired while tab was in the background
-    setState({ user: null });
-    renderAuthHeader(null);
-    showSessionExpiredModal();
-  }
-});
+init();

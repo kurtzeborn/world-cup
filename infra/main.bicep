@@ -12,9 +12,6 @@ param swaLocation string = 'eastus2'
 @description('Custom domain for the Static Web App (leave empty until DNS CNAME is configured)')
 param customDomain string = ''
 
-@description('Lock deadline for picks (ISO 8601 UTC)')
-param lockDeadline string = '2026-06-11T19:00:00Z'
-
 @description('Tags to apply to all resources')
 param tags object = {
   project: 'world-cup'
@@ -51,13 +48,13 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.19.0' = {
   }
 }
 
-// Static Web App — Standard tier required for custom auth providers (Google)
+// Static Web App — Free tier (read-only archive, no auth providers required)
 module staticSite 'br/public:avm/res/web/static-site:0.7.0' = {
   params: {
     name: staticSiteName
     location: swaLocation
     tags: tags
-    sku: 'Standard'
+    sku: 'Free'
     customDomains: customDomain != '' ? [customDomain] : []
   }
 }
@@ -70,7 +67,8 @@ resource swaAppSettings 'Microsoft.Web/staticSites/config@2023-12-01' = {
   name: '${staticSiteName}/appsettings'
   properties: {
     AZURE_STORAGE_CONNECTION_STRING: storageConnectionString
-    LOCK_DEADLINE: lockDeadline
+    // LOCK_DEADLINE retained so isLocked() continues to return true in the archive
+    LOCK_DEADLINE: '2026-06-11T19:00:00Z'
   }
   dependsOn: [storageAccount, staticSite]
 }

@@ -1,7 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
 import { getEntity, listEntitiesByPartition } from '../shared/storage.js';
 import { LeagueMemberEntity, LeagueEntity, UserEntity, PicksEntity } from '../shared/types.js';
-import { requireAuth, AuthError } from '../shared/auth.js';
 
 function userToLeaderboardEntry(u: UserEntity & { rowKey?: string }, championPick: string | null, extra?: { joinedAt?: string }) {
   return {
@@ -34,28 +33,20 @@ app.http('getLeaderboard', {
   methods: ['GET'],
   authLevel: 'anonymous',
   route: 'leaderboard',
-  handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
-    try {
-      requireAuth(request);
-      const users = await listEntitiesByPartition<UserEntity>('Users', 'user');
+  handler: async (_request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
+    const users = await listEntitiesByPartition<UserEntity>('Users', 'user');
 
-      const championPicks = await Promise.all(users.map(u => getChampionPick(u.rowKey!)));
+    const championPicks = await Promise.all(users.map(u => getChampionPick(u.rowKey!)));
 
-      const leaderboard = users
-        .map((u, i) => userToLeaderboardEntry(u, championPicks[i]))
-        .sort((a, b) => b.totalPoints - a.totalPoints);
+    const leaderboard = users
+      .map((u, i) => userToLeaderboardEntry(u, championPicks[i]))
+      .sort((a, b) => b.totalPoints - a.totalPoints);
 
-      return {
-        status: 200,
-        headers: { 'Cache-Control': 'no-store' },
-        jsonBody: leaderboard,
-      };
-    } catch (err) {
-      if (err instanceof AuthError) {
-        return { status: err.statusCode, jsonBody: { error: err.message } };
-      }
-      throw err;
-    }
+    return {
+      status: 200,
+      headers: { 'Cache-Control': 'no-store' },
+      jsonBody: leaderboard,
+    };
   },
 });
 
@@ -65,42 +56,34 @@ app.http('getLeagueLeaderboard', {
   authLevel: 'anonymous',
   route: 'leaderboard/{leagueId}',
   handler: async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
-    try {
-      requireAuth(request);
-      const leagueId = request.params.leagueId;
+    const leagueId = request.params.leagueId;
 
-      const members = await listEntitiesByPartition<LeagueMemberEntity>('LeagueMembers', leagueId);
-      if (members.length === 0) {
-        return { status: 404, jsonBody: { error: 'League not found or has no members' } };
-      }
-
-      const [league, userRows, championPicks] = await Promise.all([
-        getEntity<LeagueEntity>('Leagues', 'leagues', leagueId),
-        Promise.all(members.map((m) => getEntity<UserEntity>('Users', 'user', m.rowKey!))),
-        Promise.all(members.map((m) => getChampionPick(m.rowKey!))),
-      ]);
-
-      const leaderboard = members
-        .map((m, i) => {
-          const u = userRows[i];
-          return userToLeaderboardEntry(
-            u ?? { rowKey: m.rowKey, displayName: m.rowKey! } as any,
-            championPicks[i],
-            { joinedAt: m.joinedAt },
-          );
-        })
-        .sort((a, b) => b.totalPoints - a.totalPoints);
-
-      return {
-        status: 200,
-        headers: { 'Cache-Control': 'no-store' },
-        jsonBody: { createdBy: league?.createdBy ?? null, leagueName: league?.name ?? 'League', leaderboard },
-      };
-    } catch (err) {
-      if (err instanceof AuthError) {
-        return { status: err.statusCode, jsonBody: { error: err.message } };
-      }
-      throw err;
+    const members = await listEntitiesByPartition<LeagueMemberEntity>('LeagueMembers', leagueId);
+    if (members.length === 0) {
+      return { status: 404, jsonBody: { error: 'League not found or has no members' } };
     }
+
+    const [league, userRows, championPicks] = await Promise.all([
+      getEntity<LeagueEntity>('Leagues', 'leagues', leagueId),
+      Promise.all(members.map((m) => getEntity<UserEntity>('Users', 'user', m.rowKey!))),
+      Promise.all(members.map((m) => getChampionPick(m.rowKey!))),
+    ]);
+
+    const leaderboard = members
+      .map((m, i) => {
+        const u = userRows[i];
+        return userToLeaderboardEntry(
+          u ?? { rowKey: m.rowKey, displayName: m.rowKey! } as any,
+          championPicks[i],
+          { joinedAt: m.joinedAt },
+        );
+      })
+      .sort((a, b) => b.totalPoints - a.totalPoints);
+
+    return {
+      status: 200,
+      headers: { 'Cache-Control': 'no-store' },
+      jsonBody: { createdBy: league?.createdBy ?? null, leagueName: league?.name ?? 'League', leaderboard },
+    };
   },
 });
